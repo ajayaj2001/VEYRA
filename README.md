@@ -1,6 +1,6 @@
-# Pulse for Android
+# Veyra for Android
 
-Pulse is a local-first personal health companion for Google Fitbit Air. It is designed to combine a readable daily health dashboard, fast strength training, low-friction nutrition logging, and a bring-your-own-key AI coach in one premium Android experience.
+Veyra is a local-first personal health companion for Google Fitbit Air. It is designed to combine a readable daily health dashboard, fast strength training, low-friction nutrition logging, and a bring-your-own-key AI coach in one premium Android experience.
 
 ## Current prototype
 

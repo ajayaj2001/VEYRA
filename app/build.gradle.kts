@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.pulse.app"
+    namespace = "com.veyra.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.pulse.app"
+        applicationId = "com.veyra.app"
         minSdk = 28
         targetSdk = 35
         versionCode = 1

@@ -1,12 +1,12 @@
-package com.pulse.app.ui
+package com.veyra.app.ui
 
 import androidx.compose.ui.graphics.Color
-import com.pulse.app.ui.theme.Acid
-import com.pulse.app.ui.theme.Recovery
-import com.pulse.app.ui.theme.Sleep
-import com.pulse.app.ui.theme.Strain
+import com.veyra.app.ui.theme.Acid
+import com.veyra.app.ui.theme.Recovery
+import com.veyra.app.ui.theme.Sleep
+import com.veyra.app.ui.theme.Strain
 
-enum class PulseTab(val label: String) { Today("Today"), Train("Train"), Fuel("Fuel"), Coach("Coach"), You("You") }
+enum class VeyraTab(val label: String) { Today("Today"), Train("Train"), Fuel("Fuel"), Coach("Coach"), You("You") }
 
 data class Score(
     val label: String,

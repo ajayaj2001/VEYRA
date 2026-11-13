@@ -1,4 +1,4 @@
-package com.pulse.app.ui.theme
+package com.veyra.app.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -71,6 +71,6 @@ private val typography = androidx.compose.material3.Typography(
 )
 
 @Composable
-fun PulseTheme(content: @Composable () -> Unit) {
+fun VeyraTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = colors, typography = typography, content = content)
 }

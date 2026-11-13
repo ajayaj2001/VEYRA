@@ -2,9 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
         android:allowBackup="false"
-        android:label="Pulse"
+        android:label="Veyra"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Pulse">
+        android:theme="@style/Theme.Veyra">
         <activity
             android:name=".MainActivity"
             android:exported="true"

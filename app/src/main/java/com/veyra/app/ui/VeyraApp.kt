@@ -1,4 +1,4 @@
-package com.pulse.app.ui
+package com.veyra.app.ui
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
@@ -85,28 +85,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.pulse.app.ui.theme.Acid
-import com.pulse.app.ui.theme.Bone
-import com.pulse.app.ui.theme.Hairline
-import com.pulse.app.ui.theme.Ink
-import com.pulse.app.ui.theme.Muted
-import com.pulse.app.ui.theme.Recovery
-import com.pulse.app.ui.theme.Sleep
-import com.pulse.app.ui.theme.Strain
-import com.pulse.app.ui.theme.Surface
-import com.pulse.app.ui.theme.SurfaceHigh
+import com.veyra.app.ui.theme.Acid
+import com.veyra.app.ui.theme.Bone
+import com.veyra.app.ui.theme.Hairline
+import com.veyra.app.ui.theme.Ink
+import com.veyra.app.ui.theme.Muted
+import com.veyra.app.ui.theme.Recovery
+import com.veyra.app.ui.theme.Sleep
+import com.veyra.app.ui.theme.Strain
+import com.veyra.app.ui.theme.Surface
+import com.veyra.app.ui.theme.SurfaceHigh
 import kotlinx.coroutines.delay
 
-private sealed interface PulseRoute {
-    data object Main : PulseRoute
-    data class ExerciseDetail(val exercise: Exercise) : PulseRoute
-    data object ActiveWorkout : PulseRoute
+private sealed interface VeyraRoute {
+    data object Main : VeyraRoute
+    data class ExerciseDetail(val exercise: Exercise) : VeyraRoute
+    data object ActiveWorkout : VeyraRoute
 }
 
 @Composable
-fun PulseApp() {
-    var tab by rememberSaveable { mutableStateOf(PulseTab.Today) }
-    var route by remember { mutableStateOf<PulseRoute>(PulseRoute.Main) }
+fun VeyraApp() {
+    var tab by rememberSaveable { mutableStateOf(VeyraTab.Today) }
+    var route by remember { mutableStateOf<VeyraRoute>(VeyraRoute.Main) }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
         AnimatedContent(
@@ -115,18 +115,18 @@ fun PulseApp() {
             label = "route"
         ) { destination ->
             when (destination) {
-                PulseRoute.Main -> MainShell(
+                VeyraRoute.Main -> MainShell(
                     selected = tab,
                     onSelect = { tab = it },
-                    onExercise = { route = PulseRoute.ExerciseDetail(it) },
-                    onStartWorkout = { route = PulseRoute.ActiveWorkout }
+                    onExercise = { route = VeyraRoute.ExerciseDetail(it) },
+                    onStartWorkout = { route = VeyraRoute.ActiveWorkout }
                 )
-                is PulseRoute.ExerciseDetail -> ExerciseDetailScreen(
+                is VeyraRoute.ExerciseDetail -> ExerciseDetailScreen(
                     exercise = destination.exercise,
-                    onBack = { route = PulseRoute.Main },
-                    onStart = { route = PulseRoute.ActiveWorkout }
+                    onBack = { route = VeyraRoute.Main },
+                    onStart = { route = VeyraRoute.ActiveWorkout }
                 )
-                PulseRoute.ActiveWorkout -> ActiveWorkoutScreen(onBack = { route = PulseRoute.Main })
+                VeyraRoute.ActiveWorkout -> ActiveWorkoutScreen(onBack = { route = VeyraRoute.Main })
             }
         }
     }
@@ -134,8 +134,8 @@ fun PulseApp() {
 
 @Composable
 private fun MainShell(
-    selected: PulseTab,
-    onSelect: (PulseTab) -> Unit,
+    selected: VeyraTab,
+    onSelect: (VeyraTab) -> Unit,
     onExercise: (Exercise) -> Unit,
     onStartWorkout: () -> Unit
 ) {
@@ -145,11 +145,11 @@ private fun MainShell(
     ) {
         Box(Modifier.weight(1f)) {
             when (selected) {
-                PulseTab.Today -> TodayScreen()
-                PulseTab.Train -> TrainScreen(onExercise, onStartWorkout)
-                PulseTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
-                PulseTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
-                PulseTab.You -> ComingSoonScreen("You", "Trends, records and private settings.", Sleep)
+                VeyraTab.Today -> TodayScreen()
+                VeyraTab.Train -> TrainScreen(onExercise, onStartWorkout)
+                VeyraTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
+                VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
+                VeyraTab.You -> ComingSoonScreen("You", "Trends, records and private settings.", Sleep)
             }
         }
         BottomBar(selected, onSelect)
@@ -666,20 +666,20 @@ private fun MuscleLegend(label: String, muscles: String, color: Color, modifier:
 }
 
 @Composable
-private fun BottomBar(selected: PulseTab, onSelect: (PulseTab) -> Unit) {
+private fun BottomBar(selected: VeyraTab, onSelect: (VeyraTab) -> Unit) {
     Row(
         Modifier.fillMaxWidth().background(Surface).border(1.dp, Hairline)
             .padding(horizontal = 8.dp, vertical = 8.dp)
             .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        PulseTab.entries.forEach { tab ->
+        VeyraTab.entries.forEach { tab ->
             val icon = when (tab) {
-                PulseTab.Today -> Icons.Outlined.Home
-                PulseTab.Train -> Icons.Outlined.FitnessCenter
-                PulseTab.Fuel -> Icons.Outlined.Restaurant
-                PulseTab.Coach -> Icons.Outlined.ChatBubbleOutline
-                PulseTab.You -> Icons.Outlined.PersonOutline
+                VeyraTab.Today -> Icons.Outlined.Home
+                VeyraTab.Train -> Icons.Outlined.FitnessCenter
+                VeyraTab.Fuel -> Icons.Outlined.Restaurant
+                VeyraTab.Coach -> Icons.Outlined.ChatBubbleOutline
+                VeyraTab.You -> Icons.Outlined.PersonOutline
             }
             val active = selected == tab
             Column(
