@@ -10,7 +10,7 @@ enum class VeyraTab(val label: String) { Today("Today"), Train("Train"), Fuel("F
 
 data class Score(
     val label: String,
-    val value: Int,
+    val value: Int?,
     val unit: String = "",
     val note: String,
     val color: Color

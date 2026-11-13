@@ -1,6 +1,11 @@
 package com.veyra.app.ui
 
+import android.content.Intent
+import android.os.Build
 import android.view.HapticFeedbackConstants
+import android.view.View
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.health.connect.client.PermissionController
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
@@ -41,8 +46,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.Bolt
@@ -57,6 +62,7 @@ import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -80,11 +86,17 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.net.toUri
+import com.veyra.app.data.health.HealthDashboardState
+import com.veyra.app.data.health.HealthSnapshot
 import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.Bone
 import com.veyra.app.ui.theme.Hairline
@@ -95,6 +107,11 @@ import com.veyra.app.ui.theme.Sleep
 import com.veyra.app.ui.theme.Strain
 import com.veyra.app.ui.theme.Surface
 import com.veyra.app.ui.theme.SurfaceHigh
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import kotlinx.coroutines.delay
 
 private sealed interface VeyraRoute {
@@ -104,9 +121,21 @@ private sealed interface VeyraRoute {
 }
 
 @Composable
-fun VeyraApp() {
+fun VeyraApp(dashboardViewModel: DashboardViewModel = viewModel()) {
     var tab by rememberSaveable { mutableStateOf(VeyraTab.Today) }
     var route by remember { mutableStateOf<VeyraRoute>(VeyraRoute.Main) }
+    val healthState by dashboardViewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val permissionsLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { dashboardViewModel.onPermissionsResult() }
+    val openHealthConnect = {
+        val webUri = "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata".toUri()
+        val marketUri = "market://details?id=com.google.android.apps.healthdata".toUri()
+        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, marketUri)) }
+            .onFailure { context.startActivity(Intent(Intent.ACTION_VIEW, webUri)) }
+        Unit
+    }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
         AnimatedContent(
@@ -118,6 +147,10 @@ fun VeyraApp() {
                 VeyraRoute.Main -> MainShell(
                     selected = tab,
                     onSelect = { tab = it },
+                    healthState = healthState,
+                    onConnectHealth = { permissionsLauncher.launch(dashboardViewModel.permissions) },
+                    onRefreshHealth = dashboardViewModel::refresh,
+                    onInstallHealthConnect = openHealthConnect,
                     onExercise = { route = VeyraRoute.ExerciseDetail(it) },
                     onStartWorkout = { route = VeyraRoute.ActiveWorkout }
                 )
@@ -136,6 +169,10 @@ fun VeyraApp() {
 private fun MainShell(
     selected: VeyraTab,
     onSelect: (VeyraTab) -> Unit,
+    healthState: HealthDashboardState,
+    onConnectHealth: () -> Unit,
+    onRefreshHealth: () -> Unit,
+    onInstallHealthConnect: () -> Unit,
     onExercise: (Exercise) -> Unit,
     onStartWorkout: () -> Unit
 ) {
@@ -145,7 +182,12 @@ private fun MainShell(
     ) {
         Box(Modifier.weight(1f)) {
             when (selected) {
-                VeyraTab.Today -> TodayScreen()
+                VeyraTab.Today -> TodayScreen(
+                    healthState,
+                    onConnectHealth,
+                    onRefreshHealth,
+                    onInstallHealthConnect,
+                )
                 VeyraTab.Train -> TrainScreen(onExercise, onStartWorkout)
                 VeyraTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
                 VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
@@ -157,7 +199,17 @@ private fun MainShell(
 }
 
 @Composable
-private fun TodayScreen() {
+private fun TodayScreen(
+    healthState: HealthDashboardState,
+    onConnectHealth: () -> Unit,
+    onRefreshHealth: () -> Unit,
+    onInstallHealthConnect: () -> Unit,
+) {
+    val snapshot = (healthState as? HealthDashboardState.Ready)?.snapshot
+    val scores = snapshot?.toScores()
+    val dateLabel = remember {
+        LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE · d MMM")).uppercase()
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 28.dp),
@@ -166,28 +218,39 @@ private fun TodayScreen() {
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
-                    Label("THURSDAY · 13 NOV")
+                    Label(dateLabel)
                     Text("Good morning, Ajay", color = Bone, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
                 }
-                SyncPill()
+                SyncPill(snapshot?.syncedAt, healthState is HealthDashboardState.Loading, onRefreshHealth)
             }
         }
-        item { RecoveryHero(dashboardScores[0]) }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                CompactScore(dashboardScores[1], Modifier.weight(1f), Icons.Outlined.Bedtime)
-                CompactScore(dashboardScores[2], Modifier.weight(1f), Icons.Outlined.Bolt)
+        if (snapshot == null || scores == null) {
+            item {
+                HealthConnectCard(
+                    state = healthState,
+                    onConnect = onConnectHealth,
+                    onRefresh = onRefreshHealth,
+                    onInstall = onInstallHealthConnect,
+                )
             }
+        } else {
+            item { RecoveryHero(scores[0], snapshot) }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    CompactScore(scores[1], Modifier.weight(1f), Icons.Outlined.Bedtime)
+                    CompactScore(scores[2], Modifier.weight(1f), Icons.Outlined.Bolt)
+                }
+            }
+            item { CoachBrief(snapshot) }
+            item { SectionHeader("TODAY'S SIGNALS", "Live") }
+            item { SignalStrip(snapshot) }
         }
-        item { CoachBrief() }
-        item { SectionHeader("TODAY'S SIGNALS", "Details") }
-        item { SignalStrip() }
         item { LastWorkoutCard() }
     }
 }
 
 @Composable
-private fun RecoveryHero(score: Score) {
+private fun RecoveryHero(score: Score, snapshot: HealthSnapshot) {
     PremiumCard(Modifier.fillMaxWidth().height(300.dp), border = score.color.copy(alpha = .35f)) {
         Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxHeight().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
@@ -196,10 +259,18 @@ private fun RecoveryHero(score: Score) {
                     Text("Strong", color = score.color, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Column {
-                    Text(score.value.toString(), style = androidx.compose.material3.MaterialTheme.typography.displayLarge, color = Bone)
+                    Text(score.value?.toString() ?: "—", style = androidx.compose.material3.MaterialTheme.typography.displayLarge, color = Bone)
                     Text(score.note, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.Medium)
                     Spacer(Modifier.height(5.dp))
-                    Text("HRV 48 ms · RHR 54 bpm · Sleep +8", color = Muted, fontSize = 13.sp)
+                    Text(
+                        listOfNotNull(
+                            snapshot.hrvMs?.let { "HRV ${it.toInt()} ms" },
+                            snapshot.restingHeartRate?.let { "RHR $it bpm" },
+                            snapshot.sleepMinutes?.let { "Sleep ${it / 60}h ${it % 60}m" },
+                        ).joinToString(" · ").ifEmpty { "Waiting for nightly signals" },
+                        color = Muted,
+                        fontSize = 13.sp,
+                    )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(7.dp).clip(CircleShape).background(score.color))
@@ -207,7 +278,7 @@ private fun RecoveryHero(score: Score) {
                     Text("TRAINING TARGET  13–16", color = Bone, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 }
             }
-            ScoreArc(score.value / 100f, score.color, Modifier.align(Alignment.CenterEnd).size(175.dp).graphicsLayer { translationX = 36.dp.toPx() })
+            ScoreArc((score.value ?: 0) / 100f, score.color, Modifier.align(Alignment.CenterEnd).size(175.dp).graphicsLayer { translationX = 36.dp.toPx() })
         }
     }
 }
@@ -229,7 +300,7 @@ private fun CompactScore(score: Score, modifier: Modifier, icon: androidx.compos
                 Icon(icon, null, tint = score.color, modifier = Modifier.size(18.dp))
             }
             Row(verticalAlignment = Alignment.Bottom) {
-                Text(score.value.toString(), style = androidx.compose.material3.MaterialTheme.typography.displayMedium, color = Bone)
+                Text(score.value?.toString() ?: "—", style = androidx.compose.material3.MaterialTheme.typography.displayMedium, color = Bone)
                 Text(score.unit, color = Muted, modifier = Modifier.padding(bottom = 8.dp, start = 2.dp))
             }
             Text(score.note, color = Muted, fontSize = 12.sp, lineHeight = 16.sp)
@@ -238,7 +309,13 @@ private fun CompactScore(score: Score, modifier: Modifier, icon: androidx.compos
 }
 
 @Composable
-private fun CoachBrief() {
+private fun CoachBrief(snapshot: HealthSnapshot) {
+    val message = when {
+        snapshot.recoveryScore == null -> "I'm learning your baseline. Wear Fitbit Air overnight and keep Google Health synced."
+        snapshot.recoveryScore >= 67 -> "Your recovery supports the planned session. Keep the final working set around RPE 8."
+        snapshot.recoveryScore >= 34 -> "Train as planned, but keep two reps in reserve and avoid adding extra volume."
+        else -> "Recovery is suppressed today. Choose walking or mobility and move the hard session forward."
+    }
     PremiumCard(Modifier.fillMaxWidth(), border = Recovery.copy(alpha = .25f)) {
         Row(Modifier.padding(17.dp), verticalAlignment = Alignment.Top) {
             Box(Modifier.size(38.dp).clip(CircleShape).background(Recovery.copy(.12f)), contentAlignment = Alignment.Center) {
@@ -248,7 +325,7 @@ private fun CoachBrief() {
             Column(Modifier.weight(1f)) {
                 Label("COACH", Recovery)
                 Spacer(Modifier.height(4.dp))
-                Text("You're ready to push. Keep the final bench set at RPE 8; your sleep supports the planned volume.", color = Bone, fontSize = 14.sp, lineHeight = 20.sp)
+                Text(message, color = Bone, fontSize = 14.sp, lineHeight = 20.sp)
             }
             Icon(Icons.Outlined.ChevronRight, null, tint = Muted, modifier = Modifier.padding(top = 10.dp))
         }
@@ -256,14 +333,82 @@ private fun CoachBrief() {
 }
 
 @Composable
-private fun SignalStrip() {
+private fun SignalStrip(snapshot: HealthSnapshot) {
     PremiumCard(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(vertical = 18.dp)) {
-            Metric("8,462", "STEPS", "+12%", Modifier.weight(1f))
+            Metric("%,d".format(snapshot.steps), "STEPS", "Today", Modifier.weight(1f))
             DividerLine()
-            Metric("632", "ACTIVE KCAL", "+8%", Modifier.weight(1f))
+            Metric("%,d".format(snapshot.activeCalories), "ACTIVE KCAL", "Today", Modifier.weight(1f))
             DividerLine()
-            Metric("54", "RESTING HR", "−2", Modifier.weight(1f))
+            Metric(
+                snapshot.restingHeartRate?.toString() ?: "—",
+                "RESTING HR",
+                "${(snapshot.heartRateCoverage * 100).toInt()}% HR cover",
+                Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HealthConnectCard(
+    state: HealthDashboardState,
+    onConnect: () -> Unit,
+    onRefresh: () -> Unit,
+    onInstall: () -> Unit,
+) {
+    val content = when (state) {
+        HealthDashboardState.Loading -> Triple(
+            "SYNCING HEALTH DATA",
+            "Reading your latest Fitbit signals from Health Connect.",
+            null,
+        )
+        HealthDashboardState.NeedsPermissions -> Triple(
+            "CONNECT YOUR HEALTH DATA",
+            "Allow sleep, HRV, resting heart rate, heart rate, steps and active calories. Veyra reads them on this phone.",
+            "CONNECT HEALTH",
+        )
+        HealthDashboardState.ProviderUpdateRequired -> Triple(
+            "HEALTH CONNECT REQUIRED",
+            "Install or update Health Connect to securely share Google Health data with Veyra.",
+            "OPEN PLAY STORE",
+        )
+        HealthDashboardState.Unavailable -> Triple(
+            "HEALTH CONNECT UNAVAILABLE",
+            "Veyra requires Android 9 or newer and a supported personal phone profile.",
+            null,
+        )
+        is HealthDashboardState.Error -> Triple(
+            "SYNC NEEDS ATTENTION",
+            state.message,
+            "TRY AGAIN",
+        )
+        is HealthDashboardState.Ready -> return
+    }
+    val action = when (state) {
+        HealthDashboardState.NeedsPermissions -> onConnect
+        HealthDashboardState.ProviderUpdateRequired -> onInstall
+        is HealthDashboardState.Error -> onRefresh
+        else -> null
+    }
+
+    PremiumCard(Modifier.fillMaxWidth(), border = Sleep.copy(.30f)) {
+        Column(Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(40.dp).clip(CircleShape).background(Sleep.copy(.12f)), contentAlignment = Alignment.Center) {
+                    if (state is HealthDashboardState.Loading) {
+                        CircularProgressIndicator(Modifier.size(19.dp), color = Sleep, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Outlined.Sync, null, tint = Sleep, modifier = Modifier.size(19.dp))
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                Label(content.first, Sleep)
+            }
+            Text(content.second, color = Bone, fontSize = 15.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 14.dp, bottom = if (action != null) 16.dp else 0.dp))
+            if (action != null && content.third != null) {
+                PopButton(content.third!!, Icons.Outlined.Sync, Sleep, action)
+            }
         }
     }
 }
@@ -434,7 +579,7 @@ private fun ActiveWorkoutScreen(onBack: () -> Unit) {
     ) {
         Row(Modifier.fillMaxWidth().padding(20.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(38.dp).clip(CircleShape).background(Surface).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.ArrowBack, null, tint = Bone, modifier = Modifier.size(19.dp))
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, tint = Bone, modifier = Modifier.size(19.dp))
             }
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Label("LIVE · 32:18", Strain)
@@ -525,7 +670,7 @@ private fun SetCheck(done: Boolean, onClick: () -> Unit) {
             .background(if (done) Recovery else SurfaceHigh)
             .border(1.dp, if (done) Recovery else Hairline, CircleShape)
             .clickable {
-                view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                view.performConfirmHaptic()
                 onClick()
             },
         contentAlignment = Alignment.Center
@@ -722,7 +867,7 @@ private fun PopButton(label: String, icon: androidx.compose.ui.graphics.vector.I
             Modifier.fillMaxSize().graphicsLayer { translationY = if (pressed) 4.dp.toPx() else 0f }
                 .clip(RoundedCornerShape(13.dp)).background(color)
                 .clickable(interactionSource = interaction, indication = null) {
-                    view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+                    view.performConfirmHaptic()
                     onClick()
                 }.padding(horizontal = 18.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -736,12 +881,38 @@ private fun PopButton(label: String, icon: androidx.compose.ui.graphics.vector.I
 }
 
 @Composable
-private fun SyncPill() {
-    Row(Modifier.clip(CircleShape).background(Surface).border(1.dp, Hairline, CircleShape).padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Outlined.Sync, null, tint = Recovery, modifier = Modifier.size(12.dp))
-        Spacer(Modifier.width(5.dp))
-        Text("08:42", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+private fun SyncPill(syncedAt: Instant?, syncing: Boolean, onRefresh: () -> Unit) {
+    val text = when {
+        syncing -> "SYNCING"
+        syncedAt != null -> syncedAt.atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
+        else -> "OFFLINE"
     }
+    Row(
+        Modifier.clip(CircleShape).background(Surface).border(1.dp, Hairline, CircleShape)
+            .clickable(enabled = !syncing, onClick = onRefresh)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.Sync, null, tint = if (syncedAt != null || syncing) Recovery else Muted, modifier = Modifier.size(12.dp))
+        Spacer(Modifier.width(5.dp))
+        Text(text, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+private fun HealthSnapshot.toScores(): List<Score> = listOf(
+    Score("Recovery", recoveryScore, note = recoveryNote, color = Recovery),
+    Score("Sleep", sleepScore, note = sleepNote, color = Sleep),
+    Score("Strain", strainScore, "/21", strainNote, Strain),
+)
+
+private fun View.performConfirmHaptic() {
+    performHapticFeedback(
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            HapticFeedbackConstants.CONFIRM
+        } else {
+            HapticFeedbackConstants.VIRTUAL_KEY
+        }
+    )
 }
 
 @Composable
@@ -761,7 +932,7 @@ private fun Label(text: String, color: Color = Muted) {
 private fun TopBack(label: String, onBack: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(40.dp).clip(CircleShape).background(Surface).border(1.dp, Hairline, CircleShape).clickable(onClick = onBack), contentAlignment = Alignment.Center) {
-            Icon(Icons.Outlined.ArrowBack, null, tint = Bone, modifier = Modifier.size(19.dp))
+            Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, tint = Bone, modifier = Modifier.size(19.dp))
         }
         Spacer(Modifier.width(12.dp))
         Label(label)
