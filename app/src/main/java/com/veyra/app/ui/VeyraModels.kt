@@ -25,17 +25,6 @@ data class Exercise(
     val accent: Color = Strain
 )
 
-data class WorkoutExercise(
-    val exercise: Exercise,
-    val sets: List<WorkoutSet>
-)
-
-data class WorkoutSet(
-    val previous: String,
-    val weight: String,
-    val reps: String
-)
-
 val dashboardScores = listOf(
     Score("Recovery", 72, note = "Ready for a productive session", color = Recovery),
     Score("Sleep", 84, note = "7h 48m · steady timing", color = Sleep),
@@ -64,24 +53,5 @@ val exercises = listOf(
         primaryMuscles = listOf("Upper back", "Lats"),
         secondaryMuscles = listOf("Rear delts", "Biceps"),
         cue = "Keep the chest planted. Pull elbows toward the hips without shrugging."
-    )
-)
-
-val sampleWorkout = listOf(
-    WorkoutExercise(
-        exercises[0],
-        listOf(
-            WorkoutSet("70 × 10", "70", "10"),
-            WorkoutSet("75 × 8", "75", "8"),
-            WorkoutSet("75 × 7", "75", "8")
-        )
-    ),
-    WorkoutExercise(
-        Exercise("Incline dumbbell press", "Dumbbells · Bench", listOf("Upper chest"), listOf("Triceps"), "Set the bench to 30°. Keep wrists stacked over elbows."),
-        listOf(
-            WorkoutSet("24 × 12", "24", "12"),
-            WorkoutSet("26 × 10", "26", "10"),
-            WorkoutSet("26 × 9", "26", "10")
-        )
     )
 )

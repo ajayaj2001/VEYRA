@@ -19,6 +19,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -67,8 +69,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -89,6 +89,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -97,6 +98,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.net.toUri
 import com.veyra.app.data.health.HealthDashboardState
 import com.veyra.app.data.health.HealthSnapshot
+import com.veyra.app.data.workout.WorkoutSetEntity
+import com.veyra.app.data.workout.WorkoutSummary
 import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.Bone
 import com.veyra.app.ui.theme.Hairline
@@ -121,10 +124,15 @@ private sealed interface VeyraRoute {
 }
 
 @Composable
-fun VeyraApp(dashboardViewModel: DashboardViewModel = viewModel()) {
+fun VeyraApp(
+    dashboardViewModel: DashboardViewModel = viewModel(),
+    workoutViewModel: WorkoutViewModel = viewModel(),
+) {
     var tab by rememberSaveable { mutableStateOf(VeyraTab.Today) }
     var route by remember { mutableStateOf<VeyraRoute>(VeyraRoute.Main) }
     val healthState by dashboardViewModel.state.collectAsStateWithLifecycle()
+    val activeWorkout by workoutViewModel.activeWorkout.collectAsStateWithLifecycle()
+    val latestWorkout by workoutViewModel.latestWorkout.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val permissionsLauncher = rememberLauncherForActivityResult(
         PermissionController.createRequestPermissionResultContract()
@@ -152,14 +160,29 @@ fun VeyraApp(dashboardViewModel: DashboardViewModel = viewModel()) {
                     onRefreshHealth = dashboardViewModel::refresh,
                     onInstallHealthConnect = openHealthConnect,
                     onExercise = { route = VeyraRoute.ExerciseDetail(it) },
-                    onStartWorkout = { route = VeyraRoute.ActiveWorkout }
+                    activeWorkout = activeWorkout,
+                    latestWorkout = latestWorkout,
+                    onStartWorkout = {
+                        workoutViewModel.startPushWorkout { route = VeyraRoute.ActiveWorkout }
+                    },
+                    onResumeWorkout = { route = VeyraRoute.ActiveWorkout },
                 )
                 is VeyraRoute.ExerciseDetail -> ExerciseDetailScreen(
                     exercise = destination.exercise,
                     onBack = { route = VeyraRoute.Main },
-                    onStart = { route = VeyraRoute.ActiveWorkout }
+                    onStart = {
+                        workoutViewModel.startPushWorkout { route = VeyraRoute.ActiveWorkout }
+                    }
                 )
-                VeyraRoute.ActiveWorkout -> ActiveWorkoutScreen(onBack = { route = VeyraRoute.Main })
+                VeyraRoute.ActiveWorkout -> ActiveWorkoutScreen(
+                    state = activeWorkout,
+                    onBack = { route = VeyraRoute.Main },
+                    onToggleSet = workoutViewModel::toggleSet,
+                    onWeightChange = workoutViewModel::updateWeight,
+                    onRepsChange = workoutViewModel::updateReps,
+                    onAdjustRest = workoutViewModel::adjustRest,
+                    onFinish = { workoutViewModel.finish { route = VeyraRoute.Main } },
+                )
             }
         }
     }
@@ -174,7 +197,10 @@ private fun MainShell(
     onRefreshHealth: () -> Unit,
     onInstallHealthConnect: () -> Unit,
     onExercise: (Exercise) -> Unit,
-    onStartWorkout: () -> Unit
+    activeWorkout: ActiveWorkoutState?,
+    latestWorkout: WorkoutSummary?,
+    onStartWorkout: () -> Unit,
+    onResumeWorkout: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize()
@@ -187,8 +213,14 @@ private fun MainShell(
                     onConnectHealth,
                     onRefreshHealth,
                     onInstallHealthConnect,
+                    latestWorkout,
                 )
-                VeyraTab.Train -> TrainScreen(onExercise, onStartWorkout)
+                VeyraTab.Train -> TrainScreen(
+                    onExercise,
+                    activeWorkout,
+                    onStartWorkout,
+                    onResumeWorkout,
+                )
                 VeyraTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
                 VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
                 VeyraTab.You -> ComingSoonScreen("You", "Trends, records and private settings.", Sleep)
@@ -204,6 +236,7 @@ private fun TodayScreen(
     onConnectHealth: () -> Unit,
     onRefreshHealth: () -> Unit,
     onInstallHealthConnect: () -> Unit,
+    latestWorkout: WorkoutSummary?,
 ) {
     val snapshot = (healthState as? HealthDashboardState.Ready)?.snapshot
     val scores = snapshot?.toScores()
@@ -245,7 +278,7 @@ private fun TodayScreen(
             item { SectionHeader("TODAY'S SIGNALS", "Live") }
             item { SignalStrip(snapshot) }
         }
-        item { LastWorkoutCard() }
+        if (latestWorkout != null) item { LastWorkoutCard(latestWorkout) }
     }
 }
 
@@ -426,7 +459,12 @@ private fun Metric(value: String, label: String, delta: String, modifier: Modifi
 }
 
 @Composable
-private fun LastWorkoutCard() {
+private fun LastWorkoutCard(workout: WorkoutSummary) {
+    val durationMinutes = ((workout.finishedAtEpochMs - workout.startedAtEpochMs) / 60_000L).coerceAtLeast(1)
+    val date = Instant.ofEpochMilli(workout.finishedAtEpochMs)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .format(DateTimeFormatter.ofPattern("d MMM"))
     PremiumCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(50.dp).clip(RoundedCornerShape(15.dp)).background(Strain.copy(.12f)), contentAlignment = Alignment.Center) {
@@ -435,16 +473,21 @@ private fun LastWorkoutCard() {
             Spacer(Modifier.width(13.dp))
             Column(Modifier.weight(1f)) {
                 Label("LAST WORKOUT", Strain)
-                Text("Upper strength", color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                Text("Yesterday · 56 min · 7,840 kg", color = Muted, fontSize = 12.sp)
+                Text(workout.title, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("$date · $durationMinutes min · ${"%.0f".format(workout.volumeKg)} kg", color = Muted, fontSize = 12.sp)
             }
-            Text("2 PR", color = Acid, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("${workout.completedSets}/${workout.totalSets}", color = Acid, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-private fun TrainScreen(onExercise: (Exercise) -> Unit, onStartWorkout: () -> Unit) {
+private fun TrainScreen(
+    onExercise: (Exercise) -> Unit,
+    activeWorkout: ActiveWorkoutState?,
+    onStartWorkout: () -> Unit,
+    onResumeWorkout: () -> Unit,
+) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 18.dp, 20.dp, 30.dp),
@@ -456,13 +499,41 @@ private fun TrainScreen(onExercise: (Exercise) -> Unit, onStartWorkout: () -> Un
             Text("Previous performance, precise rest and form guidance—without the noise.", color = Muted, fontSize = 14.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 6.dp))
         }
         item {
-            PopButton("START PUSH DAY", Icons.Outlined.PlayArrow, Acid, onStartWorkout)
+            if (activeWorkout == null) {
+                PopButton("START PUSH DAY", Icons.Outlined.PlayArrow, Acid, onStartWorkout)
+            } else {
+                ActiveWorkoutCard(activeWorkout, onResumeWorkout)
+            }
         }
-        item { SectionHeader("YOUR ROUTINES", "Edit") }
-        item { RoutineCard("Push · Strength", "6 exercises · 18 sets", "Last: yesterday", onStartWorkout) }
-        item { RoutineCard("Pull · Hypertrophy", "7 exercises · 21 sets", "Last: 4 days ago", onStartWorkout) }
+        item { SectionHeader("YOUR ROUTINES", "1 saved") }
+        item { RoutineCard("Push · Strength", "2 exercises · 6 sets", "Ready", onStartWorkout) }
         item { SectionHeader("EXERCISE LIBRARY", "View all") }
         items(exercises) { exercise -> ExerciseCard(exercise) { onExercise(exercise) } }
+    }
+}
+
+@Composable
+private fun ActiveWorkoutCard(state: ActiveWorkoutState, onResume: () -> Unit) {
+    val completed = state.exercises.sumOf { exercise -> exercise.sets.count { it.completedAtEpochMs != null } }
+    val total = state.exercises.sumOf { it.sets.size }
+    PremiumCard(
+        Modifier.fillMaxWidth().clickable(onClick = onResume),
+        border = Strain.copy(.4f),
+    ) {
+        Row(Modifier.padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(48.dp).clip(CircleShape).background(Strain.copy(.14f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.PlayArrow, null, tint = Strain)
+            }
+            Column(Modifier.weight(1f).padding(start = 13.dp)) {
+                Label("WORKOUT IN PROGRESS", Strain)
+                Text(state.workout.title, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text("$completed of $total sets complete", color = Muted, fontSize = 12.sp)
+            }
+            Text("RESUME", color = Acid, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
@@ -556,22 +627,31 @@ private fun ExerciseDetailScreen(exercise: Exercise, onBack: () -> Unit, onStart
                 MuscleLegend("SECONDARY", exercise.secondaryMuscles.joinToString(), exercise.accent.copy(.45f), Modifier.weight(1f))
             }
         }
-        item { PopButton("ADD TO WORKOUT", Icons.Outlined.Add, exercise.accent, onStart) }
+        item { PopButton("START PUSH WORKOUT", Icons.Outlined.PlayArrow, exercise.accent, onStart) }
     }
 }
 
 @Composable
-private fun ActiveWorkoutScreen(onBack: () -> Unit) {
-    val completed = remember { mutableStateListOf<String>() }
-    var restSeconds by rememberSaveable { mutableIntStateOf(0) }
-    var running by rememberSaveable { mutableStateOf(false) }
-
-    LaunchedEffect(running, restSeconds) {
-        if (running && restSeconds > 0) {
-            delay(1000)
-            restSeconds -= 1
-        } else if (restSeconds == 0) running = false
+private fun ActiveWorkoutScreen(
+    state: ActiveWorkoutState?,
+    onBack: () -> Unit,
+    onToggleSet: (WorkoutSetEntity) -> Unit,
+    onWeightChange: (WorkoutSetEntity, String) -> Unit,
+    onRepsChange: (WorkoutSetEntity, String) -> Unit,
+    onAdjustRest: (Int) -> Unit,
+    onFinish: () -> Unit,
+) {
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(state?.workout?.restUntilEpochMs) {
+        while (true) {
+            now = System.currentTimeMillis()
+            delay(1_000)
+        }
     }
+    val restSeconds = state?.workout?.restUntilEpochMs
+        ?.let { ((it - now).coerceAtLeast(0) / 1_000L).toInt() }
+        ?: 0
+    val elapsedSeconds = state?.workout?.let { ((now - it.startedAtEpochMs) / 1_000L).coerceAtLeast(0) } ?: 0
 
     Column(
         Modifier.fillMaxSize().background(Ink)
@@ -582,10 +662,17 @@ private fun ActiveWorkoutScreen(onBack: () -> Unit) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, null, tint = Bone, modifier = Modifier.size(19.dp))
             }
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                Label("LIVE · 32:18", Strain)
-                Text("Push · Strength", color = Bone, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
+                Label("LIVE · ${formatDuration(elapsedSeconds)}", Strain)
+                Text(state?.workout?.title ?: "Loading workout…", color = Bone, fontSize = 19.sp, fontWeight = FontWeight.SemiBold)
             }
-            Text("FINISH", color = Acid, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text(
+                "FINISH",
+                color = if (state == null) Muted else Acid,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.clickable(enabled = state != null, onClick = onFinish).padding(8.dp),
+            )
         }
 
         LazyColumn(
@@ -593,33 +680,43 @@ private fun ActiveWorkoutScreen(onBack: () -> Unit) {
             contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 8.dp, 20.dp, 120.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            items(sampleWorkout) { workoutExercise ->
-                WorkoutExerciseCard(workoutExercise, completed) { key ->
-                    if (completed.contains(key)) completed.remove(key) else {
-                        completed.add(key)
-                        restSeconds = 90
-                        running = true
-                    }
-                }
+            items(state?.exercises.orEmpty(), key = { it.key }) { exercise ->
+                WorkoutExerciseCard(
+                    exercise = exercise,
+                    onToggleSet = onToggleSet,
+                    onWeightChange = onWeightChange,
+                    onRepsChange = onRepsChange,
+                )
             }
-            item { PopButton("ADD EXERCISE", Icons.Outlined.Add, SurfaceHigh) {} }
         }
 
-        AnimatedVisibility(running, enter = fadeIn(), exit = fadeOut()) {
-            RestTimerBar(restSeconds) { restSeconds = (restSeconds + it).coerceAtLeast(0) }
+        AnimatedVisibility(restSeconds > 0, enter = fadeIn(), exit = fadeOut()) {
+            RestTimerBar(restSeconds, onAdjustRest)
         }
     }
 }
 
 @Composable
-private fun WorkoutExerciseCard(workoutExercise: WorkoutExercise, completed: List<String>, toggle: (String) -> Unit) {
+private fun WorkoutExerciseCard(
+    exercise: ActiveExercise,
+    onToggleSet: (WorkoutSetEntity) -> Unit,
+    onWeightChange: (WorkoutSetEntity, String) -> Unit,
+    onRepsChange: (WorkoutSetEntity, String) -> Unit,
+) {
+    val exerciseVisual = exercises.firstOrNull { it.name == exercise.name } ?: Exercise(
+        name = exercise.name,
+        equipment = exercise.equipment,
+        primaryMuscles = listOf("Upper chest"),
+        secondaryMuscles = listOf("Triceps"),
+        cue = "Keep each rep controlled and repeatable.",
+    )
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(SurfaceHigh)) {
-                ExerciseMotionDemo(workoutExercise.exercise, Modifier.fillMaxSize().padding(4.dp))
+                ExerciseMotionDemo(exerciseVisual, Modifier.fillMaxSize().padding(4.dp))
             }
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(workoutExercise.exercise.name, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                Text(exercise.name, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
                 Text("Last session beside each set", color = Muted, fontSize = 11.sp)
             }
             Icon(Icons.Outlined.ChevronRight, null, tint = Muted)
@@ -632,9 +729,8 @@ private fun WorkoutExerciseCard(workoutExercise: WorkoutExercise, completed: Lis
             SetHeader("REPS", Modifier.width(64.dp))
             Spacer(Modifier.width(36.dp))
         }
-        workoutExercise.sets.forEachIndexed { index, set ->
-            val key = "${workoutExercise.exercise.name}-$index"
-            val isDone = completed.contains(key)
+        exercise.sets.forEach { set ->
+            val isDone = set.completedAtEpochMs != null
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 5.dp)
                     .clip(RoundedCornerShape(12.dp))
@@ -642,23 +738,48 @@ private fun WorkoutExerciseCard(workoutExercise: WorkoutExercise, completed: Lis
                     .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("${index + 1}", color = if (isDone) Recovery else Muted, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(38.dp))
+                Text("${set.setNumber}", color = if (isDone) Recovery else Muted, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(38.dp))
                 Text(set.previous, color = Muted, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                SetValue(set.weight, isDone, Modifier.width(64.dp))
-                SetValue(set.reps, isDone, Modifier.width(64.dp))
-                SetCheck(isDone) { toggle(key) }
+                EditableSetValue(set.weightKg, isDone, Modifier.width(64.dp), KeyboardType.Decimal) { onWeightChange(set, it) }
+                EditableSetValue(set.reps, isDone, Modifier.width(64.dp), KeyboardType.Number) { onRepsChange(set, it) }
+                SetCheck(isDone) { onToggleSet(set) }
             }
         }
     }
 }
 
+private fun formatDuration(seconds: Long): String = "%d:%02d".format(seconds / 60, seconds % 60)
+
 @Composable
 private fun SetHeader(text: String, modifier: Modifier) = Text(text, color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp, modifier = modifier)
 
 @Composable
-private fun SetValue(text: String, done: Boolean, modifier: Modifier) {
+private fun EditableSetValue(
+    value: String,
+    done: Boolean,
+    modifier: Modifier,
+    keyboardType: KeyboardType,
+    onValueChange: (String) -> Unit,
+) {
+    var localValue by remember(value) { mutableStateOf(value) }
     Box(modifier.height(36.dp).padding(end = 6.dp).clip(RoundedCornerShape(9.dp)).background(if (done) Recovery.copy(.08f) else SurfaceHigh), contentAlignment = Alignment.Center) {
-        Text(text, color = if (done) Recovery else Bone, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+        BasicTextField(
+            value = localValue,
+            onValueChange = {
+                localValue = it
+                onValueChange(it)
+            },
+            enabled = !done,
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(
+                color = if (done) Recovery else Bone,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
