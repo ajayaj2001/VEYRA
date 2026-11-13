@@ -58,6 +58,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FitnessCenter
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.PlayArrow
@@ -121,6 +122,7 @@ private sealed interface VeyraRoute {
     data object Main : VeyraRoute
     data class ExerciseDetail(val exercise: Exercise) : VeyraRoute
     data object ActiveWorkout : VeyraRoute
+    data object WorkoutHistory : VeyraRoute
 }
 
 @Composable
@@ -133,10 +135,41 @@ fun VeyraApp(
     val healthState by dashboardViewModel.state.collectAsStateWithLifecycle()
     val activeWorkout by workoutViewModel.activeWorkout.collectAsStateWithLifecycle()
     val latestWorkout by workoutViewModel.latestWorkout.collectAsStateWithLifecycle()
+    val workoutHistory by workoutViewModel.workoutHistory.collectAsStateWithLifecycle()
+    var pendingFinish by remember { mutableStateOf(false) }
+    var pendingSyncWorkoutId by remember { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
     val permissionsLauncher = rememberLauncherForActivityResult(
         PermissionController.createRequestPermissionResultContract()
     ) { dashboardViewModel.onPermissionsResult() }
+    val workoutPermissionsLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract()
+    ) { granted ->
+        if (pendingFinish) {
+            pendingFinish = false
+            workoutViewModel.finish(
+                exportToHealthConnect = granted.containsAll(workoutViewModel.healthWritePermission),
+            ) { route = VeyraRoute.Main }
+        } else {
+            pendingSyncWorkoutId?.let { workoutId ->
+                if (granted.containsAll(workoutViewModel.healthWritePermission)) {
+                    workoutViewModel.syncWorkout(workoutId)
+                }
+                pendingSyncWorkoutId = null
+            }
+        }
+    }
+    val syncWorkout: (Long) -> Unit = { workoutId ->
+        workoutViewModel.checkHealthWriteAccess { hasPermission, canRequest ->
+            when {
+                hasPermission -> workoutViewModel.syncWorkout(workoutId)
+                canRequest -> {
+                    pendingSyncWorkoutId = workoutId
+                    workoutPermissionsLauncher.launch(workoutViewModel.healthWritePermission)
+                }
+            }
+        }
+    }
     val openHealthConnect = {
         val webUri = "https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata".toUri()
         val marketUri = "market://details?id=com.google.android.apps.healthdata".toUri()
@@ -162,10 +195,13 @@ fun VeyraApp(
                     onExercise = { route = VeyraRoute.ExerciseDetail(it) },
                     activeWorkout = activeWorkout,
                     latestWorkout = latestWorkout,
+                    workoutHistory = workoutHistory,
                     onStartWorkout = {
                         workoutViewModel.startPushWorkout { route = VeyraRoute.ActiveWorkout }
                     },
                     onResumeWorkout = { route = VeyraRoute.ActiveWorkout },
+                    onWorkoutHistory = { route = VeyraRoute.WorkoutHistory },
+                    onSyncWorkout = syncWorkout,
                 )
                 is VeyraRoute.ExerciseDetail -> ExerciseDetailScreen(
                     exercise = destination.exercise,
@@ -181,7 +217,23 @@ fun VeyraApp(
                     onWeightChange = workoutViewModel::updateWeight,
                     onRepsChange = workoutViewModel::updateReps,
                     onAdjustRest = workoutViewModel::adjustRest,
-                    onFinish = { workoutViewModel.finish { route = VeyraRoute.Main } },
+                    onFinish = {
+                        workoutViewModel.checkHealthWriteAccess { hasPermission, canRequest ->
+                            when {
+                                hasPermission -> workoutViewModel.finish(true) { route = VeyraRoute.Main }
+                                canRequest -> {
+                                    pendingFinish = true
+                                    workoutPermissionsLauncher.launch(workoutViewModel.healthWritePermission)
+                                }
+                                else -> workoutViewModel.finish(false) { route = VeyraRoute.Main }
+                            }
+                        }
+                    },
+                )
+                VeyraRoute.WorkoutHistory -> WorkoutHistoryScreen(
+                    workouts = workoutHistory,
+                    onBack = { route = VeyraRoute.Main },
+                    onSyncWorkout = syncWorkout,
                 )
             }
         }
@@ -199,8 +251,11 @@ private fun MainShell(
     onExercise: (Exercise) -> Unit,
     activeWorkout: ActiveWorkoutState?,
     latestWorkout: WorkoutSummary?,
+    workoutHistory: List<WorkoutSummary>,
     onStartWorkout: () -> Unit,
     onResumeWorkout: () -> Unit,
+    onWorkoutHistory: () -> Unit,
+    onSyncWorkout: (Long) -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize()
@@ -218,8 +273,11 @@ private fun MainShell(
                 VeyraTab.Train -> TrainScreen(
                     onExercise,
                     activeWorkout,
+                    workoutHistory,
                     onStartWorkout,
                     onResumeWorkout,
+                    onWorkoutHistory,
+                    onSyncWorkout,
                 )
                 VeyraTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
                 VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
@@ -485,8 +543,11 @@ private fun LastWorkoutCard(workout: WorkoutSummary) {
 private fun TrainScreen(
     onExercise: (Exercise) -> Unit,
     activeWorkout: ActiveWorkoutState?,
+    workoutHistory: List<WorkoutSummary>,
     onStartWorkout: () -> Unit,
     onResumeWorkout: () -> Unit,
+    onWorkoutHistory: () -> Unit,
+    onSyncWorkout: (Long) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -507,6 +568,13 @@ private fun TrainScreen(
         }
         item { SectionHeader("YOUR ROUTINES", "1 saved") }
         item { RoutineCard("Push · Strength", "2 exercises · 6 sets", "Ready", onStartWorkout) }
+        if (workoutHistory.isNotEmpty()) {
+            item { SectionHeader("RECENT WORKOUTS", "${workoutHistory.size} total") }
+            items(workoutHistory.take(3), key = { it.id }) { workout ->
+                WorkoutHistoryCard(workout, onSyncWorkout)
+            }
+            item { PopButton("VIEW WORKOUT HISTORY", Icons.Outlined.History, SurfaceHigh, onWorkoutHistory) }
+        }
         item { SectionHeader("EXERCISE LIBRARY", "View all") }
         items(exercises) { exercise -> ExerciseCard(exercise) { onExercise(exercise) } }
     }
@@ -533,6 +601,92 @@ private fun ActiveWorkoutCard(state: ActiveWorkoutState, onResume: () -> Unit) {
                 Text("$completed of $total sets complete", color = Muted, fontSize = 12.sp)
             }
             Text("RESUME", color = Acid, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun WorkoutHistoryCard(workout: WorkoutSummary, onSyncWorkout: ((Long) -> Unit)? = null) {
+    val durationMinutes = ((workout.finishedAtEpochMs - workout.startedAtEpochMs) / 60_000L).coerceAtLeast(1)
+    val date = Instant.ofEpochMilli(workout.finishedAtEpochMs)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("d MMM · HH:mm"))
+    PremiumCard(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(46.dp).clip(RoundedCornerShape(14.dp))
+                    .background(if (workout.healthConnectId != null) Recovery.copy(.13f) else SurfaceHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (workout.healthConnectId != null) Icons.Outlined.Check else Icons.Outlined.FitnessCenter,
+                    null,
+                    tint = if (workout.healthConnectId != null) Recovery else Strain,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Column(Modifier.weight(1f).padding(start = 13.dp)) {
+                Text(workout.title, color = Bone, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("$date · $durationMinutes min", color = Muted, fontSize = 11.sp)
+                Text(
+                    "${workout.completedSets}/${workout.totalSets} sets · ${"%.0f".format(workout.volumeKg)} kg",
+                    color = Bone,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            Text(
+                if (workout.healthConnectId != null) "SYNCED" else if (onSyncWorkout != null) "SYNC" else "ON DEVICE",
+                color = if (workout.healthConnectId != null) Recovery else if (onSyncWorkout != null) Acid else Muted,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = .7.sp,
+                modifier = Modifier
+                    .clickable(enabled = workout.healthConnectId == null && onSyncWorkout != null) {
+                        onSyncWorkout?.invoke(workout.id)
+                    }
+                    .padding(8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun WorkoutHistoryScreen(
+    workouts: List<WorkoutSummary>,
+    onBack: () -> Unit,
+    onSyncWorkout: (Long) -> Unit,
+) {
+    LazyColumn(
+        Modifier.fillMaxSize().background(Ink),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp,
+            end = 20.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 30.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { TopBack("TRAIN", onBack) }
+        item {
+            Label("WORKOUT HISTORY", Strain)
+            Text("Every session. No noise.", color = Bone, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+            Text(
+                "Sessions marked Synced are available to Health Connect and compatible health apps.",
+                color = Muted,
+                fontSize = 13.sp,
+                lineHeight = 19.sp,
+                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+            )
+        }
+        if (workouts.isEmpty()) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Text("Finish your first workout to build your history.", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(20.dp))
+                }
+            }
+        } else {
+            items(workouts, key = { it.id }) { workout -> WorkoutHistoryCard(workout, onSyncWorkout) }
         }
     }
 }

@@ -13,6 +13,7 @@ data class WorkoutEntity(
     val startedAtEpochMs: Long,
     val finishedAtEpochMs: Long? = null,
     val restUntilEpochMs: Long? = null,
+    val healthConnectId: String? = null,
 )
 
 @Entity(
@@ -51,4 +52,5 @@ data class WorkoutSummary(
     val completedSets: Int,
     val totalSets: Int,
     val volumeKg: Double,
+    val healthConnectId: String?,
 )

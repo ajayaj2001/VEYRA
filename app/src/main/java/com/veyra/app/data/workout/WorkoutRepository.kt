@@ -8,6 +8,7 @@ class WorkoutRepository(private val database: VeyraDatabase) {
 
     val activeWorkout: Flow<WorkoutWithSets?> = dao.observeActiveWorkout()
     val latestWorkout: Flow<WorkoutSummary?> = dao.observeLatestWorkout()
+    val workoutHistory: Flow<List<WorkoutSummary>> = dao.observeWorkoutHistory()
 
     suspend fun startPushWorkout(): Long = database.withTransaction {
         dao.activeWorkout()?.id ?: dao.insertWorkout(
@@ -39,6 +40,12 @@ class WorkoutRepository(private val database: VeyraDatabase) {
 
     suspend fun finish(workoutId: Long) {
         dao.finishWorkout(workoutId, System.currentTimeMillis())
+    }
+
+    suspend fun workout(workoutId: Long): WorkoutWithSets? = dao.workoutWithSets(workoutId)
+
+    suspend fun markHealthConnectSynced(workoutId: Long, recordId: String) {
+        dao.markHealthConnectSynced(workoutId, recordId)
     }
 
     private fun pushDaySets(workoutId: Long): List<WorkoutSetEntity> {

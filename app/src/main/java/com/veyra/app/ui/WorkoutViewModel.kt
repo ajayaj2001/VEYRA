@@ -3,11 +3,13 @@ package com.veyra.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.health.connect.client.HealthConnectClient
 import com.veyra.app.data.workout.VeyraDatabase
 import com.veyra.app.data.workout.WorkoutEntity
 import com.veyra.app.data.workout.WorkoutRepository
 import com.veyra.app.data.workout.WorkoutSetEntity
 import com.veyra.app.data.workout.WorkoutSummary
+import com.veyra.app.data.workout.WorkoutHealthExporter
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -28,6 +30,9 @@ data class ActiveExercise(
 
 class WorkoutViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = WorkoutRepository(VeyraDatabase.get(application))
+    private val healthExporter = WorkoutHealthExporter(application)
+
+    val healthWritePermission: Set<String> = setOf(healthExporter.writePermission)
 
     val activeWorkout: StateFlow<ActiveWorkoutState?> = repository.activeWorkout
         .map { relation ->
@@ -54,6 +59,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     val latestWorkout: StateFlow<WorkoutSummary?> = repository.latestWorkout
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val workoutHistory: StateFlow<List<WorkoutSummary>> = repository.workoutHistory
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun startPushWorkout(onStarted: () -> Unit = {}) {
         viewModelScope.launch {
@@ -84,11 +92,33 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { repository.adjustRest(workout, seconds) }
     }
 
-    fun finish(onFinished: () -> Unit) {
+    fun checkHealthWriteAccess(onResult: (hasPermission: Boolean, canRequest: Boolean) -> Unit) {
+        viewModelScope.launch {
+            val available = healthExporter.availability == HealthConnectClient.SDK_AVAILABLE
+            val granted = available && runCatching { healthExporter.hasWritePermission() }.getOrDefault(false)
+            onResult(granted, available)
+        }
+    }
+
+    fun finish(exportToHealthConnect: Boolean, onFinished: () -> Unit) {
         val workoutId = activeWorkout.value?.workout?.id ?: return
         viewModelScope.launch {
             repository.finish(workoutId)
+            if (exportToHealthConnect) {
+                repository.workout(workoutId)?.let { workout ->
+                    runCatching { healthExporter.export(workout) }
+                        .onSuccess { recordId -> repository.markHealthConnectSynced(workoutId, recordId) }
+                }
+            }
             onFinished()
+        }
+    }
+
+    fun syncWorkout(workoutId: Long) {
+        viewModelScope.launch {
+            val workout = repository.workout(workoutId) ?: return@launch
+            runCatching { healthExporter.export(workout) }
+                .onSuccess { recordId -> repository.markHealthConnectSynced(workoutId, recordId) }
         }
     }
 }

@@ -16,6 +16,8 @@ Veyra is a local-first personal health companion for Google Fitbit Air. It is de
 - Editable weights and reps stored in an on-device Room database
 - Completion haptics and automatic rest timer
 - Crash-safe active workout resume and completed-session summaries
+- Full local workout history with sync status
+- One-tap export and retry of completed workouts to Health Connect
 - Durable product structure for Fuel, Coach and personal health records
 
 The Today dashboard uses real Health Connect data after permission is granted. Active workouts and their latest completed summary are local-first and remain available after the app or phone restarts. The initial Push routine is currently fixed while routine editing is built.
@@ -49,10 +51,17 @@ Install Android SDK 36 and Java 17, then run:
 
 The APK is generated at `app/build/outputs/apk/debug/app-debug.apk`.
 
+Every completed push to `main` publishes:
+
+- An installable debug APK in the workflow artifacts and the latest GitHub Release
+- An unsigned optimized release APK for build verification
+
+A permanent Android signing keystore must be configured before release APKs can be installed as update-safe production builds or submitted to Google Play.
+
 ## Next milestones
 
 1. Validate Fitbit Air record coverage on the target phone and tune score thresholds.
-2. Add routine editing, workout history and Health Connect session export.
+2. Add custom routine creation and editing.
 3. Add text, barcode and photo-assisted nutrition logging.
 4. Add encrypted medical records and evidence-grounded coach tools.
 

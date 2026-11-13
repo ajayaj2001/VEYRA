@@ -18,7 +18,8 @@ interface WorkoutDao {
                SUM(CASE WHEN s.completedAtEpochMs IS NOT NULL THEN 1 ELSE 0 END) AS completedSets,
                COUNT(s.id) AS totalSets,
                COALESCE(SUM(CASE WHEN s.completedAtEpochMs IS NOT NULL
-                   THEN CAST(s.weightKg AS REAL) * CAST(s.reps AS INTEGER) ELSE 0 END), 0) AS volumeKg
+                   THEN CAST(s.weightKg AS REAL) * CAST(s.reps AS INTEGER) ELSE 0 END), 0) AS volumeKg,
+               w.healthConnectId
         FROM workouts w LEFT JOIN workout_sets s ON w.id = s.workoutId
         WHERE w.finishedAtEpochMs IS NOT NULL
         GROUP BY w.id
@@ -26,6 +27,26 @@ interface WorkoutDao {
         """
     )
     fun observeLatestWorkout(): Flow<WorkoutSummary?>
+
+    @Query(
+        """
+        SELECT w.id, w.title, w.startedAtEpochMs, w.finishedAtEpochMs,
+               SUM(CASE WHEN s.completedAtEpochMs IS NOT NULL THEN 1 ELSE 0 END) AS completedSets,
+               COUNT(s.id) AS totalSets,
+               COALESCE(SUM(CASE WHEN s.completedAtEpochMs IS NOT NULL
+                   THEN CAST(s.weightKg AS REAL) * CAST(s.reps AS INTEGER) ELSE 0 END), 0) AS volumeKg,
+               w.healthConnectId
+        FROM workouts w LEFT JOIN workout_sets s ON w.id = s.workoutId
+        WHERE w.finishedAtEpochMs IS NOT NULL
+        GROUP BY w.id
+        ORDER BY w.finishedAtEpochMs DESC
+        """
+    )
+    fun observeWorkoutHistory(): Flow<List<WorkoutSummary>>
+
+    @Transaction
+    @Query("SELECT * FROM workouts WHERE id = :workoutId LIMIT 1")
+    suspend fun workoutWithSets(workoutId: Long): WorkoutWithSets?
 
     @Query("SELECT * FROM workouts WHERE finishedAtEpochMs IS NULL ORDER BY startedAtEpochMs DESC LIMIT 1")
     suspend fun activeWorkout(): WorkoutEntity?
@@ -50,4 +71,7 @@ interface WorkoutDao {
 
     @Query("UPDATE workouts SET finishedAtEpochMs = :finishedAt, restUntilEpochMs = NULL WHERE id = :workoutId")
     suspend fun finishWorkout(workoutId: Long, finishedAt: Long)
+
+    @Query("UPDATE workouts SET healthConnectId = :recordId WHERE id = :workoutId")
+    suspend fun markHealthConnectSynced(workoutId: Long, recordId: String)
 }
