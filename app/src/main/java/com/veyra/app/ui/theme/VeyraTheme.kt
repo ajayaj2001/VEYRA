@@ -3,23 +3,37 @@ package com.veyra.app.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Ink = Color(0xFF000000)
-val Surface = Color(0xFF0D0D0F)
-val SurfaceHigh = Color(0xFF17171A)
-val Hairline = Color(0xFF28282D)
-val Bone = Color(0xFFF5F4EF)
-val Muted = Color(0xFF96969E)
-val Acid = Color(0xFFE6FF5C)
-val Recovery = Color(0xFF46E6A0)
-val Sleep = Color(0xFF9385FF)
-val Strain = Color(0xFFFF7B35)
+val Ink = Color(0xFF06110D)
+val Surface = Color(0xE613241D)
+val SurfaceHigh = Color(0xF21B3027)
+val Hairline = Color(0xFF355044)
+val Bone = Color(0xFFF7F8F3)
+val Muted = Color(0xFFA6B4AC)
+val Acid = Color(0xFFDFFF69)
+val Recovery = Color(0xFF54E6AD)
+val Sleep = Color(0xFFA294FF)
+val Strain = Color(0xFF5B8CFF)
 val Danger = Color(0xFFFF6262)
+val ElectricBlue = Color(0xFF3F6FE5)
+val AuroraGold = Color(0xFF6A4F0D)
+
+val AppBackgroundBrush = Brush.verticalGradient(
+    0f to Color(0xFF4A390E),
+    .22f to Color(0xFF173128),
+    .58f to Color(0xFF091A14),
+    1f to Ink,
+)
+
+val CardBackgroundBrush = Brush.linearGradient(
+    listOf(Color(0xF2293B33), Color(0xEB13251E)),
+)
 
 private val colors = darkColorScheme(
     primary = Acid,

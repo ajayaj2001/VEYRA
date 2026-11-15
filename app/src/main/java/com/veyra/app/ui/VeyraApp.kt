@@ -88,6 +88,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -116,7 +117,10 @@ import com.veyra.app.data.food.FoodDraft
 import com.veyra.app.data.food.FoodIngredientDraft
 import com.veyra.app.data.food.FoodWithIngredients
 import com.veyra.app.ui.theme.Acid
+import com.veyra.app.ui.theme.AppBackgroundBrush
 import com.veyra.app.ui.theme.Bone
+import com.veyra.app.ui.theme.CardBackgroundBrush
+import com.veyra.app.ui.theme.ElectricBlue
 import com.veyra.app.ui.theme.Hairline
 import com.veyra.app.ui.theme.Ink
 import com.veyra.app.ui.theme.Muted
@@ -202,7 +206,7 @@ fun VeyraApp(
         Unit
     }
 
-    Box(Modifier.fillMaxSize().background(Ink)) {
+    Box(Modifier.fillMaxSize().background(AppBackgroundBrush)) {
         AnimatedContent(
             targetState = route,
             transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
@@ -458,7 +462,13 @@ private fun TodayScreen(
 @Composable
 private fun RecoveryHero(score: Score, snapshot: HealthSnapshot) {
     PremiumCard(Modifier.fillMaxWidth().height(300.dp), border = score.color.copy(alpha = .35f)) {
-        Box(Modifier.fillMaxSize()) {
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.linearGradient(
+                    listOf(ElectricBlue.copy(alpha = .82f), Color(0xFF214B71), Color(0xFF17352D)),
+                ),
+            ),
+        ) {
             Column(Modifier.fillMaxHeight().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Label("RECOVERY", score.color)
@@ -500,7 +510,12 @@ private fun ScoreArc(progress: Float, color: Color, modifier: Modifier = Modifie
 @Composable
 private fun CompactScore(score: Score, modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     PremiumCard(modifier.height(168.dp)) {
-        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
+        Column(
+            Modifier.fillMaxSize()
+                .background(Brush.linearGradient(listOf(score.color.copy(alpha = .18f), Color.Transparent)))
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Label(score.label.uppercase(), score.color)
                 Icon(icon, null, tint = score.color, modifier = Modifier.size(18.dp))
@@ -784,7 +799,7 @@ private fun WorkoutHistoryScreen(
     onSyncWorkout: (Long) -> Unit,
 ) {
     LazyColumn(
-        Modifier.fillMaxSize().background(Ink),
+        Modifier.fillMaxSize().background(AppBackgroundBrush),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp,
             end = 20.dp,
@@ -874,7 +889,7 @@ private fun ExerciseDetailScreen(
     var selectedMetric by rememberSaveable(exercise.key) { mutableStateOf(0) }
     val groupedHistory = historySets.groupBy { it.workoutId }.values.toList()
     LazyColumn(
-        Modifier.fillMaxSize().background(Ink),
+        Modifier.fillMaxSize().background(AppBackgroundBrush),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp,
             end = 20.dp,
@@ -1070,7 +1085,7 @@ private fun RoutineDetailScreen(
 ) {
     val sessions = history.filter { it.title == routine?.routine?.name }.sortedBy { it.finishedAtEpochMs }
     LazyColumn(
-        Modifier.fillMaxSize().background(Ink),
+        Modifier.fillMaxSize().background(AppBackgroundBrush),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -1133,7 +1148,7 @@ private fun CreateRoutineScreen(
     var name by rememberSaveable(initialName) { mutableStateOf(initialName) }
     var selected by rememberSaveable(initialKeys) { mutableStateOf(initialKeys) }
     LazyColumn(
-        Modifier.fillMaxSize().background(Ink),
+        Modifier.fillMaxSize().background(AppBackgroundBrush),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -1196,7 +1211,7 @@ private fun AddExerciseScreen(
             (muscleIndex == 0 || muscle in exercise.primaryMuscles)
     }.sortedBy { exercise -> recentKeys.indexOf(exercise.key).let { if (it == -1) Int.MAX_VALUE else it } }
     LazyColumn(
-        Modifier.fillMaxSize().background(Ink),
+        Modifier.fillMaxSize().background(AppBackgroundBrush),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -1333,7 +1348,7 @@ private fun ActiveWorkoutScreen(
         .sumOf { (it.weightKg.toDoubleOrNull() ?: 0.0) * (it.reps.toIntOrNull() ?: 0) }
 
     Column(
-        Modifier.fillMaxSize().background(Ink)
+        Modifier.fillMaxSize().background(AppBackgroundBrush)
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
     ) {
         Row(Modifier.fillMaxWidth().padding(20.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1704,27 +1719,35 @@ private fun MuscleLegend(label: String, muscles: String, color: Color, modifier:
 
 @Composable
 private fun BottomBar(selected: VeyraTab, onSelect: (VeyraTab) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Surface).border(1.dp, Hairline)
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+    Box(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp)
             .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
-        horizontalArrangement = Arrangement.SpaceAround
     ) {
-        VeyraTab.entries.forEach { tab ->
-            val icon = when (tab) {
-                VeyraTab.Today -> Icons.Outlined.Home
-                VeyraTab.Train -> Icons.Outlined.FitnessCenter
-                VeyraTab.Fuel -> Icons.Outlined.Restaurant
-                VeyraTab.Coach -> Icons.Outlined.ChatBubbleOutline
-                VeyraTab.You -> Icons.Outlined.PersonOutline
-            }
-            val active = selected == tab
-            Column(
-                Modifier.width(64.dp).clip(RoundedCornerShape(14.dp)).clickable { onSelect(tab) }.padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(icon, tab.label, tint = if (active) Acid else Muted, modifier = Modifier.size(21.dp))
-                Text(tab.label, color = if (active) Bone else Muted, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.padding(top = 3.dp))
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp))
+                .background(SurfaceHigh.copy(alpha = .94f))
+                .border(1.dp, Bone.copy(alpha = .12f), RoundedCornerShape(30.dp))
+                .padding(horizontal = 7.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+        ) {
+            VeyraTab.entries.forEach { tab ->
+                val icon = when (tab) {
+                    VeyraTab.Today -> Icons.Outlined.Home
+                    VeyraTab.Train -> Icons.Outlined.FitnessCenter
+                    VeyraTab.Fuel -> Icons.Outlined.Restaurant
+                    VeyraTab.Coach -> Icons.Outlined.ChatBubbleOutline
+                    VeyraTab.You -> Icons.Outlined.PersonOutline
+                }
+                val active = selected == tab
+                Column(
+                    Modifier.width(64.dp).clip(RoundedCornerShape(22.dp))
+                        .background(if (active) Bone.copy(alpha = .12f) else Color.Transparent)
+                        .clickable { onSelect(tab) }.padding(vertical = 7.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(icon, tab.label, tint = if (active) Acid else Muted, modifier = Modifier.size(21.dp))
+                    Text(tab.label, color = if (active) Bone else Muted, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.padding(top = 3.dp))
+                }
             }
         }
     }
@@ -1753,7 +1776,11 @@ private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood:
         }
         item {
             PremiumCard(Modifier.fillMaxWidth().height(230.dp), border = Acid.copy(.35f)) {
-                Box(Modifier.fillMaxSize().padding(20.dp)) {
+                Box(
+                    Modifier.fillMaxSize()
+                        .background(Brush.linearGradient(listOf(Color(0xFF274F42), Color(0xFF182C25), Acid.copy(.08f))))
+                        .padding(20.dp),
+                ) {
                     Column(Modifier.align(Alignment.TopStart)) {
                         Label("CALORIES LEFT", Acid)
                         Text("$remaining", color = Bone, fontSize = 58.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-2).sp)
@@ -1860,7 +1887,7 @@ private fun AddFoodScreen(onBack: () -> Unit, onReview: (FoodDraft) -> Unit) {
         photoCaptured = it != null
     }
     Column(
-        Modifier.fillMaxSize().background(Ink)
+        Modifier.fillMaxSize().background(AppBackgroundBrush)
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
     ) {
         Row(Modifier.fillMaxWidth().padding(20.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1972,7 +1999,7 @@ private fun FoodReviewScreen(initial: FoodDraft, onBack: () -> Unit, onLog: (Foo
     var protein by rememberSaveable { mutableStateOf(initial.proteinGrams.toString().removeSuffix(".0")) }
     var fat by rememberSaveable { mutableStateOf(initial.fatGrams.toString().removeSuffix(".0")) }
     LazyColumn(
-        Modifier.fillMaxSize().background(Ink),
+        Modifier.fillMaxSize().background(AppBackgroundBrush),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -2059,7 +2086,11 @@ private fun ComingSoonScreen(title: String, message: String, accent: Color) {
 
 @Composable
 private fun PremiumCard(modifier: Modifier = Modifier, border: Color = Hairline, content: @Composable () -> Unit) {
-    Box(modifier.clip(RoundedCornerShape(21.dp)).background(Surface).border(1.dp, border, RoundedCornerShape(21.dp))) { content() }
+    val shape = RoundedCornerShape(27.dp)
+    Box(
+        modifier.clip(shape).background(CardBackgroundBrush)
+            .border(1.dp, if (border == Hairline) Bone.copy(alpha = .10f) else border, shape),
+    ) { content() }
 }
 
 @Composable
