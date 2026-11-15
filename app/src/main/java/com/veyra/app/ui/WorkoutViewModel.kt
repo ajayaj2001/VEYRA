@@ -10,6 +10,9 @@ import com.veyra.app.data.workout.WorkoutRepository
 import com.veyra.app.data.workout.WorkoutSetEntity
 import com.veyra.app.data.workout.WorkoutSummary
 import com.veyra.app.data.workout.WorkoutHealthExporter
+import com.veyra.app.data.workout.ExerciseHistoryPoint
+import com.veyra.app.data.workout.RoutineWithExercises
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -26,6 +29,8 @@ data class ActiveExercise(
     val name: String,
     val equipment: String,
     val sets: List<WorkoutSetEntity>,
+    val note: String,
+    val restSeconds: Int,
 )
 
 class WorkoutViewModel(application: Application) : AndroidViewModel(application) {
@@ -33,6 +38,10 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     private val healthExporter = WorkoutHealthExporter(application)
 
     val healthWritePermission: Set<String> = setOf(healthExporter.writePermission)
+
+    init {
+        viewModelScope.launch { repository.ensureSeedRoutines() }
+    }
 
     val activeWorkout: StateFlow<ActiveWorkoutState?> = repository.activeWorkout
         .map { relation ->
@@ -50,6 +59,8 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
                                 name = first.exerciseName,
                                 equipment = first.equipment,
                                 sets = sets.sortedBy(WorkoutSetEntity::setNumber),
+                                note = first.exerciseNote,
+                                restSeconds = first.restSeconds,
                             )
                         },
                 )
@@ -63,10 +74,44 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
     val workoutHistory: StateFlow<List<WorkoutSummary>> = repository.workoutHistory
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun startPushWorkout(onStarted: () -> Unit = {}) {
+    val routines: StateFlow<List<RoutineWithExercises>> = repository.routines
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun startRoutine(routineId: Long, onStarted: () -> Unit = {}) {
         viewModelScope.launch {
-            repository.startPushWorkout()
+            repository.startRoutine(routineId)
             onStarted()
+        }
+    }
+
+    fun startEmptyWorkout(onStarted: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.startEmptyWorkout()
+            onStarted()
+        }
+    }
+
+    fun startWorkoutWithExercise(exerciseKey: String, onStarted: () -> Unit = {}) {
+        viewModelScope.launch {
+            val workoutId = repository.startEmptyWorkout()
+            repository.addExercise(workoutId, exerciseKey)
+            onStarted()
+        }
+    }
+
+    fun createRoutine(name: String, exerciseKeys: List<String>, onCreated: () -> Unit) {
+        if (name.isBlank() || exerciseKeys.isEmpty()) return
+        viewModelScope.launch {
+            repository.createRoutine(name.trim(), exerciseKeys)
+            onCreated()
+        }
+    }
+
+    fun updateRoutine(routineId: Long, name: String, exerciseKeys: List<String>, onUpdated: () -> Unit) {
+        if (name.isBlank() || exerciseKeys.isEmpty()) return
+        viewModelScope.launch {
+            repository.updateRoutine(routineId, name.trim(), exerciseKeys)
+            onUpdated()
         }
     }
 
@@ -91,6 +136,37 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         val workout = activeWorkout.value?.workout ?: return
         viewModelScope.launch { repository.adjustRest(workout, seconds) }
     }
+
+    fun addSet(exerciseKey: String) {
+        val workoutId = activeWorkout.value?.workout?.id ?: return
+        viewModelScope.launch { repository.addSet(workoutId, exerciseKey) }
+    }
+
+    fun addExercise(exerciseKey: String) {
+        val workoutId = activeWorkout.value?.workout?.id ?: return
+        viewModelScope.launch { repository.addExercise(workoutId, exerciseKey) }
+    }
+
+    fun updateExerciseRest(exerciseKey: String, seconds: Int) {
+        val workoutId = activeWorkout.value?.workout?.id ?: return
+        viewModelScope.launch { repository.updateExerciseRest(workoutId, exerciseKey, seconds) }
+    }
+
+    fun updateExerciseNote(exerciseKey: String, note: String) {
+        val workoutId = activeWorkout.value?.workout?.id ?: return
+        viewModelScope.launch { repository.updateExerciseNote(workoutId, exerciseKey, note) }
+    }
+
+    fun discard(onDiscarded: () -> Unit) {
+        val workoutId = activeWorkout.value?.workout?.id ?: return
+        viewModelScope.launch {
+            repository.discard(workoutId)
+            onDiscarded()
+        }
+    }
+
+    fun exerciseHistory(exerciseKey: String): Flow<List<ExerciseHistoryPoint>> =
+        repository.exerciseHistory(exerciseKey)
 
     fun checkHealthWriteAccess(onResult: (hasPermission: Boolean, canRequest: Boolean) -> Unit) {
         viewModelScope.launch {

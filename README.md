@@ -9,18 +9,20 @@ Veyra is a local-first personal health companion for Google Fitbit Air. It is de
 - Live Fitbit-derived sleep, HRV, resting-HR, activity and heart-rate reads
 - Transparent Recovery, Sleep and Strain calculations with calibration states
 - Coach brief and daily signals
-- Workout routines and exercise library
+- Persistent Push, Pull and Legs routines plus custom routine creation/editing
 - Smooth vector exercise demonstrations
 - Front/back muscle-impact visualization
-- Active workout set logging with previous values
+- Empty workouts, add-exercise and dynamic add-set flows
+- Active workout set logging with previous values, notes and per-exercise rest settings
 - Editable weights and reps stored in an on-device Room database
 - Completion haptics and automatic rest timer
 - Crash-safe active workout resume and completed-session summaries
 - Full local workout history with sync status
+- Routine volume and exercise weight progression charts
 - One-tap export and retry of completed workouts to Health Connect
 - Durable product structure for Fuel, Coach and personal health records
 
-The Today dashboard uses real Health Connect data after permission is granted. Active workouts and their latest completed summary are local-first and remain available after the app or phone restarts. The initial Push routine is currently fixed while routine editing is built.
+The Today dashboard uses real Health Connect data after permission is granted. Routines, active workouts and completed history are local-first and remain available after the app or phone restarts.
 
 ## Product principles
 
@@ -61,8 +63,8 @@ A permanent Android signing keystore must be configured before release APKs can 
 ## Next milestones
 
 1. Validate Fitbit Air record coverage on the target phone and tune score thresholds.
-2. Add custom routine creation and editing.
-3. Add text, barcode and photo-assisted nutrition logging.
-4. Add encrypted medical records and evidence-grounded coach tools.
+2. Add text, barcode and photo-assisted nutrition logging.
+3. Add encrypted medical records and evidence-grounded coach tools.
+4. Add permanent Android release signing and Play distribution.
 
 Adaptive daily plans, universal quick logging, and the cross-domain “Why did this change?” timeline are deliberately reserved for a later phase.

@@ -66,6 +66,8 @@ import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -101,6 +103,8 @@ import com.veyra.app.data.health.HealthDashboardState
 import com.veyra.app.data.health.HealthSnapshot
 import com.veyra.app.data.workout.WorkoutSetEntity
 import com.veyra.app.data.workout.WorkoutSummary
+import com.veyra.app.data.workout.RoutineWithExercises
+import com.veyra.app.data.workout.ExerciseHistoryPoint
 import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.Bone
 import com.veyra.app.ui.theme.Hairline
@@ -123,6 +127,10 @@ private sealed interface VeyraRoute {
     data class ExerciseDetail(val exercise: Exercise) : VeyraRoute
     data object ActiveWorkout : VeyraRoute
     data object WorkoutHistory : VeyraRoute
+    data class RoutineDetail(val routineId: Long) : VeyraRoute
+    data object CreateRoutine : VeyraRoute
+    data class EditRoutine(val routineId: Long) : VeyraRoute
+    data object AddExercise : VeyraRoute
 }
 
 @Composable
@@ -136,6 +144,7 @@ fun VeyraApp(
     val activeWorkout by workoutViewModel.activeWorkout.collectAsStateWithLifecycle()
     val latestWorkout by workoutViewModel.latestWorkout.collectAsStateWithLifecycle()
     val workoutHistory by workoutViewModel.workoutHistory.collectAsStateWithLifecycle()
+    val routines by workoutViewModel.routines.collectAsStateWithLifecycle()
     var pendingFinish by remember { mutableStateOf(false) }
     var pendingSyncWorkoutId by remember { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
@@ -196,20 +205,33 @@ fun VeyraApp(
                     activeWorkout = activeWorkout,
                     latestWorkout = latestWorkout,
                     workoutHistory = workoutHistory,
-                    onStartWorkout = {
-                        workoutViewModel.startPushWorkout { route = VeyraRoute.ActiveWorkout }
+                    routines = routines,
+                    onStartRoutine = { routineId ->
+                        workoutViewModel.startRoutine(routineId) { route = VeyraRoute.ActiveWorkout }
+                    },
+                    onStartEmpty = {
+                        workoutViewModel.startEmptyWorkout { route = VeyraRoute.ActiveWorkout }
                     },
                     onResumeWorkout = { route = VeyraRoute.ActiveWorkout },
                     onWorkoutHistory = { route = VeyraRoute.WorkoutHistory },
                     onSyncWorkout = syncWorkout,
+                    onRoutine = { route = VeyraRoute.RoutineDetail(it) },
+                    onCreateRoutine = { route = VeyraRoute.CreateRoutine },
                 )
-                is VeyraRoute.ExerciseDetail -> ExerciseDetailScreen(
-                    exercise = destination.exercise,
-                    onBack = { route = VeyraRoute.Main },
-                    onStart = {
-                        workoutViewModel.startPushWorkout { route = VeyraRoute.ActiveWorkout }
-                    }
-                )
+                is VeyraRoute.ExerciseDetail -> {
+                    val history by workoutViewModel.exerciseHistory(destination.exercise.key)
+                        .collectAsStateWithLifecycle(initialValue = emptyList())
+                    ExerciseDetailScreen(
+                        exercise = destination.exercise,
+                        history = history,
+                        onBack = { route = VeyraRoute.Main },
+                        onStart = {
+                            workoutViewModel.startWorkoutWithExercise(destination.exercise.key) {
+                                route = VeyraRoute.ActiveWorkout
+                            }
+                        },
+                    )
+                }
                 VeyraRoute.ActiveWorkout -> ActiveWorkoutScreen(
                     state = activeWorkout,
                     onBack = { route = VeyraRoute.Main },
@@ -217,6 +239,11 @@ fun VeyraApp(
                     onWeightChange = workoutViewModel::updateWeight,
                     onRepsChange = workoutViewModel::updateReps,
                     onAdjustRest = workoutViewModel::adjustRest,
+                    onAddSet = workoutViewModel::addSet,
+                    onRestChange = workoutViewModel::updateExerciseRest,
+                    onNoteChange = workoutViewModel::updateExerciseNote,
+                    onAddExercise = { route = VeyraRoute.AddExercise },
+                    onDiscard = { workoutViewModel.discard { route = VeyraRoute.Main } },
                     onFinish = {
                         workoutViewModel.checkHealthWriteAccess { hasPermission, canRequest ->
                             when {
@@ -235,6 +262,47 @@ fun VeyraApp(
                     onBack = { route = VeyraRoute.Main },
                     onSyncWorkout = syncWorkout,
                 )
+                is VeyraRoute.RoutineDetail -> RoutineDetailScreen(
+                    routine = routines.firstOrNull { it.routine.id == destination.routineId },
+                    history = workoutHistory,
+                    onBack = { route = VeyraRoute.Main },
+                    onStart = {
+                        workoutViewModel.startRoutine(destination.routineId) {
+                            route = VeyraRoute.ActiveWorkout
+                        }
+                    },
+                    onExercise = { route = VeyraRoute.ExerciseDetail(it) },
+                    onEdit = { route = VeyraRoute.EditRoutine(destination.routineId) },
+                )
+                VeyraRoute.CreateRoutine -> CreateRoutineScreen(
+                    initialName = "",
+                    initialKeys = emptyList(),
+                    onBack = { route = VeyraRoute.Main },
+                    onCreate = { name, keys ->
+                        workoutViewModel.createRoutine(name, keys) { route = VeyraRoute.Main }
+                    },
+                )
+                is VeyraRoute.EditRoutine -> {
+                    val routine = routines.firstOrNull { it.routine.id == destination.routineId }
+                    CreateRoutineScreen(
+                        initialName = routine?.routine?.name.orEmpty(),
+                        initialKeys = routine?.exercises?.sortedBy { it.position }?.map { it.exerciseKey }.orEmpty(),
+                        onBack = { route = VeyraRoute.RoutineDetail(destination.routineId) },
+                        onCreate = { name, keys ->
+                            workoutViewModel.updateRoutine(destination.routineId, name, keys) {
+                                route = VeyraRoute.RoutineDetail(destination.routineId)
+                            }
+                        },
+                    )
+                }
+                VeyraRoute.AddExercise -> AddExerciseScreen(
+                    existingKeys = activeWorkout?.exercises?.map { it.key }.orEmpty().toSet(),
+                    onBack = { route = VeyraRoute.ActiveWorkout },
+                    onAdd = {
+                        workoutViewModel.addExercise(it)
+                        route = VeyraRoute.ActiveWorkout
+                    },
+                )
             }
         }
     }
@@ -252,10 +320,14 @@ private fun MainShell(
     activeWorkout: ActiveWorkoutState?,
     latestWorkout: WorkoutSummary?,
     workoutHistory: List<WorkoutSummary>,
-    onStartWorkout: () -> Unit,
+    routines: List<RoutineWithExercises>,
+    onStartRoutine: (Long) -> Unit,
+    onStartEmpty: () -> Unit,
     onResumeWorkout: () -> Unit,
     onWorkoutHistory: () -> Unit,
     onSyncWorkout: (Long) -> Unit,
+    onRoutine: (Long) -> Unit,
+    onCreateRoutine: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize()
@@ -274,10 +346,14 @@ private fun MainShell(
                     onExercise,
                     activeWorkout,
                     workoutHistory,
-                    onStartWorkout,
+                    routines,
+                    onStartRoutine,
+                    onStartEmpty,
                     onResumeWorkout,
                     onWorkoutHistory,
                     onSyncWorkout,
+                    onRoutine,
+                    onCreateRoutine,
                 )
                 VeyraTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
                 VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
@@ -544,10 +620,14 @@ private fun TrainScreen(
     onExercise: (Exercise) -> Unit,
     activeWorkout: ActiveWorkoutState?,
     workoutHistory: List<WorkoutSummary>,
-    onStartWorkout: () -> Unit,
+    routines: List<RoutineWithExercises>,
+    onStartRoutine: (Long) -> Unit,
+    onStartEmpty: () -> Unit,
     onResumeWorkout: () -> Unit,
     onWorkoutHistory: () -> Unit,
     onSyncWorkout: (Long) -> Unit,
+    onRoutine: (Long) -> Unit,
+    onCreateRoutine: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -561,13 +641,20 @@ private fun TrainScreen(
         }
         item {
             if (activeWorkout == null) {
-                PopButton("START PUSH DAY", Icons.Outlined.PlayArrow, Acid, onStartWorkout)
+                PopButton("START EMPTY WORKOUT", Icons.Outlined.Add, Acid, onStartEmpty)
             } else {
                 ActiveWorkoutCard(activeWorkout, onResumeWorkout)
             }
         }
-        item { SectionHeader("YOUR ROUTINES", "1 saved") }
-        item { RoutineCard("Push · Strength", "2 exercises · 6 sets", "Ready", onStartWorkout) }
+        item { PopButton("CREATE NEW ROUTINE", Icons.Outlined.Add, SurfaceHigh, onCreateRoutine) }
+        item { SectionHeader("YOUR ROUTINES", "${routines.size} saved") }
+        items(routines, key = { it.routine.id }) { routine ->
+            RoutineCard(
+                routine = routine,
+                onOpen = { onRoutine(routine.routine.id) },
+                onStart = { onStartRoutine(routine.routine.id) },
+            )
+        }
         if (workoutHistory.isNotEmpty()) {
             item { SectionHeader("RECENT WORKOUTS", "${workoutHistory.size} total") }
             items(workoutHistory.take(3), key = { it.id }) { workout ->
@@ -692,17 +779,25 @@ private fun WorkoutHistoryScreen(
 }
 
 @Composable
-private fun RoutineCard(name: String, detail: String, last: String, onClick: () -> Unit) {
-    PremiumCard(Modifier.fillMaxWidth().clickable(onClick = onClick)) {
-        Row(Modifier.padding(17.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(name, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-                Text(detail, color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
+private fun RoutineCard(routine: RoutineWithExercises, onOpen: () -> Unit, onStart: () -> Unit) {
+    PremiumCard(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
+        Column(Modifier.padding(17.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(routine.routine.name, color = Bone, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        routine.exercises.sortedBy { it.position }.joinToString { it.exerciseName },
+                        color = Muted,
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        maxLines = 2,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                Icon(Icons.Outlined.ChevronRight, null, tint = Muted)
             }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(last, color = Muted, fontSize = 11.sp)
-                Icon(Icons.Outlined.ChevronRight, null, tint = Bone, modifier = Modifier.size(20.dp))
-            }
+            Spacer(Modifier.height(14.dp))
+            PopButton("START ROUTINE", Icons.Outlined.PlayArrow, Acid, onStart)
         }
     }
 }
@@ -729,7 +824,13 @@ private fun ExerciseCard(exercise: Exercise, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ExerciseDetailScreen(exercise: Exercise, onBack: () -> Unit, onStart: () -> Unit) {
+private fun ExerciseDetailScreen(
+    exercise: Exercise,
+    history: List<ExerciseHistoryPoint>,
+    onBack: () -> Unit,
+    onStart: () -> Unit,
+) {
+    var selectedTab by rememberSaveable(exercise.key) { mutableStateOf(0) }
     LazyColumn(
         Modifier.fillMaxSize().background(Ink),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -746,43 +847,278 @@ private fun ExerciseDetailScreen(exercise: Exercise, onBack: () -> Unit, onStart
             Text(exercise.equipment, color = Muted, fontSize = 14.sp, modifier = Modifier.padding(top = 5.dp))
         }
         item {
-            PremiumCard(Modifier.fillMaxWidth().height(330.dp), border = exercise.accent.copy(.32f)) {
-                Box(Modifier.fillMaxSize().background(SurfaceHigh)) {
-                    ExerciseMotionDemo(exercise, Modifier.fillMaxSize().padding(24.dp))
-                    Row(Modifier.align(Alignment.TopStart).padding(15.dp).clip(CircleShape).background(Ink.copy(.75f)).padding(horizontal = 11.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(6.dp).clip(CircleShape).background(exercise.accent))
-                        Spacer(Modifier.width(7.dp))
-                        Text("FORM DEMO", color = Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                DetailTab("SUMMARY", selectedTab == 0, Modifier.weight(1f)) { selectedTab = 0 }
+                DetailTab("HISTORY", selectedTab == 1, Modifier.weight(1f)) { selectedTab = 1 }
+                DetailTab("HOW TO", selectedTab == 2, Modifier.weight(1f)) { selectedTab = 2 }
+            }
+        }
+        if (selectedTab != 1) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth().height(330.dp), border = exercise.accent.copy(.32f)) {
+                    Box(Modifier.fillMaxSize().background(SurfaceHigh)) {
+                        ExerciseMotionDemo(exercise, Modifier.fillMaxSize().padding(24.dp))
+                        Row(Modifier.align(Alignment.TopStart).padding(15.dp).clip(CircleShape).background(Ink.copy(.75f)).padding(horizontal = 11.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(exercise.accent))
+                            Spacer(Modifier.width(7.dp))
+                            Text("FORM DEMO", color = Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        }
                     }
                 }
             }
         }
+        if (selectedTab == 2) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp)) {
+                        Label("COACHING CUE", exercise.accent)
+                        Spacer(Modifier.height(7.dp))
+                        Text(exercise.cue, color = Bone, fontSize = 15.sp, lineHeight = 22.sp)
+                    }
+                }
+            }
+            item {
+                SectionHeader("MUSCLES WORKED", "Front · back")
+                PremiumCard(Modifier.fillMaxWidth().height(280.dp)) {
+                    Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        MuscleMap(exercise, false, Modifier.weight(1f).fillMaxHeight())
+                        MuscleMap(exercise, true, Modifier.weight(1f).fillMaxHeight())
+                    }
+                }
+            }
+        }
+        if (selectedTab == 0 || selectedTab == 2) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    MuscleLegend("PRIMARY", exercise.primaryMuscles.joinToString(), exercise.accent, Modifier.weight(1f))
+                    MuscleLegend("SECONDARY", exercise.secondaryMuscles.joinToString(), exercise.accent.copy(.45f), Modifier.weight(1f))
+                }
+            }
+        }
+        if (selectedTab == 0) item {
+            SectionHeader("PROGRESSION", if (history.isEmpty()) "No sessions yet" else "Last ${history.size}")
+            PremiumCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp)) {
+                    val best = history.maxOfOrNull { it.bestWeightKg }
+                    Text(if (best == null) "— kg" else "${"%.1f".format(best)} kg", color = Bone, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
+                    Text("HEAVIEST WEIGHT", color = Strain, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
+                    Spacer(Modifier.height(14.dp))
+                    PerformanceChart(history.map { it.bestWeightKg }, Strain, Modifier.fillMaxWidth().height(150.dp))
+                }
+            }
+        }
+        if (selectedTab == 1) {
+            if (history.isEmpty()) item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Text("Complete this exercise in a workout to build history.", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(20.dp))
+                }
+            }
+            items(history.reversed(), key = { it.finishedAtEpochMs }) { point ->
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                Instant.ofEpochMilli(point.finishedAtEpochMs).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")),
+                                color = Bone,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text("${"%.0f".format(point.volumeKg)} kg volume", color = Muted, fontSize = 12.sp)
+                        }
+                        Text("${"%.1f".format(point.bestWeightKg)} kg", color = Strain, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+        item { PopButton("START WITH THIS EXERCISE", Icons.Outlined.PlayArrow, exercise.accent, onStart) }
+    }
+}
+
+@Composable
+private fun DetailTab(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Column(modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, color = if (selected) Strain else Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.fillMaxWidth().height(2.dp).background(if (selected) Strain else Hairline))
+    }
+}
+
+@Composable
+private fun PerformanceChart(values: List<Double>, color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        if (values.isEmpty()) {
+            drawLine(Hairline, Offset(0f, size.height * .8f), Offset(size.width, size.height * .8f), 1.dp.toPx())
+            return@Canvas
+        }
+        val min = values.minOrNull() ?: 0.0
+        val max = values.maxOrNull() ?: min
+        val range = (max - min).takeIf { it > 0.0 } ?: 1.0
+        val points = values.mapIndexed { index, value ->
+            val x = if (values.size == 1) size.width / 2 else index * size.width / (values.size - 1)
+            val y = size.height - (((value - min) / range).toFloat() * size.height * .7f + size.height * .15f)
+            Offset(x, y)
+        }
+        drawLine(Hairline, Offset(0f, size.height * .85f), Offset(size.width, size.height * .85f), 1.dp.toPx())
+        points.zipWithNext().forEach { (start, end) -> drawLine(color, start, end, 3.dp.toPx(), StrokeCap.Round) }
+        points.forEach { point ->
+            drawCircle(color, 5.dp.toPx(), point)
+            drawCircle(Ink, 2.dp.toPx(), point)
+        }
+    }
+}
+
+@Composable
+private fun RoutineDetailScreen(
+    routine: RoutineWithExercises?,
+    history: List<WorkoutSummary>,
+    onBack: () -> Unit,
+    onStart: () -> Unit,
+    onExercise: (Exercise) -> Unit,
+    onEdit: () -> Unit,
+) {
+    val sessions = history.filter { it.title == routine?.routine?.name }.sortedBy { it.finishedAtEpochMs }
+    LazyColumn(
+        Modifier.fillMaxSize().background(Ink),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 30.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item { TopBack("ROUTINE", onBack) }
+        item {
+            Label("SAVED ROUTINE", Acid)
+            Text(routine?.routine?.name ?: "Loading…", color = Bone, fontSize = 34.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+            Text("Built by you · stored on device", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp))
+        }
+        item { PopButton("START ROUTINE", Icons.Outlined.PlayArrow, Acid, onStart) }
+        item { PopButton("EDIT ROUTINE", Icons.Outlined.FitnessCenter, SurfaceHigh, onEdit) }
         item {
             PremiumCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp)) {
-                    Label("COACHING CUE", exercise.accent)
-                    Spacer(Modifier.height(7.dp))
-                    Text(exercise.cue, color = Bone, fontSize = 15.sp, lineHeight = 22.sp)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text("${"%.0f".format(sessions.lastOrNull()?.volumeKg ?: 0.0)} kg", color = Bone, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
+                        Text("  latest volume", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(bottom = 4.dp))
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    PerformanceChart(sessions.map { it.volumeKg }, Acid, Modifier.fillMaxWidth().height(145.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Label("VOLUME", Acid)
+                        Text("${sessions.size} sessions", color = Muted, fontSize = 11.sp)
+                    }
                 }
             }
         }
-        item {
-            SectionHeader("MUSCLES WORKED", "Front · back")
-            PremiumCard(Modifier.fillMaxWidth().height(280.dp)) {
-                Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    MuscleMap(exercise, false, Modifier.weight(1f).fillMaxHeight())
-                    MuscleMap(exercise, true, Modifier.weight(1f).fillMaxHeight())
+        item { SectionHeader("EXERCISES", "${routine?.exercises?.size ?: 0}") }
+        items(routine?.exercises?.sortedBy { it.position }.orEmpty(), key = { it.exerciseKey }) { item ->
+            val exercise = exercises.firstOrNull { it.key == item.exerciseKey }
+            if (exercise != null) {
+                PremiumCard(Modifier.fillMaxWidth().clickable { onExercise(exercise) }) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(52.dp).clip(CircleShape).background(SurfaceHigh)) {
+                            ExerciseMotionDemo(exercise, Modifier.fillMaxSize().padding(5.dp))
+                        }
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text(item.exerciseName, color = Bone, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text("${item.targetSets} sets · ${item.defaultWeightKg.ifBlank { "—" }} kg × ${item.defaultReps}", color = Muted, fontSize = 12.sp)
+                        }
+                        Icon(Icons.Outlined.ChevronRight, null, tint = Muted)
+                    }
                 }
             }
         }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MuscleLegend("PRIMARY", exercise.primaryMuscles.joinToString(), exercise.accent, Modifier.weight(1f))
-                MuscleLegend("SECONDARY", exercise.secondaryMuscles.joinToString(), exercise.accent.copy(.45f), Modifier.weight(1f))
-            }
-        }
-        item { PopButton("START PUSH WORKOUT", Icons.Outlined.PlayArrow, exercise.accent, onStart) }
     }
+}
+
+@Composable
+private fun CreateRoutineScreen(
+    initialName: String,
+    initialKeys: List<String>,
+    onBack: () -> Unit,
+    onCreate: (String, List<String>) -> Unit,
+) {
+    var name by rememberSaveable(initialName) { mutableStateOf(initialName) }
+    var selected by rememberSaveable(initialKeys) { mutableStateOf(initialKeys) }
+    LazyColumn(
+        Modifier.fillMaxSize().background(Ink),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 30.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { TopBack(if (initialName.isBlank()) "NEW ROUTINE" else "EDIT ROUTINE", onBack) }
+        item {
+            Text("Build your split.", color = Bone, fontSize = 31.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+            Spacer(Modifier.height(12.dp))
+            VeyraTextInput(name, "Routine name", Modifier.fillMaxWidth()) { name = it.take(36) }
+        }
+        item { SectionHeader("CHOOSE EXERCISES", "${selected.size} selected") }
+        items(exercises, key = { it.key }) { exercise ->
+            val chosen = exercise.key in selected
+            PremiumCard(
+                Modifier.fillMaxWidth().clickable {
+                    selected = if (chosen) selected - exercise.key else selected + exercise.key
+                },
+                border = if (chosen) Acid.copy(.55f) else Hairline,
+            ) {
+                Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(48.dp).clip(CircleShape).background(SurfaceHigh)) {
+                        ExerciseMotionDemo(exercise, Modifier.fillMaxSize().padding(5.dp))
+                    }
+                    Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(exercise.name, color = Bone, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text(exercise.equipment, color = Muted, fontSize = 11.sp)
+                    }
+                    SetCheck(chosen) {
+                        selected = if (chosen) selected - exercise.key else selected + exercise.key
+                    }
+                }
+            }
+        }
+        item { PopButton(if (initialName.isBlank()) "SAVE ROUTINE" else "UPDATE ROUTINE", Icons.Outlined.Check, Acid) { onCreate(name, selected) } }
+    }
+}
+
+@Composable
+private fun AddExerciseScreen(existingKeys: Set<String>, onBack: () -> Unit, onAdd: (String) -> Unit) {
+    LazyColumn(
+        Modifier.fillMaxSize().background(Ink),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 30.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item { TopBack("ADD EXERCISE", onBack) }
+        item {
+            Text("Exercise library", color = Bone, fontSize = 31.sp, fontWeight = FontWeight.SemiBold)
+            Text("Choose one to add three working sets.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        items(exercises.filterNot { it.key in existingKeys }, key = { it.key }) { exercise ->
+            ExerciseCard(exercise) { onAdd(exercise.key) }
+        }
+    }
+}
+
+@Composable
+private fun VeyraTextInput(value: String, placeholder: String, modifier: Modifier, onValueChange: (String) -> Unit) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        singleLine = true,
+        textStyle = androidx.compose.ui.text.TextStyle(color = Bone, fontSize = 16.sp),
+        modifier = modifier.height(54.dp).clip(RoundedCornerShape(14.dp)).background(SurfaceHigh).padding(horizontal = 16.dp),
+        decorationBox = { inner ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
+                if (value.isBlank()) Text(placeholder, color = Muted, fontSize = 15.sp)
+                inner()
+            }
+        },
+    )
 }
 
 @Composable
@@ -793,8 +1129,14 @@ private fun ActiveWorkoutScreen(
     onWeightChange: (WorkoutSetEntity, String) -> Unit,
     onRepsChange: (WorkoutSetEntity, String) -> Unit,
     onAdjustRest: (Int) -> Unit,
+    onAddSet: (String) -> Unit,
+    onRestChange: (String, Int) -> Unit,
+    onNoteChange: (String, String) -> Unit,
+    onAddExercise: () -> Unit,
+    onDiscard: () -> Unit,
     onFinish: () -> Unit,
 ) {
+    var confirmDiscard by remember { mutableStateOf(false) }
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
     LaunchedEffect(state?.workout?.restUntilEpochMs) {
         while (true) {
@@ -806,6 +1148,10 @@ private fun ActiveWorkoutScreen(
         ?.let { ((it - now).coerceAtLeast(0) / 1_000L).toInt() }
         ?: 0
     val elapsedSeconds = state?.workout?.let { ((now - it.startedAtEpochMs) / 1_000L).coerceAtLeast(0) } ?: 0
+    val completedSets = state?.exercises?.sumOf { exercise -> exercise.sets.count { it.completedAtEpochMs != null } } ?: 0
+    val volume = state?.exercises.orEmpty().flatMap { it.sets }
+        .filter { it.completedAtEpochMs != null }
+        .sumOf { (it.weightKg.toDoubleOrNull() ?: 0.0) * (it.reps.toIntOrNull() ?: 0) }
 
     Column(
         Modifier.fillMaxSize().background(Ink)
@@ -829,6 +1175,15 @@ private fun ActiveWorkoutScreen(
             )
         }
 
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp)
+                .clip(RoundedCornerShape(14.dp)).background(Surface).padding(14.dp),
+        ) {
+            LiveMetric(formatDuration(elapsedSeconds), "DURATION", Modifier.weight(1f))
+            LiveMetric("${"%.0f".format(volume)} kg", "VOLUME", Modifier.weight(1f))
+            LiveMetric(completedSets.toString(), "SETS", Modifier.weight(1f))
+        }
+
         LazyColumn(
             Modifier.weight(1f),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 8.dp, 20.dp, 120.dp),
@@ -840,13 +1195,53 @@ private fun ActiveWorkoutScreen(
                     onToggleSet = onToggleSet,
                     onWeightChange = onWeightChange,
                     onRepsChange = onRepsChange,
+                    onAddSet = onAddSet,
+                    onRestChange = onRestChange,
+                    onNoteChange = onNoteChange,
                 )
+            }
+            if (state?.exercises.isNullOrEmpty()) {
+                item {
+                    PremiumCard(Modifier.fillMaxWidth(), border = Strain.copy(.35f)) {
+                        Column(Modifier.padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Outlined.FitnessCenter, null, tint = Strain, modifier = Modifier.size(30.dp))
+                            Text("Start with an exercise", color = Bone, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 10.dp))
+                            Text("Build this workout as you go.", color = Muted, fontSize = 13.sp)
+                        }
+                    }
+                }
+            }
+            item { PopButton("ADD EXERCISE", Icons.Outlined.Add, Acid, onAddExercise) }
+            item {
+                PopButton("DISCARD WORKOUT", Icons.Outlined.FitnessCenter, SurfaceHigh) { confirmDiscard = true }
             }
         }
 
         AnimatedVisibility(restSeconds > 0, enter = fadeIn(), exit = fadeOut()) {
             RestTimerBar(restSeconds, onAdjustRest)
         }
+    }
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            containerColor = Surface,
+            title = { Text("Discard workout?", color = Bone) },
+            text = { Text("The active session and all its sets will be removed.", color = Muted) },
+            confirmButton = {
+                TextButton(onClick = onDiscard) { Text("DISCARD", color = Color(0xFFFF6B6B), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) { Text("KEEP", color = Bone) }
+            },
+        )
+    }
+}
+
+@Composable
+private fun LiveMetric(value: String, label: String, modifier: Modifier) {
+    Column(modifier) {
+        Text(label, color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .7.sp)
+        Text(value, color = Bone, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 3.dp))
     }
 }
 
@@ -856,7 +1251,12 @@ private fun WorkoutExerciseCard(
     onToggleSet: (WorkoutSetEntity) -> Unit,
     onWeightChange: (WorkoutSetEntity, String) -> Unit,
     onRepsChange: (WorkoutSetEntity, String) -> Unit,
+    onAddSet: (String) -> Unit,
+    onRestChange: (String, Int) -> Unit,
+    onNoteChange: (String, String) -> Unit,
 ) {
+    var showNote by remember { mutableStateOf(false) }
+    var noteDraft by remember(exercise.note) { mutableStateOf(exercise.note) }
     val exerciseVisual = exercises.firstOrNull { it.name == exercise.name } ?: Exercise(
         name = exercise.name,
         equipment = exercise.equipment,
@@ -874,6 +1274,16 @@ private fun WorkoutExerciseCard(
                 Text("Last session beside each set", color = Muted, fontSize = 11.sp)
             }
             Icon(Icons.Outlined.ChevronRight, null, tint = Muted)
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            WorkoutChip(if (exercise.restSeconds == 0) "REST · OFF" else "REST · ${exercise.restSeconds / 60}:${"%02d".format(exercise.restSeconds % 60)}") {
+                onRestChange(exercise.key, if (exercise.restSeconds == 0) 90 else 0)
+            }
+            WorkoutChip(if (exercise.note.isBlank()) "ADD NOTE" else "NOTE ADDED") { showNote = true }
+        }
+        if (exercise.note.isNotBlank()) {
+            Text(exercise.note, color = Muted, fontSize = 12.sp, lineHeight = 17.sp, modifier = Modifier.padding(top = 8.dp, start = 4.dp))
         }
         Spacer(Modifier.height(10.dp))
         Row(Modifier.padding(horizontal = 10.dp)) {
@@ -899,6 +1309,34 @@ private fun WorkoutExerciseCard(
                 SetCheck(isDone) { onToggleSet(set) }
             }
         }
+        Spacer(Modifier.height(7.dp))
+        PopButton("ADD SET", Icons.Outlined.Add, SurfaceHigh) { onAddSet(exercise.key) }
+    }
+    if (showNote) {
+        AlertDialog(
+            onDismissRequest = { showNote = false },
+            containerColor = Surface,
+            title = { Text("Exercise note", color = Bone) },
+            text = { VeyraTextInput(noteDraft, "Tempo, cue, pain note…", Modifier.fillMaxWidth()) { noteDraft = it.take(120) } },
+            confirmButton = {
+                TextButton(onClick = {
+                    onNoteChange(exercise.key, noteDraft.trim())
+                    showNote = false
+                }) { Text("SAVE", color = Acid, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { showNote = false }) { Text("CANCEL", color = Muted) } },
+        )
+    }
+}
+
+@Composable
+private fun WorkoutChip(label: String, onClick: () -> Unit) {
+    Box(
+        Modifier.height(38.dp).clip(RoundedCornerShape(11.dp)).background(SurfaceHigh)
+            .clickable(onClick = onClick).padding(horizontal = 13.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = .6.sp)
     }
 }
 

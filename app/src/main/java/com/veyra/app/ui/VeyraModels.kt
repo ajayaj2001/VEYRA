@@ -5,6 +5,7 @@ import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.Recovery
 import com.veyra.app.ui.theme.Sleep
 import com.veyra.app.ui.theme.Strain
+import com.veyra.app.data.workout.WorkoutCatalog
 
 enum class VeyraTab(val label: String) { Today("Today"), Train("Train"), Fuel("Fuel"), Coach("Coach"), You("You") }
 
@@ -22,7 +23,8 @@ data class Exercise(
     val primaryMuscles: List<String>,
     val secondaryMuscles: List<String>,
     val cue: String,
-    val accent: Color = Strain
+    val accent: Color = Strain,
+    val key: String = name.lowercase().replace(" ", "_"),
 )
 
 val dashboardScores = listOf(
@@ -31,27 +33,14 @@ val dashboardScores = listOf(
     Score("Strain", 6, "/21", "Target 13–16 today", Strain)
 )
 
-val exercises = listOf(
+val exercises = WorkoutCatalog.exercises.map { template ->
     Exercise(
-        name = "Barbell bench press",
-        equipment = "Barbell · Bench",
-        primaryMuscles = listOf("Chest"),
-        secondaryMuscles = listOf("Triceps", "Front delts"),
-        cue = "Lower with control. Keep shoulder blades pinned and press slightly back."
-    ),
-    Exercise(
-        name = "Back squat",
-        equipment = "Barbell · Rack",
-        primaryMuscles = listOf("Quadriceps", "Glutes"),
-        secondaryMuscles = listOf("Adductors", "Core"),
-        cue = "Brace before descending. Keep the bar over mid-foot and drive the floor away.",
-        accent = Acid
-    ),
-    Exercise(
-        name = "Chest-supported row",
-        equipment = "Dumbbells · Incline bench",
-        primaryMuscles = listOf("Upper back", "Lats"),
-        secondaryMuscles = listOf("Rear delts", "Biceps"),
-        cue = "Keep the chest planted. Pull elbows toward the hips without shrugging."
+        name = template.name,
+        equipment = template.equipment,
+        primaryMuscles = template.primaryMuscles,
+        secondaryMuscles = template.secondaryMuscles,
+        cue = template.cue,
+        accent = if (template.key == "squat") Acid else Strain,
+        key = template.key,
     )
-)
+}
