@@ -21,18 +21,15 @@ val Recovery = Color(0xFF54E6AD)
 val Sleep = Color(0xFFA294FF)
 val Strain = Color(0xFF5B8CFF)
 val Danger = Color(0xFFFF6262)
-val ElectricBlue = Color(0xFF3F6FE5)
-val AuroraGold = Color(0xFF6A4F0D)
-
 val AppBackgroundBrush = Brush.verticalGradient(
-    0f to Color(0xFF4A390E),
-    .22f to Color(0xFF173128),
-    .58f to Color(0xFF091A14),
+    0f to Color(0xFF2A250F),
+    .22f to Color(0xFF132D24),
+    .58f to Color(0xFF081A14),
     1f to Ink,
 )
 
 val CardBackgroundBrush = Brush.linearGradient(
-    listOf(Color(0xF2293B33), Color(0xEB13251E)),
+    listOf(Color(0xF02A3B34), Color(0xE6172922), Color(0xF00D1C17)),
 )
 
 private val colors = darkColorScheme(
@@ -50,16 +47,16 @@ private val colors = darkColorScheme(
 
 private val typography = androidx.compose.material3.Typography(
     displayLarge = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 84.sp,
-        lineHeight = 84.sp,
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 76.sp,
+        lineHeight = 78.sp,
         letterSpacing = (-3).sp
     ),
     displayMedium = TextStyle(
-        fontFamily = FontFamily.Serif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 52.sp,
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 48.sp,
         lineHeight = 54.sp,
         letterSpacing = (-2).sp
     ),

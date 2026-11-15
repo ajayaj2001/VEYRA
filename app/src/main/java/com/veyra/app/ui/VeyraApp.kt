@@ -85,6 +85,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -120,7 +121,6 @@ import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.AppBackgroundBrush
 import com.veyra.app.ui.theme.Bone
 import com.veyra.app.ui.theme.CardBackgroundBrush
-import com.veyra.app.ui.theme.ElectricBlue
 import com.veyra.app.ui.theme.Hairline
 import com.veyra.app.ui.theme.Ink
 import com.veyra.app.ui.theme.Muted
@@ -206,7 +206,8 @@ fun VeyraApp(
         Unit
     }
 
-    Box(Modifier.fillMaxSize().background(AppBackgroundBrush)) {
+    Box(Modifier.fillMaxSize().background(Ink)) {
+        AuroraBackdrop()
         AnimatedContent(
             targetState = route,
             transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(160)) },
@@ -408,6 +409,88 @@ private fun MainShell(
 }
 
 @Composable
+private fun AuroraBackdrop() {
+    Canvas(Modifier.fillMaxSize()) {
+        drawRect(AppBackgroundBrush)
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0xB88A650E), Color(0x00412F08)),
+                center = Offset(size.width * .18f, size.height * .02f),
+                radius = size.width * .78f,
+            ),
+            radius = size.width * .78f,
+            center = Offset(size.width * .18f, size.height * .02f),
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0x8A176A4C), Color(0x00113E2E)),
+                center = Offset(size.width * .90f, size.height * .32f),
+                radius = size.width * .92f,
+            ),
+            radius = size.width * .92f,
+            center = Offset(size.width * .90f, size.height * .32f),
+        )
+        drawCircle(
+            brush = Brush.radialGradient(
+                listOf(Color(0x553D4CBE), Color.Transparent),
+                center = Offset(size.width * .05f, size.height * .76f),
+                radius = size.width * .72f,
+            ),
+            radius = size.width * .72f,
+            center = Offset(size.width * .05f, size.height * .76f),
+        )
+    }
+}
+
+@Composable
+private fun BrandHeader(eyebrow: String, title: String, trailing: @Composable () -> Unit = {}) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Bone, fontSize = 29.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
+            Text(eyebrow, color = Bone.copy(alpha = .65f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        }
+        trailing()
+        Spacer(Modifier.width(9.dp))
+        Box(
+            Modifier.size(42.dp).clip(CircleShape)
+                .background(Brush.linearGradient(listOf(Recovery, Acid)))
+                .border(2.dp, Bone.copy(alpha = .55f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Outlined.PersonOutline, null, tint = Ink, modifier = Modifier.size(22.dp))
+        }
+    }
+}
+
+@Composable
+private fun HealthCategoryRail() {
+    val categories = listOf(
+        Icons.Outlined.Home,
+        Icons.Outlined.FitnessCenter,
+        Icons.Outlined.Bedtime,
+        Icons.Outlined.FavoriteBorder,
+        Icons.Outlined.Restaurant,
+    )
+    PremiumCard(Modifier.fillMaxWidth().height(72.dp)) {
+        Row(
+            Modifier.fillMaxSize().padding(6.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            categories.forEachIndexed { index, icon ->
+                Box(
+                    Modifier.size(52.dp).clip(RoundedCornerShape(20.dp))
+                        .background(if (index == 0) Bone.copy(alpha = .16f) else Color.Transparent),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(icon, null, tint = if (index == 0) Bone else Bone.copy(alpha = .68f), modifier = Modifier.size(24.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun TodayScreen(
     healthState: HealthDashboardState,
     onConnectHealth: () -> Unit,
@@ -426,14 +509,14 @@ private fun TodayScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Label(dateLabel)
-                    Text("Good morning, Ajay", color = Bone, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
-                }
-                SyncPill(snapshot?.syncedAt, healthState is HealthDashboardState.Loading, onRefreshHealth)
-            }
+            BrandHeader(
+                eyebrow = dateLabel,
+                title = "VEYRA Health",
+                trailing = { SyncPill(snapshot?.syncedAt, healthState is HealthDashboardState.Loading, onRefreshHealth) },
+            )
         }
+        item { HealthCategoryRail() }
+        item { DailyBriefCard(snapshot) }
         if (snapshot == null || scores == null) {
             item {
                 HealthConnectCard(
@@ -460,15 +543,68 @@ private fun TodayScreen(
 }
 
 @Composable
+private fun DailyBriefCard(snapshot: HealthSnapshot?) {
+    val ready = snapshot?.recoveryScore?.let { it >= 60 } == true
+    PremiumCard(Modifier.fillMaxWidth().height(154.dp), border = Bone.copy(alpha = .14f)) {
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.linearGradient(listOf(Color(0xB42A4037), Color(0xD3132A22), Color(0xE40E211A))),
+            ),
+        ) {
+            Box(
+                Modifier.align(Alignment.CenterEnd).size(160.dp).graphicsLayer { translationX = 36.dp.toPx() }
+                    .clip(CircleShape).background(Brush.radialGradient(listOf(Acid.copy(alpha = .22f), Color.Transparent))),
+            )
+            Column(Modifier.fillMaxHeight().padding(22.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                Label("DAILY BRIEFING", Acid)
+                Column(Modifier.fillMaxWidth(.78f)) {
+                    Text(
+                        if (snapshot == null) "Connect your health story." else if (ready) "Your body is ready today." else "Plan around your energy.",
+                        color = Bone,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = (-.5).sp,
+                    )
+                    Text(
+                        if (snapshot == null) "Fitbit signals become one calm, useful view."
+                        else "Sleep, recovery and activity translated into one clear direction.",
+                        color = Bone.copy(alpha = .66f),
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        modifier = Modifier.padding(top = 5.dp),
+                    )
+                }
+            }
+            Icon(
+                Icons.Outlined.AutoAwesome,
+                null,
+                tint = Acid.copy(alpha = .88f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(22.dp).size(28.dp),
+            )
+        }
+    }
+}
+
+@Composable
 private fun RecoveryHero(score: Score, snapshot: HealthSnapshot) {
-    PremiumCard(Modifier.fillMaxWidth().height(300.dp), border = score.color.copy(alpha = .35f)) {
+    PremiumCard(Modifier.fillMaxWidth().height(286.dp), border = Color.White.copy(alpha = .18f)) {
         Box(
             Modifier.fillMaxSize().background(
                 Brush.linearGradient(
-                    listOf(ElectricBlue.copy(alpha = .82f), Color(0xFF214B71), Color(0xFF17352D)),
+                    listOf(Color(0xFF416FE0), Color(0xFF2856BE), Color(0xFF183F68)),
                 ),
             ),
         ) {
+            Box(
+                Modifier.align(Alignment.TopEnd).size(210.dp).graphicsLayer { translationX = 52.dp.toPx(); translationY = (-42).dp.toPx() }
+                    .clip(CircleShape).background(Brush.radialGradient(listOf(Color(0x995EEBCE), Color.Transparent))),
+            )
+            Icon(
+                Icons.Outlined.AutoAwesome,
+                null,
+                tint = Bone.copy(alpha = .12f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(24.dp).size(92.dp),
+            )
             Column(Modifier.fillMaxHeight().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Label("RECOVERY", score.color)
@@ -510,21 +646,28 @@ private fun ScoreArc(progress: Float, color: Color, modifier: Modifier = Modifie
 @Composable
 private fun CompactScore(score: Score, modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     PremiumCard(modifier.height(168.dp)) {
-        Column(
-            Modifier.fillMaxSize()
-                .background(Brush.linearGradient(listOf(score.color.copy(alpha = .18f), Color.Transparent)))
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.linearGradient(listOf(score.color.copy(alpha = .30f), Color(0xB20B1A15))),
+            ),
         ) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Label(score.label.uppercase(), score.color)
-                Icon(icon, null, tint = score.color, modifier = Modifier.size(18.dp))
+            Box(
+                Modifier.align(Alignment.TopEnd).size(96.dp).graphicsLayer { translationX = 28.dp.toPx(); translationY = (-24).dp.toPx() }
+                    .clip(CircleShape).background(score.color.copy(alpha = .18f)),
+            )
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Label(score.label.uppercase(), Bone.copy(alpha = .86f))
+                    Box(Modifier.size(34.dp).clip(CircleShape).background(Bone.copy(alpha = .12f)), contentAlignment = Alignment.Center) {
+                        Icon(icon, null, tint = Bone, modifier = Modifier.size(18.dp))
+                    }
+                }
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(score.value?.toString() ?: "—", style = androidx.compose.material3.MaterialTheme.typography.displayMedium, color = Bone)
+                    Text(score.unit, color = Bone.copy(alpha = .7f), modifier = Modifier.padding(bottom = 8.dp, start = 2.dp))
+                }
+                Text(score.note, color = Bone.copy(alpha = .76f), fontSize = 12.sp, lineHeight = 16.sp)
             }
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(score.value?.toString() ?: "—", style = androidx.compose.material3.MaterialTheme.typography.displayMedium, color = Bone)
-                Text(score.unit, color = Muted, modifier = Modifier.padding(bottom = 8.dp, start = 2.dp))
-            }
-            Text(score.note, color = Muted, fontSize = 12.sp, lineHeight = 16.sp)
         }
     }
 }
@@ -689,9 +832,8 @@ private fun TrainScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Label("TRAIN")
-            Text("Built to progress.", color = Bone, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
-            Text("Previous performance, precise rest and form guidance—without the noise.", color = Muted, fontSize = 14.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 6.dp))
+            BrandHeader("BUILT TO PROGRESS", "Workout")
+            Text("Previous performance, precise rest and form guidance—without the noise.", color = Bone.copy(alpha = .68f), fontSize = 14.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 12.dp))
         }
         item {
             if (activeWorkout == null) {
@@ -799,7 +941,7 @@ private fun WorkoutHistoryScreen(
     onSyncWorkout: (Long) -> Unit,
 ) {
     LazyColumn(
-        Modifier.fillMaxSize().background(AppBackgroundBrush),
+        Modifier.fillMaxSize().background(Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp,
             end = 20.dp,
@@ -889,7 +1031,7 @@ private fun ExerciseDetailScreen(
     var selectedMetric by rememberSaveable(exercise.key) { mutableStateOf(0) }
     val groupedHistory = historySets.groupBy { it.workoutId }.values.toList()
     LazyColumn(
-        Modifier.fillMaxSize().background(AppBackgroundBrush),
+        Modifier.fillMaxSize().background(Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp,
             end = 20.dp,
@@ -1085,7 +1227,7 @@ private fun RoutineDetailScreen(
 ) {
     val sessions = history.filter { it.title == routine?.routine?.name }.sortedBy { it.finishedAtEpochMs }
     LazyColumn(
-        Modifier.fillMaxSize().background(AppBackgroundBrush),
+        Modifier.fillMaxSize().background(Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -1148,7 +1290,7 @@ private fun CreateRoutineScreen(
     var name by rememberSaveable(initialName) { mutableStateOf(initialName) }
     var selected by rememberSaveable(initialKeys) { mutableStateOf(initialKeys) }
     LazyColumn(
-        Modifier.fillMaxSize().background(AppBackgroundBrush),
+        Modifier.fillMaxSize().background(Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -1211,7 +1353,7 @@ private fun AddExerciseScreen(
             (muscleIndex == 0 || muscle in exercise.primaryMuscles)
     }.sortedBy { exercise -> recentKeys.indexOf(exercise.key).let { if (it == -1) Int.MAX_VALUE else it } }
     LazyColumn(
-        Modifier.fillMaxSize().background(AppBackgroundBrush),
+        Modifier.fillMaxSize().background(Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -1348,7 +1490,7 @@ private fun ActiveWorkoutScreen(
         .sumOf { (it.weightKg.toDoubleOrNull() ?: 0.0) * (it.reps.toIntOrNull() ?: 0) }
 
     Column(
-        Modifier.fillMaxSize().background(AppBackgroundBrush)
+        Modifier.fillMaxSize().background(Color.Transparent)
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding())
     ) {
         Row(Modifier.fillMaxWidth().padding(20.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1724,8 +1866,9 @@ private fun BottomBar(selected: VeyraTab, onSelect: (VeyraTab) -> Unit) {
             .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
     ) {
         Row(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(30.dp))
-                .background(SurfaceHigh.copy(alpha = .94f))
+            Modifier.fillMaxWidth().shadow(20.dp, RoundedCornerShape(31.dp), ambientColor = Ink, spotColor = Ink)
+                .clip(RoundedCornerShape(31.dp))
+                .background(Brush.linearGradient(listOf(Color(0xF2364A41), Color(0xF21B2D26), Color(0xF2293C34))))
                 .border(1.dp, Bone.copy(alpha = .12f), RoundedCornerShape(30.dp))
                 .padding(horizontal = 7.dp, vertical = 7.dp),
             horizontalArrangement = Arrangement.SpaceAround,
@@ -1764,15 +1907,7 @@ private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood:
         verticalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         item {
-            Label("FUEL", Acid)
-            Text("Eat with intent.", color = Bone, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
-            Text(
-                state.date.format(DateTimeFormatter.ofPattern("EEEE · d MMM")).uppercase(),
-                color = Muted,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 5.dp),
-            )
+            BrandHeader(state.date.format(DateTimeFormatter.ofPattern("EEEE · d MMM")).uppercase(), "Nutrition")
         }
         item {
             PremiumCard(Modifier.fillMaxWidth().height(230.dp), border = Acid.copy(.35f)) {
@@ -1887,7 +2022,7 @@ private fun AddFoodScreen(onBack: () -> Unit, onReview: (FoodDraft) -> Unit) {
         photoCaptured = it != null
     }
     Column(
-        Modifier.fillMaxSize().background(AppBackgroundBrush)
+        Modifier.fillMaxSize().background(Color.Transparent)
             .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
     ) {
         Row(Modifier.fillMaxWidth().padding(20.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1999,7 +2134,7 @@ private fun FoodReviewScreen(initial: FoodDraft, onBack: () -> Unit, onLog: (Foo
     var protein by rememberSaveable { mutableStateOf(initial.proteinGrams.toString().removeSuffix(".0")) }
     var fat by rememberSaveable { mutableStateOf(initial.fatGrams.toString().removeSuffix(".0")) }
     LazyColumn(
-        Modifier.fillMaxSize().background(AppBackgroundBrush),
+        Modifier.fillMaxSize().background(Color.Transparent),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
             start = 20.dp, end = 20.dp,
             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
@@ -2086,11 +2221,22 @@ private fun ComingSoonScreen(title: String, message: String, accent: Color) {
 
 @Composable
 private fun PremiumCard(modifier: Modifier = Modifier, border: Color = Hairline, content: @Composable () -> Unit) {
-    val shape = RoundedCornerShape(27.dp)
+    val shape = RoundedCornerShape(30.dp)
     Box(
-        modifier.clip(shape).background(CardBackgroundBrush)
+        modifier.shadow(16.dp, shape, ambientColor = Ink.copy(alpha = .8f), spotColor = Ink)
+            .clip(shape).background(CardBackgroundBrush)
             .border(1.dp, if (border == Hairline) Bone.copy(alpha = .10f) else border, shape),
-    ) { content() }
+    ) {
+        content()
+        Box(
+            Modifier.fillMaxWidth().height(54.dp).align(Alignment.TopCenter)
+                .background(Brush.verticalGradient(listOf(Bone.copy(alpha = .075f), Color.Transparent))),
+        )
+        Box(
+            Modifier.fillMaxWidth(.72f).height(1.dp).align(Alignment.TopCenter)
+                .background(Brush.horizontalGradient(listOf(Color.Transparent, Bone.copy(alpha = .38f), Color.Transparent))),
+        )
+    }
 }
 
 @Composable
@@ -2098,11 +2244,18 @@ private fun PopButton(label: String, icon: androidx.compose.ui.graphics.vector.I
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val view = LocalView.current
-    Box(Modifier.fillMaxWidth().height(62.dp).padding(bottom = 4.dp)) {
-        Box(Modifier.fillMaxSize().graphicsLayer { translationY = 4.dp.toPx() }.background(color.copy(.35f), RoundedCornerShape(13.dp)))
+    val shape = RoundedCornerShape(22.dp)
+    val fill = if (color == SurfaceHigh) {
+        Brush.linearGradient(listOf(Color(0xFF31463C), Color(0xFF182A23)))
+    } else {
+        Brush.linearGradient(listOf(color.copy(alpha = .92f), color, Recovery.copy(alpha = .82f)))
+    }
+    Box(Modifier.fillMaxWidth().height(64.dp).padding(bottom = 4.dp)) {
+        Box(Modifier.fillMaxSize().graphicsLayer { translationY = 4.dp.toPx() }.background(color.copy(.28f), shape))
         Row(
             Modifier.fillMaxSize().graphicsLayer { translationY = if (pressed) 4.dp.toPx() else 0f }
-                .clip(RoundedCornerShape(13.dp)).background(color)
+                .shadow(12.dp, shape, ambientColor = color.copy(alpha = .35f), spotColor = color.copy(alpha = .45f))
+                .clip(shape).background(fill).border(1.dp, Bone.copy(alpha = .18f), shape)
                 .clickable(interactionSource = interaction, indication = null) {
                     view.performConfirmHaptic()
                     onClick()

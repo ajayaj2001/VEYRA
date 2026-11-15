@@ -4,7 +4,7 @@ Veyra is a local-first personal health companion for Google Fitbit Air. It is de
 
 ## Current prototype
 
-- Premium aurora-glass Compose design system with rich gradients, oversized cards and floating navigation
+- Premium aurora-glass Compose design system with layered lighting, glossy bento cards, rich gradients and floating navigation
 - Health Connect availability, permission and sync flow
 - Live Fitbit-derived sleep, HRV, resting-HR, activity and heart-rate reads
 - Transparent Recovery, Sleep and Strain calculations with calibration states
