@@ -10,7 +10,7 @@ Veyra is a local-first personal health companion for Google Fitbit Air. It is de
 - Transparent Recovery, Sleep and Strain calculations with calibration states
 - Coach brief and daily signals
 - Persistent Push, Pull and Legs routines plus custom routine creation/editing
-- Smooth vector exercise demonstrations
+- Looping start/end exercise demonstrations with playback controls and offline vector fallback
 - Front/back muscle-impact visualization
 - Empty workouts, add-exercise and dynamic add-set flows
 - Active workout set logging with previous values, notes and per-exercise rest settings
@@ -50,6 +50,8 @@ The Today dashboard uses real Health Connect data after permission is granted. R
 - Gradle 8.13 and Android Gradle Plugin 8.13.2
 
 Planned platform components include WorkManager, CameraX, ML Kit and Android Keystore.
+
+Exercise movement frames are loaded from the public-domain [free-exercise-db](https://github.com/yuhonas/free-exercise-db) dataset and cached on-device. VEYRA's generated vector demonstration remains available when media cannot be reached.
 
 ## Build
 

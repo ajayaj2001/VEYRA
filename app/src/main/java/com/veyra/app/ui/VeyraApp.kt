@@ -64,6 +64,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Pause
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Restaurant
@@ -95,6 +96,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -106,6 +108,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.net.toUri
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import com.veyra.app.data.health.HealthDashboardState
 import com.veyra.app.data.health.HealthSnapshot
 import com.veyra.app.data.workout.WorkoutSetEntity
@@ -1054,13 +1059,13 @@ private fun ExerciseDetailScreen(
         }
         if (selectedTab != 1) {
             item {
-                PremiumCard(Modifier.fillMaxWidth().height(330.dp), border = exercise.accent.copy(.32f)) {
-                    Box(Modifier.fillMaxSize().background(SurfaceHigh)) {
-                        ExerciseMotionDemo(exercise, Modifier.fillMaxSize().padding(24.dp))
+                PremiumCard(Modifier.fillMaxWidth().height(330.dp), border = Bone.copy(.28f)) {
+                    Box(Modifier.fillMaxSize().background(Color.White)) {
+                        ExerciseMotionDemo(exercise, Modifier.fillMaxSize(), showControls = true)
                         Row(Modifier.align(Alignment.TopStart).padding(15.dp).clip(CircleShape).background(Ink.copy(.75f)).padding(horizontal = 11.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(6.dp).clip(CircleShape).background(exercise.accent))
+                            Box(Modifier.size(6.dp).clip(CircleShape).background(Color(0xFFFF5B45)))
                             Spacer(Modifier.width(7.dp))
-                            Text("FORM DEMO", color = Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text("LOOPING FORM DEMO", color = Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         }
                     }
                 }
@@ -1751,8 +1756,102 @@ private fun TimerAdjust(label: String, onClick: () -> Unit) {
     }
 }
 
+private val exerciseMediaIds = mapOf(
+    "incline_press" to "Incline_Dumbbell_Press",
+    "bench" to "Barbell_Bench_Press_-_Medium_Grip",
+    "triceps_extension" to "Dumbbell_One-Arm_Triceps_Extension",
+    "lat_pulldown" to "Wide-Grip_Lat_Pulldown",
+    "row" to "Dumbbell_Incline_Row",
+    "biceps_curl" to "Dumbbell_Bicep_Curl",
+    "squat" to "Barbell_Full_Squat",
+    "leg_press" to "Leg_Press",
+    "leg_curl" to "Seated_Leg_Curl",
+)
+
+private fun Exercise.mediaFrames(): List<String> {
+    val mediaId = exerciseMediaIds[key] ?: return emptyList()
+    val root = "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/$mediaId"
+    return listOf("$root/0.jpg", "$root/1.jpg")
+}
+
 @Composable
-private fun ExerciseMotionDemo(exercise: Exercise, modifier: Modifier = Modifier) {
+private fun ExerciseMotionDemo(
+    exercise: Exercise,
+    modifier: Modifier = Modifier,
+    showControls: Boolean = false,
+) {
+    val frames = remember(exercise.key) { exercise.mediaFrames() }
+    var playing by rememberSaveable(exercise.key, showControls) { mutableStateOf(true) }
+    var frame by rememberSaveable(exercise.key, showControls) { mutableStateOf(0) }
+
+    LaunchedEffect(playing, exercise.key) {
+        while (playing && frames.size > 1) {
+            delay(900)
+            frame = (frame + 1) % frames.size
+        }
+    }
+
+    Box(modifier.background(Color.White)) {
+        if (frames.isEmpty()) {
+            ExerciseVectorFallback(exercise, Modifier.fillMaxSize().padding(28.dp))
+        } else {
+            Crossfade(targetState = frame, animationSpec = tween(260), label = "exercise-frame") { activeFrame ->
+                SubcomposeAsyncImage(
+                    model = frames[activeFrame],
+                    contentDescription = "${exercise.name} demonstration frame ${activeFrame + 1}",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                ) {
+                    when (painter.state) {
+                        is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
+                        is AsyncImagePainter.State.Error -> ExerciseVectorFallback(exercise, Modifier.fillMaxSize().padding(28.dp))
+                        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(Modifier.size(24.dp), color = Color(0xFF26332E), strokeWidth = 2.dp)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (showControls) {
+            Box(
+                Modifier.align(Alignment.TopEnd).padding(14.dp).size(44.dp).clip(CircleShape)
+                    .background(Color(0xCC222824)).clickable { playing = !playing },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (playing) Icons.Outlined.Pause else Icons.Outlined.PlayArrow,
+                    if (playing) "Pause demonstration" else "Play demonstration",
+                    tint = Color.White,
+                    modifier = Modifier.size(23.dp),
+                )
+            }
+            Row(
+                Modifier.align(Alignment.BottomStart).padding(14.dp).clip(CircleShape)
+                    .background(Color(0xD9212724)).padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("TARGET", color = Color.White.copy(alpha = .62f), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
+                Spacer(Modifier.width(7.dp))
+                Text(exercise.primaryMuscles.joinToString(), color = Color(0xFFFF725E), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+            Row(
+                Modifier.align(Alignment.BottomEnd).padding(18.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                frames.indices.forEach { index ->
+                    Box(
+                        Modifier.width(if (frame == index) 18.dp else 6.dp).height(6.dp).clip(CircleShape)
+                            .background(if (frame == index) Color(0xFF222824) else Color(0x55222824)),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseVectorFallback(exercise: Exercise, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "exercise-motion")
     val phase by transition.animateFloat(
         initialValue = 0f,

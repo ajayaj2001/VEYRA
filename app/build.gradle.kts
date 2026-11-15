@@ -13,8 +13,8 @@ android {
         applicationId = "com.veyra.app"
         minSdk = 28
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.6.0"
+        versionCode = 8
+        versionName = "0.7.0"
     }
 
     buildFeatures { compose = true }
@@ -47,6 +47,7 @@ dependencies {
     implementation("androidx.health.connect:connect-client:1.1.0")
     implementation("androidx.room:room-runtime:2.8.5")
     implementation("androidx.room:room-ktx:2.8.5")
+    implementation("io.coil-kt:coil-compose:2.7.0")
     ksp("androidx.room:room-compiler:2.8.5")
 
     testImplementation("junit:junit:4.13.2")
