@@ -137,7 +137,8 @@ interface WorkoutDao {
         """
         SELECT w.finishedAtEpochMs,
                MAX(CAST(s.weightKg AS REAL)) AS bestWeightKg,
-               SUM(CAST(s.weightKg AS REAL) * CAST(s.reps AS INTEGER)) AS volumeKg
+               SUM(CAST(s.weightKg AS REAL) * CAST(s.reps AS INTEGER)) AS volumeKg,
+               MAX(CAST(s.weightKg AS REAL) * (1.0 + CAST(s.reps AS REAL) / 30.0)) AS estimatedOneRepMaxKg
         FROM workout_sets s INNER JOIN workouts w ON w.id = s.workoutId
         WHERE s.exerciseKey = :exerciseKey AND s.completedAtEpochMs IS NOT NULL
           AND w.finishedAtEpochMs IS NOT NULL
@@ -145,4 +146,27 @@ interface WorkoutDao {
         """
     )
     fun observeExerciseHistory(exerciseKey: String): Flow<List<ExerciseHistoryPoint>>
+
+    @Query(
+        """
+        SELECT w.id AS workoutId, w.title AS workoutTitle, w.finishedAtEpochMs,
+               s.setNumber, s.weightKg, s.reps
+        FROM workout_sets s INNER JOIN workouts w ON w.id = s.workoutId
+        WHERE s.exerciseKey = :exerciseKey AND s.completedAtEpochMs IS NOT NULL
+          AND w.finishedAtEpochMs IS NOT NULL
+        ORDER BY w.finishedAtEpochMs DESC, s.setNumber
+        """
+    )
+    fun observeExerciseHistorySets(exerciseKey: String): Flow<List<ExerciseHistorySet>>
+
+    @Query(
+        """
+        SELECT exerciseKey FROM workout_sets
+        WHERE completedAtEpochMs IS NOT NULL
+        GROUP BY exerciseKey
+        ORDER BY MAX(completedAtEpochMs) DESC
+        LIMIT 6
+        """
+    )
+    fun observeRecentExerciseKeys(): Flow<List<String>>
 }

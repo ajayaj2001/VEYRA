@@ -5,6 +5,12 @@ import org.junit.Test
 
 class WorkoutMetricsTest {
     @Test
+    fun `estimated one rep max uses the Epley formula`() {
+        assertEquals(100.0, WorkoutMetrics.estimatedOneRepMaxKg(75.0, 10), 0.001)
+        assertEquals(0.0, WorkoutMetrics.estimatedOneRepMaxKg(75.0, 0), 0.001)
+    }
+
+    @Test
     fun `volume only counts completed valid sets`() {
         val sets = listOf(
             workoutSet(weight = "75", reps = "8", completed = true),

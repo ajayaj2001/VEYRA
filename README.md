@@ -19,6 +19,10 @@ Veyra is a local-first personal health companion for Google Fitbit Air. It is de
 - Crash-safe active workout resume and completed-session summaries
 - Full local workout history with sync status
 - Routine volume and exercise weight progression charts
+- Searchable exercise picker with equipment and muscle filters
+- Session-by-session exercise history with every completed set
+- Heaviest-weight, estimated-1RM and session-volume progression modes
+- Numbered exercise setup and execution guidance
 - One-tap export and retry of completed workouts to Health Connect
 - Durable product structure for Fuel, Coach and personal health records
 

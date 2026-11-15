@@ -63,6 +63,7 @@ import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material3.Icon
 import androidx.compose.material3.CircularProgressIndicator
@@ -105,6 +106,7 @@ import com.veyra.app.data.workout.WorkoutSetEntity
 import com.veyra.app.data.workout.WorkoutSummary
 import com.veyra.app.data.workout.RoutineWithExercises
 import com.veyra.app.data.workout.ExerciseHistoryPoint
+import com.veyra.app.data.workout.ExerciseHistorySet
 import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.Bone
 import com.veyra.app.ui.theme.Hairline
@@ -145,6 +147,7 @@ fun VeyraApp(
     val latestWorkout by workoutViewModel.latestWorkout.collectAsStateWithLifecycle()
     val workoutHistory by workoutViewModel.workoutHistory.collectAsStateWithLifecycle()
     val routines by workoutViewModel.routines.collectAsStateWithLifecycle()
+    val recentExerciseKeys by workoutViewModel.recentExerciseKeys.collectAsStateWithLifecycle()
     var pendingFinish by remember { mutableStateOf(false) }
     var pendingSyncWorkoutId by remember { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
@@ -221,9 +224,12 @@ fun VeyraApp(
                 is VeyraRoute.ExerciseDetail -> {
                     val history by workoutViewModel.exerciseHistory(destination.exercise.key)
                         .collectAsStateWithLifecycle(initialValue = emptyList())
+                    val historySets by workoutViewModel.exerciseHistorySets(destination.exercise.key)
+                        .collectAsStateWithLifecycle(initialValue = emptyList())
                     ExerciseDetailScreen(
                         exercise = destination.exercise,
                         history = history,
+                        historySets = historySets,
                         onBack = { route = VeyraRoute.Main },
                         onStart = {
                             workoutViewModel.startWorkoutWithExercise(destination.exercise.key) {
@@ -297,9 +303,10 @@ fun VeyraApp(
                 }
                 VeyraRoute.AddExercise -> AddExerciseScreen(
                     existingKeys = activeWorkout?.exercises?.map { it.key }.orEmpty().toSet(),
+                    recentKeys = recentExerciseKeys,
                     onBack = { route = VeyraRoute.ActiveWorkout },
-                    onAdd = {
-                        workoutViewModel.addExercise(it)
+                    onAdd = { keys ->
+                        workoutViewModel.addExercises(keys)
                         route = VeyraRoute.ActiveWorkout
                     },
                 )
@@ -827,10 +834,13 @@ private fun ExerciseCard(exercise: Exercise, onClick: () -> Unit) {
 private fun ExerciseDetailScreen(
     exercise: Exercise,
     history: List<ExerciseHistoryPoint>,
+    historySets: List<ExerciseHistorySet>,
     onBack: () -> Unit,
     onStart: () -> Unit,
 ) {
     var selectedTab by rememberSaveable(exercise.key) { mutableStateOf(0) }
+    var selectedMetric by rememberSaveable(exercise.key) { mutableStateOf(0) }
+    val groupedHistory = historySets.groupBy { it.workoutId }.values.toList()
     LazyColumn(
         Modifier.fillMaxSize().background(Ink),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -878,6 +888,19 @@ private fun ExerciseDetailScreen(
                 }
             }
             item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(18.dp)) {
+                        Label("HOW TO", exercise.accent)
+                        exercise.instructions.forEachIndexed { index, instruction ->
+                            Row(Modifier.padding(top = if (index == 0) 12.dp else 18.dp), verticalAlignment = Alignment.Top) {
+                                Text("${index + 1}.", color = exercise.accent, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(32.dp))
+                                Text(instruction, color = Bone, fontSize = 15.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+            }
+            item {
                 SectionHeader("MUSCLES WORKED", "Front · back")
                 PremiumCard(Modifier.fillMaxWidth().height(280.dp)) {
                     Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -899,38 +922,75 @@ private fun ExerciseDetailScreen(
             SectionHeader("PROGRESSION", if (history.isEmpty()) "No sessions yet" else "Last ${history.size}")
             PremiumCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp)) {
-                    val best = history.maxOfOrNull { it.bestWeightKg }
+                    val metricValues = when (selectedMetric) {
+                        1 -> history.map { it.estimatedOneRepMaxKg }
+                        2 -> history.map { it.volumeKg }
+                        else -> history.map { it.bestWeightKg }
+                    }
+                    val best = metricValues.maxOrNull()
                     Text(if (best == null) "— kg" else "${"%.1f".format(best)} kg", color = Bone, fontSize = 25.sp, fontWeight = FontWeight.SemiBold)
-                    Text("HEAVIEST WEIGHT", color = Strain, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
+                    Text(listOf("HEAVIEST WEIGHT", "ESTIMATED 1RM", "SESSION VOLUME")[selectedMetric], color = Strain, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = .8.sp)
                     Spacer(Modifier.height(14.dp))
-                    PerformanceChart(history.map { it.bestWeightKg }, Strain, Modifier.fillMaxWidth().height(150.dp))
+                    PerformanceChart(metricValues, Strain, Modifier.fillMaxWidth().height(150.dp))
+                    Spacer(Modifier.height(14.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        MetricPill("WEIGHT", selectedMetric == 0, Modifier.weight(1f)) { selectedMetric = 0 }
+                        MetricPill("1RM", selectedMetric == 1, Modifier.weight(1f)) { selectedMetric = 1 }
+                        MetricPill("VOLUME", selectedMetric == 2, Modifier.weight(1f)) { selectedMetric = 2 }
+                    }
                 }
             }
         }
         if (selectedTab == 1) {
-            if (history.isEmpty()) item {
+            if (groupedHistory.isEmpty()) item {
                 PremiumCard(Modifier.fillMaxWidth()) {
                     Text("Complete this exercise in a workout to build history.", color = Muted, fontSize = 14.sp, modifier = Modifier.padding(20.dp))
                 }
             }
-            items(history.reversed(), key = { it.finishedAtEpochMs }) { point ->
+            items(groupedHistory, key = { it.first().workoutId }) { sessionSets ->
+                val session = sessionSets.first()
                 PremiumCard(Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                Instant.ofEpochMilli(point.finishedAtEpochMs).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy")),
-                                color = Bone,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text("${"%.0f".format(point.volumeKg)} kg volume", color = Muted, fontSize = 12.sp)
+                    Column(Modifier.padding(vertical = 16.dp)) {
+                        Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(session.workoutTitle, color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    Instant.ofEpochMilli(session.finishedAtEpochMs).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("d MMM yyyy · HH:mm")),
+                                    color = Muted,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                            Text("${sessionSets.size} SETS", color = Strain, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
-                        Text("${"%.1f".format(point.bestWeightKg)} kg", color = Strain, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                            Text("SET", color = Muted, fontSize = 10.sp, modifier = Modifier.width(55.dp))
+                            Text("WEIGHT & REPS", color = Muted, fontSize = 10.sp)
+                        }
+                        sessionSets.forEachIndexed { index, set ->
+                            Row(
+                                Modifier.fillMaxWidth().background(if (index % 2 == 1) SurfaceHigh.copy(.65f) else Color.Transparent).padding(horizontal = 16.dp, vertical = 13.dp),
+                            ) {
+                                Text(set.setNumber.toString(), color = Bone, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(55.dp))
+                                Text("${set.weightKg} kg × ${set.reps}", color = Bone, fontSize = 14.sp)
+                            }
+                        }
                     }
                 }
             }
         }
         item { PopButton("START WITH THIS EXERCISE", Icons.Outlined.PlayArrow, exercise.accent, onStart) }
+    }
+}
+
+@Composable
+private fun MetricPill(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.height(38.dp).clip(CircleShape)
+            .background(if (selected) Strain else SurfaceHigh)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label, color = if (selected) Ink else Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -1083,7 +1143,26 @@ private fun CreateRoutineScreen(
 }
 
 @Composable
-private fun AddExerciseScreen(existingKeys: Set<String>, onBack: () -> Unit, onAdd: (String) -> Unit) {
+private fun AddExerciseScreen(
+    existingKeys: Set<String>,
+    recentKeys: List<String>,
+    onBack: () -> Unit,
+    onAdd: (List<String>) -> Unit,
+) {
+    var query by rememberSaveable { mutableStateOf("") }
+    var selected by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var equipmentIndex by rememberSaveable { mutableStateOf(0) }
+    var muscleIndex by rememberSaveable { mutableStateOf(0) }
+    val available = exercises.filterNot { it.key in existingKeys }
+    val equipmentOptions = listOf("All equipment") + available.map { it.equipment }.distinct()
+    val muscleOptions = listOf("All muscles") + available.flatMap { it.primaryMuscles }.distinct()
+    val equipment = equipmentOptions[equipmentIndex.coerceIn(equipmentOptions.indices)]
+    val muscle = muscleOptions[muscleIndex.coerceIn(muscleOptions.indices)]
+    val filtered = available.filter { exercise ->
+        (query.isBlank() || exercise.name.contains(query, true) || exercise.equipment.contains(query, true)) &&
+            (equipmentIndex == 0 || exercise.equipment == equipment) &&
+            (muscleIndex == 0 || muscle in exercise.primaryMuscles)
+    }.sortedBy { exercise -> recentKeys.indexOf(exercise.key).let { if (it == -1) Int.MAX_VALUE else it } }
     LazyColumn(
         Modifier.fillMaxSize().background(Ink),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
@@ -1093,14 +1172,82 @@ private fun AddExerciseScreen(existingKeys: Set<String>, onBack: () -> Unit, onA
         ),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { TopBack("ADD EXERCISE", onBack) }
         item {
-            Text("Exercise library", color = Bone, fontSize = 31.sp, fontWeight = FontWeight.SemiBold)
-            Text("Choose one to add three working sets.", color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+            Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("CANCEL", color = Strain, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
+                Text("Add exercise", color = Bone, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                Text(
+                    if (selected.isEmpty()) "ADD" else "ADD ${selected.size}",
+                    color = if (selected.isEmpty()) Muted else Acid,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(enabled = selected.isNotEmpty()) { onAdd(selected) }.padding(8.dp),
+                )
+            }
         }
-        items(exercises.filterNot { it.key in existingKeys }, key = { it.key }) { exercise ->
-            ExerciseCard(exercise) { onAdd(exercise.key) }
+        item {
+            BasicTextField(
+                value = query,
+                onValueChange = { query = it.take(50) },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(color = Bone, fontSize = 16.sp),
+                modifier = Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(15.dp)).background(SurfaceHigh),
+                decorationBox = { inner ->
+                    Row(Modifier.fillMaxSize().padding(horizontal = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Search, null, tint = Muted)
+                        Spacer(Modifier.width(10.dp))
+                        Box(Modifier.weight(1f)) {
+                            if (query.isBlank()) Text("Search exercises", color = Muted, fontSize = 15.sp)
+                            inner()
+                        }
+                    }
+                },
+            )
         }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                PickerFilter(equipment, Modifier.weight(1f)) { equipmentIndex = (equipmentIndex + 1) % equipmentOptions.size }
+                PickerFilter(muscle, Modifier.weight(1f)) { muscleIndex = (muscleIndex + 1) % muscleOptions.size }
+            }
+        }
+        item {
+            SectionHeader(if (recentKeys.isNotEmpty() && query.isBlank()) "RECENT EXERCISES" else "EXERCISES", "${filtered.size}")
+        }
+        items(filtered, key = { it.key }) { exercise ->
+            val chosen = exercise.key in selected
+            Row(
+                Modifier.fillMaxWidth().clickable {
+                    selected = if (chosen) selected - exercise.key else selected + exercise.key
+                }.padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier.size(64.dp).clip(CircleShape).background(if (chosen) Acid.copy(.15f) else SurfaceHigh)
+                        .border(1.dp, if (chosen) Acid else Hairline, CircleShape),
+                ) {
+                    ExerciseMotionDemo(exercise, Modifier.fillMaxSize().padding(7.dp))
+                }
+                Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                    Text(exercise.name, color = if (chosen) Acid else Bone, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text(exercise.primaryMuscles.joinToString(), color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
+                }
+                SetCheck(chosen) {
+                    selected = if (chosen) selected - exercise.key else selected + exercise.key
+                }
+            }
+            Box(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+        }
+    }
+}
+
+@Composable
+private fun PickerFilter(label: String, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.height(48.dp).clip(RoundedCornerShape(13.dp)).background(SurfaceHigh)
+            .clickable(onClick = onClick).padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(label.uppercase(), color = Bone, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 

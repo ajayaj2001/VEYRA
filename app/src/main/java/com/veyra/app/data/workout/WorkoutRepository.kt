@@ -10,6 +10,7 @@ class WorkoutRepository(private val database: VeyraDatabase) {
     val latestWorkout: Flow<WorkoutSummary?> = dao.observeLatestWorkout()
     val workoutHistory: Flow<List<WorkoutSummary>> = dao.observeWorkoutHistory()
     val routines: Flow<List<RoutineWithExercises>> = dao.observeRoutines()
+    val recentExerciseKeys: Flow<List<String>> = dao.observeRecentExerciseKeys()
 
     suspend fun ensureSeedRoutines() = database.withTransaction {
         if (dao.routineCount() != 0) return@withTransaction
@@ -108,6 +109,10 @@ class WorkoutRepository(private val database: VeyraDatabase) {
         })
     }
 
+    suspend fun addExercises(workoutId: Long, exerciseKeys: List<String>) {
+        exerciseKeys.forEach { addExercise(workoutId, it) }
+    }
+
     suspend fun updateExerciseRest(workoutId: Long, exerciseKey: String, seconds: Int) =
         dao.updateExerciseRest(workoutId, exerciseKey, seconds)
 
@@ -148,6 +153,9 @@ class WorkoutRepository(private val database: VeyraDatabase) {
     fun exerciseHistory(exerciseKey: String): Flow<List<ExerciseHistoryPoint>> =
         dao.observeExerciseHistory(exerciseKey)
 
+    fun exerciseHistorySets(exerciseKey: String): Flow<List<ExerciseHistorySet>> =
+        dao.observeExerciseHistorySets(exerciseKey)
+
     private suspend fun seedRoutine(name: String, keys: List<String>, offset: Int) {
         val id = dao.insertRoutine(
             RoutineEntity(name = name, createdAtEpochMs = System.currentTimeMillis() + offset)
@@ -165,6 +173,7 @@ data class ExerciseTemplate(
     val primaryMuscles: List<String>,
     val secondaryMuscles: List<String>,
     val cue: String,
+    val instructions: List<String>,
     val defaultWeightKg: String,
     val defaultReps: String = "10",
     val restSeconds: Int = 90,
@@ -183,15 +192,15 @@ data class ExerciseTemplate(
 
 object WorkoutCatalog {
     val exercises = listOf(
-        ExerciseTemplate("incline_press", "Incline dumbbell press", "Dumbbells · Bench", listOf("Upper chest"), listOf("Triceps", "Front delts"), "Set the bench to 30°. Keep wrists stacked over elbows.", "10", "12"),
-        ExerciseTemplate("bench", "Barbell bench press", "Barbell · Bench", listOf("Chest"), listOf("Triceps", "Front delts"), "Pin the shoulder blades and press slightly back.", "70", "8"),
-        ExerciseTemplate("triceps_extension", "Triceps extension", "Dumbbell", listOf("Triceps"), listOf("Shoulders"), "Keep the upper arm still and extend smoothly.", "10", "10"),
-        ExerciseTemplate("lat_pulldown", "Lat pulldown", "Cable", listOf("Lats"), listOf("Biceps", "Upper back"), "Drive elbows toward your sides without leaning back.", "45", "10"),
-        ExerciseTemplate("row", "Chest-supported row", "Dumbbells · Incline bench", listOf("Upper back", "Lats"), listOf("Rear delts", "Biceps"), "Keep the chest planted and pull elbows toward the hips.", "24", "10"),
-        ExerciseTemplate("biceps_curl", "Biceps curl", "Dumbbells", listOf("Biceps"), listOf("Forearms"), "Keep elbows quiet and control the lowering phase.", "10", "12"),
-        ExerciseTemplate("squat", "Back squat", "Barbell · Rack", listOf("Quadriceps", "Glutes"), listOf("Adductors", "Core"), "Brace before descending and keep the bar over mid-foot.", "60", "8", 120),
-        ExerciseTemplate("leg_press", "Leg press", "Machine", listOf("Quadriceps", "Glutes"), listOf("Hamstrings"), "Lower with control and keep the lower back supported.", "90", "10", 120),
-        ExerciseTemplate("leg_curl", "Seated leg curl", "Machine", listOf("Hamstrings"), listOf("Calves"), "Keep hips down and squeeze through the full range.", "35", "12"),
+        ExerciseTemplate("incline_press", "Incline dumbbell press", "Dumbbells · Bench", listOf("Upper chest"), listOf("Triceps", "Front delts"), "Set the bench to 30°. Keep wrists stacked over elbows.", listOf("Set an incline bench between 30 and 45 degrees and sit with a dumbbell on each thigh.", "Kick the dumbbells into position as you lie back, then plant both feet firmly.", "Retract your shoulder blades and hold the dumbbells beside the upper chest.", "Press upward while keeping wrists stacked over elbows.", "Lower with control until the elbows are just below the bench line."), "10", "12"),
+        ExerciseTemplate("bench", "Barbell bench press", "Barbell · Bench", listOf("Chest"), listOf("Triceps", "Front delts"), "Pin the shoulder blades and press slightly back.", listOf("Lie with eyes under the bar and plant your feet.", "Retract the shoulder blades and grip slightly wider than shoulder width.", "Unrack over the shoulders and lower toward the lower chest.", "Press up and slightly back without lifting the hips."), "70", "8"),
+        ExerciseTemplate("triceps_extension", "Triceps extension", "Dumbbell", listOf("Triceps"), listOf("Shoulders"), "Keep the upper arm still and extend smoothly.", listOf("Hold one dumbbell overhead with both hands.", "Keep the elbows pointing forward and lower behind the head.", "Extend the elbows fully without flaring them outward."), "10", "10"),
+        ExerciseTemplate("lat_pulldown", "Lat pulldown", "Cable", listOf("Lats"), listOf("Biceps", "Upper back"), "Drive elbows toward your sides without leaning back.", listOf("Set the thigh pad firmly and take a shoulder-width grip.", "Brace the torso with a slight backward lean.", "Pull the bar toward the upper chest by driving the elbows down.", "Return slowly until the lats are fully lengthened."), "45", "10"),
+        ExerciseTemplate("row", "Chest-supported row", "Dumbbells · Incline bench", listOf("Upper back", "Lats"), listOf("Rear delts", "Biceps"), "Keep the chest planted and pull elbows toward the hips.", listOf("Set a bench to a low incline and lie chest-down.", "Let the arms hang while keeping the neck neutral.", "Pull the elbows toward the hips without shrugging.", "Pause, then lower until the shoulder blades spread."), "24", "10"),
+        ExerciseTemplate("biceps_curl", "Biceps curl", "Dumbbells", listOf("Biceps"), listOf("Forearms"), "Keep elbows quiet and control the lowering phase.", listOf("Stand tall with dumbbells at your sides.", "Keep elbows close to the torso and curl without swinging.", "Squeeze at the top and lower for two to three seconds."), "10", "12"),
+        ExerciseTemplate("squat", "Back squat", "Barbell · Rack", listOf("Quadriceps", "Glutes"), listOf("Adductors", "Core"), "Brace before descending and keep the bar over mid-foot.", listOf("Set the bar across the upper back and brace before unracking.", "Stand around shoulder width with toes slightly out.", "Sit down between the hips while keeping the bar over mid-foot.", "Drive the floor away and keep the torso braced."), "60", "8", 120),
+        ExerciseTemplate("leg_press", "Leg press", "Machine", listOf("Quadriceps", "Glutes"), listOf("Hamstrings"), "Lower with control and keep the lower back supported.", listOf("Place the feet shoulder-width on the platform.", "Release the safety and lower until the knees reach a comfortable depth.", "Press through the whole foot without locking the knees."), "90", "10", 120),
+        ExerciseTemplate("leg_curl", "Seated leg curl", "Machine", listOf("Hamstrings"), listOf("Calves"), "Keep hips down and squeeze through the full range.", listOf("Align the machine pivot with the knee joint.", "Secure the thigh pad and begin with straight legs.", "Curl the pad down, pause, and return under control."), "35", "12"),
     )
 
     fun byKey(key: String): ExerciseTemplate? = exercises.firstOrNull { it.key == key }

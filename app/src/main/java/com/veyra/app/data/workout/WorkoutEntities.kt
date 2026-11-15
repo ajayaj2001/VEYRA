@@ -91,4 +91,14 @@ data class ExerciseHistoryPoint(
     val finishedAtEpochMs: Long,
     val bestWeightKg: Double,
     val volumeKg: Double,
+    val estimatedOneRepMaxKg: Double,
+)
+
+data class ExerciseHistorySet(
+    val workoutId: Long,
+    val workoutTitle: String,
+    val finishedAtEpochMs: Long,
+    val setNumber: Int,
+    val weightKg: String,
+    val reps: String,
 )

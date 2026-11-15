@@ -11,6 +11,7 @@ import com.veyra.app.data.workout.WorkoutSetEntity
 import com.veyra.app.data.workout.WorkoutSummary
 import com.veyra.app.data.workout.WorkoutHealthExporter
 import com.veyra.app.data.workout.ExerciseHistoryPoint
+import com.veyra.app.data.workout.ExerciseHistorySet
 import com.veyra.app.data.workout.RoutineWithExercises
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -75,6 +76,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val routines: StateFlow<List<RoutineWithExercises>> = repository.routines
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val recentExerciseKeys: StateFlow<List<String>> = repository.recentExerciseKeys
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun startRoutine(routineId: Long, onStarted: () -> Unit = {}) {
@@ -147,6 +151,11 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { repository.addExercise(workoutId, exerciseKey) }
     }
 
+    fun addExercises(exerciseKeys: List<String>) {
+        val workoutId = activeWorkout.value?.workout?.id ?: return
+        viewModelScope.launch { repository.addExercises(workoutId, exerciseKeys) }
+    }
+
     fun updateExerciseRest(exerciseKey: String, seconds: Int) {
         val workoutId = activeWorkout.value?.workout?.id ?: return
         viewModelScope.launch { repository.updateExerciseRest(workoutId, exerciseKey, seconds) }
@@ -167,6 +176,9 @@ class WorkoutViewModel(application: Application) : AndroidViewModel(application)
 
     fun exerciseHistory(exerciseKey: String): Flow<List<ExerciseHistoryPoint>> =
         repository.exerciseHistory(exerciseKey)
+
+    fun exerciseHistorySets(exerciseKey: String): Flow<List<ExerciseHistorySet>> =
+        repository.exerciseHistorySets(exerciseKey)
 
     fun checkHealthWriteAccess(onResult: (hasPermission: Boolean, canRequest: Boolean) -> Unit) {
         viewModelScope.launch {

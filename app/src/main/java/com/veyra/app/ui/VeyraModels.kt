@@ -23,6 +23,7 @@ data class Exercise(
     val primaryMuscles: List<String>,
     val secondaryMuscles: List<String>,
     val cue: String,
+    val instructions: List<String> = emptyList(),
     val accent: Color = Strain,
     val key: String = name.lowercase().replace(" ", "_"),
 )
@@ -40,6 +41,7 @@ val exercises = WorkoutCatalog.exercises.map { template ->
         primaryMuscles = template.primaryMuscles,
         secondaryMuscles = template.secondaryMuscles,
         cue = template.cue,
+        instructions = template.instructions,
         accent = if (template.key == "squat") Acid else Strain,
         key = template.key,
     )
