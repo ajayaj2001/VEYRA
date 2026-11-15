@@ -1,6 +1,7 @@
 package com.veyra.app.ui
 
 import android.content.Intent
+import androidx.activity.result.contract.ActivityResultContracts
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
@@ -57,6 +58,9 @@ import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LocalFireDepartment
@@ -107,6 +111,10 @@ import com.veyra.app.data.workout.WorkoutSummary
 import com.veyra.app.data.workout.RoutineWithExercises
 import com.veyra.app.data.workout.ExerciseHistoryPoint
 import com.veyra.app.data.workout.ExerciseHistorySet
+import com.veyra.app.data.food.FoodCatalog
+import com.veyra.app.data.food.FoodDraft
+import com.veyra.app.data.food.FoodIngredientDraft
+import com.veyra.app.data.food.FoodWithIngredients
 import com.veyra.app.ui.theme.Acid
 import com.veyra.app.ui.theme.Bone
 import com.veyra.app.ui.theme.Hairline
@@ -133,12 +141,15 @@ private sealed interface VeyraRoute {
     data object CreateRoutine : VeyraRoute
     data class EditRoutine(val routineId: Long) : VeyraRoute
     data object AddExercise : VeyraRoute
+    data object AddFood : VeyraRoute
+    data class ReviewFood(val draft: FoodDraft) : VeyraRoute
 }
 
 @Composable
 fun VeyraApp(
     dashboardViewModel: DashboardViewModel = viewModel(),
     workoutViewModel: WorkoutViewModel = viewModel(),
+    foodViewModel: FoodViewModel = viewModel(),
 ) {
     var tab by rememberSaveable { mutableStateOf(VeyraTab.Today) }
     var route by remember { mutableStateOf<VeyraRoute>(VeyraRoute.Main) }
@@ -148,6 +159,7 @@ fun VeyraApp(
     val workoutHistory by workoutViewModel.workoutHistory.collectAsStateWithLifecycle()
     val routines by workoutViewModel.routines.collectAsStateWithLifecycle()
     val recentExerciseKeys by workoutViewModel.recentExerciseKeys.collectAsStateWithLifecycle()
+    val foodState by foodViewModel.state.collectAsStateWithLifecycle()
     var pendingFinish by remember { mutableStateOf(false) }
     var pendingSyncWorkoutId by remember { mutableStateOf<Long?>(null) }
     val context = LocalContext.current
@@ -220,6 +232,9 @@ fun VeyraApp(
                     onSyncWorkout = syncWorkout,
                     onRoutine = { route = VeyraRoute.RoutineDetail(it) },
                     onCreateRoutine = { route = VeyraRoute.CreateRoutine },
+                    foodState = foodState,
+                    onAddFood = { route = VeyraRoute.AddFood },
+                    onDeleteFood = foodViewModel::delete,
                 )
                 is VeyraRoute.ExerciseDetail -> {
                     val history by workoutViewModel.exerciseHistory(destination.exercise.key)
@@ -310,6 +325,20 @@ fun VeyraApp(
                         route = VeyraRoute.ActiveWorkout
                     },
                 )
+                VeyraRoute.AddFood -> AddFoodScreen(
+                    onBack = { route = VeyraRoute.Main },
+                    onReview = { route = VeyraRoute.ReviewFood(it) },
+                )
+                is VeyraRoute.ReviewFood -> FoodReviewScreen(
+                    initial = destination.draft,
+                    onBack = { route = VeyraRoute.AddFood },
+                    onLog = { draft ->
+                        foodViewModel.log(draft) {
+                            tab = VeyraTab.Fuel
+                            route = VeyraRoute.Main
+                        }
+                    },
+                )
             }
         }
     }
@@ -335,6 +364,9 @@ private fun MainShell(
     onSyncWorkout: (Long) -> Unit,
     onRoutine: (Long) -> Unit,
     onCreateRoutine: () -> Unit,
+    foodState: FoodDayState,
+    onAddFood: () -> Unit,
+    onDeleteFood: (Long) -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize()
@@ -362,7 +394,7 @@ private fun MainShell(
                     onRoutine,
                     onCreateRoutine,
                 )
-                VeyraTab.Fuel -> ComingSoonScreen("Fuel", "Photo, describe or scan a meal.", Acid)
+                VeyraTab.Fuel -> FuelScreen(foodState, onAddFood, onDeleteFood)
                 VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
                 VeyraTab.You -> ComingSoonScreen("You", "Trends, records and private settings.", Sleep)
             }
@@ -1694,6 +1726,320 @@ private fun BottomBar(selected: VeyraTab, onSelect: (VeyraTab) -> Unit) {
                 Icon(icon, tab.label, tint = if (active) Acid else Muted, modifier = Modifier.size(21.dp))
                 Text(tab.label, color = if (active) Bone else Muted, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.padding(top = 3.dp))
             }
+        }
+    }
+}
+
+private enum class FoodAddMode { Describe, Photo, Favorites, Manual }
+
+@Composable
+private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood: (Long) -> Unit) {
+    val remaining = (state.calorieGoal - state.totals.calories).coerceAtLeast(0)
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 18.dp, 20.dp, 32.dp),
+        verticalArrangement = Arrangement.spacedBy(13.dp),
+    ) {
+        item {
+            Label("FUEL", Acid)
+            Text("Eat with intent.", color = Bone, fontSize = 30.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-1).sp)
+            Text(
+                state.date.format(DateTimeFormatter.ofPattern("EEEE · d MMM")).uppercase(),
+                color = Muted,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 5.dp),
+            )
+        }
+        item {
+            PremiumCard(Modifier.fillMaxWidth().height(230.dp), border = Acid.copy(.35f)) {
+                Box(Modifier.fillMaxSize().padding(20.dp)) {
+                    Column(Modifier.align(Alignment.TopStart)) {
+                        Label("CALORIES LEFT", Acid)
+                        Text("$remaining", color = Bone, fontSize = 58.sp, fontWeight = FontWeight.SemiBold, letterSpacing = (-2).sp)
+                        Text("of ${state.calorieGoal} kcal", color = Muted, fontSize = 13.sp)
+                    }
+                    Box(
+                        Modifier.align(Alignment.CenterEnd).size(128.dp).clip(CircleShape)
+                            .background(Acid.copy(.1f)).border(1.dp, Acid.copy(.28f), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Canvas(Modifier.fillMaxSize().padding(12.dp)) {
+                            drawArc(Hairline, -90f, 360f, false, style = Stroke(8.dp.toPx(), cap = StrokeCap.Round))
+                            drawArc(
+                                Acid,
+                                -90f,
+                                360f * (state.totals.calories.toFloat() / state.calorieGoal).coerceIn(0f, 1f),
+                                false,
+                                style = Stroke(8.dp.toPx(), cap = StrokeCap.Round),
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(state.totals.calories.toString(), color = Bone, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                            Text("EATEN", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Text(
+                        if (state.totals.calories == 0) "Your day is open." else "${state.entries.size} foods logged today",
+                        color = Muted,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.BottomStart),
+                    )
+                }
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                MacroProgress("PROTEIN", state.totals.proteinGrams, state.proteinGoal, Recovery, Modifier.weight(1f))
+                MacroProgress("CARBS", state.totals.carbsGrams, state.carbsGoal, Strain, Modifier.weight(1f))
+                MacroProgress("FAT", state.totals.fatGrams, state.fatGoal, Acid, Modifier.weight(1f))
+            }
+        }
+        item { PopButton("ADD MEAL", Icons.Outlined.Add, Acid, onAddFood) }
+        item { SectionHeader("LOGGED FOOD", "${state.entries.size}") }
+        if (state.entries.isEmpty()) {
+            item {
+                PremiumCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(26.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Outlined.Restaurant, null, tint = Acid, modifier = Modifier.size(30.dp))
+                        Text("Nothing logged yet", color = Bone, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 10.dp))
+                        Text("Photo, describe, choose a favorite or enter it manually.", color = Muted, fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
+                    }
+                }
+            }
+        } else {
+            items(state.entries, key = { it.food.id }) { entry -> FoodLogCard(entry, onDeleteFood) }
+        }
+    }
+}
+
+@Composable
+private fun MacroProgress(label: String, value: Double, goal: Int, color: Color, modifier: Modifier) {
+    PremiumCard(modifier) {
+        Column(Modifier.padding(13.dp)) {
+            Text(label, color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text("${"%.0f".format(value)} g", color = Bone, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 5.dp))
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.fillMaxWidth().height(4.dp).clip(CircleShape).background(Hairline)) {
+                Box(Modifier.fillMaxWidth((value / goal).toFloat().coerceIn(0f, 1f)).fillMaxHeight().background(color))
+            }
+            Text("/ $goal g", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 5.dp))
+        }
+    }
+}
+
+@Composable
+private fun FoodLogCard(entry: FoodWithIngredients, onDeleteFood: (Long) -> Unit) {
+    PremiumCard(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Acid.copy(.11f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Outlined.Restaurant, null, tint = Acid)
+            }
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(entry.food.name, color = Bone, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                Text("${entry.food.calories} kcal · ${"%.0f".format(entry.food.amountGrams)} g", color = Muted, fontSize = 11.sp)
+                Text("P ${"%.0f".format(entry.food.proteinGrams)} · C ${"%.0f".format(entry.food.carbsGrams)} · F ${"%.0f".format(entry.food.fatGrams)}", color = Recovery, fontSize = 10.sp, modifier = Modifier.padding(top = 3.dp))
+            }
+            Text("REMOVE", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onDeleteFood(entry.food.id) }.padding(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun AddFoodScreen(onBack: () -> Unit, onReview: (FoodDraft) -> Unit) {
+    var mode by rememberSaveable { mutableStateOf(FoodAddMode.Favorites) }
+    var description by rememberSaveable { mutableStateOf("") }
+    var manualName by rememberSaveable { mutableStateOf("") }
+    var manualAmount by rememberSaveable { mutableStateOf("100") }
+    var manualCalories by rememberSaveable { mutableStateOf("") }
+    var manualCarbs by rememberSaveable { mutableStateOf("") }
+    var manualProtein by rememberSaveable { mutableStateOf("") }
+    var manualFat by rememberSaveable { mutableStateOf("") }
+    var photoCaptured by remember { mutableStateOf(false) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) {
+        photoCaptured = it != null
+    }
+    Column(
+        Modifier.fillMaxSize().background(Ink)
+            .padding(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
+    ) {
+        Row(Modifier.fillMaxWidth().padding(20.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("CANCEL", color = Strain, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable(onClick = onBack).padding(8.dp))
+            Text("Log food", color = Bone, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(62.dp))
+        }
+        Box(Modifier.weight(1f)) {
+            when (mode) {
+                FoodAddMode.Favorites -> LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 16.dp, 20.dp, 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    item {
+                        Text("Favorite foods", color = Bone, fontSize = 29.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Your fast lane for repeat meals.", color = Muted, fontSize = 13.sp)
+                    }
+                    items(FoodCatalog.favorites, key = { it.name }) { food ->
+                        PremiumCard(Modifier.fillMaxWidth().clickable { onReview(food) }) {
+                            Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Box(Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(Recovery.copy(.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Outlined.FavoriteBorder, null, tint = Recovery)
+                                }
+                                Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                                    Text("${food.calories} kcal", color = Bone, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                                    Text(food.name, color = Muted, fontSize = 13.sp, maxLines = 2)
+                                }
+                                Icon(Icons.Outlined.ChevronRight, null, tint = Muted)
+                            }
+                        }
+                    }
+                }
+                FoodAddMode.Describe -> Column(Modifier.padding(20.dp)) {
+                    Text("Describe your meal", color = Bone, fontSize = 29.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Write what you ate. You can fill the nutrition values before logging.", color = Muted, fontSize = 13.sp, lineHeight = 19.sp, modifier = Modifier.padding(top = 5.dp, bottom = 18.dp))
+                    VeyraTextInput(description, "e.g. Two eggs and buttered toast", Modifier.fillMaxWidth()) { description = it.take(100) }
+                    Spacer(Modifier.height(14.dp))
+                    PopButton("CONTINUE", Icons.Outlined.ChevronRight, Acid) {
+                        if (description.isNotBlank()) onReview(FoodDraft(description.trim(), 0.0, 0, 0.0, 0.0, 0.0))
+                    }
+                    Text("AI estimation activates after you add your API key. Until then, VEYRA never invents nutrition values.", color = Muted, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 14.dp))
+                }
+                FoodAddMode.Photo -> Column(Modifier.fillMaxSize().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Box(Modifier.size(210.dp).clip(RoundedCornerShape(34.dp)).background(SurfaceHigh).border(1.dp, if (photoCaptured) Recovery else Hairline, RoundedCornerShape(34.dp)), contentAlignment = Alignment.Center) {
+                        Icon(if (photoCaptured) Icons.Outlined.Check else Icons.Outlined.CameraAlt, null, tint = if (photoCaptured) Recovery else Bone, modifier = Modifier.size(54.dp))
+                    }
+                    Text(if (photoCaptured) "Photo captured" else "Photograph your meal", color = Bone, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 20.dp))
+                    Text("Photo analysis will use your AI provider key when configured.", color = Muted, fontSize = 12.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp, bottom = 18.dp))
+                    PopButton(if (photoCaptured) "RETAKE PHOTO" else "OPEN CAMERA", Icons.Outlined.CameraAlt, Acid) { camera.launch(null) }
+                    if (photoCaptured) {
+                        Spacer(Modifier.height(10.dp))
+                        PopButton("ENTER NUTRITION MANUALLY", Icons.Outlined.Edit, SurfaceHigh) { mode = FoodAddMode.Manual }
+                    }
+                }
+                FoodAddMode.Manual -> LazyColumn(
+                    Modifier.fillMaxSize(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp, 12.dp, 20.dp, 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    item { Text("Manual entry", color = Bone, fontSize = 29.sp, fontWeight = FontWeight.SemiBold) }
+                    item { VeyraTextInput(manualName, "Food name", Modifier.fillMaxWidth()) { manualName = it.take(60) } }
+                    item { Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        VeyraTextInput(manualAmount, "Amount g", Modifier.weight(1f)) { manualAmount = it.filter { char -> char.isDigit() || char == '.' }.take(6) }
+                        VeyraTextInput(manualCalories, "Calories", Modifier.weight(1f)) { manualCalories = it.filter(Char::isDigit).take(5) }
+                    } }
+                    item { Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                        VeyraTextInput(manualCarbs, "Carbs g", Modifier.weight(1f)) { manualCarbs = it.filter { char -> char.isDigit() || char == '.' }.take(6) }
+                        VeyraTextInput(manualProtein, "Protein g", Modifier.weight(1f)) { manualProtein = it.filter { char -> char.isDigit() || char == '.' }.take(6) }
+                        VeyraTextInput(manualFat, "Fat g", Modifier.weight(1f)) { manualFat = it.filter { char -> char.isDigit() || char == '.' }.take(6) }
+                    } }
+                    item { PopButton("REVIEW FOOD", Icons.Outlined.Edit, Acid) {
+                        if (manualName.isNotBlank() && manualCalories.isNotBlank()) {
+                            onReview(FoodDraft(manualName.trim(), manualAmount.toDoubleOrNull() ?: 0.0, manualCalories.toIntOrNull() ?: 0, manualCarbs.toDoubleOrNull() ?: 0.0, manualProtein.toDoubleOrNull() ?: 0.0, manualFat.toDoubleOrNull() ?: 0.0))
+                        }
+                    } }
+                }
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth().background(Surface).padding(horizontal = 10.dp, vertical = 10.dp)
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            FoodModeButton("DESCRIBE", FoodAddMode.Describe, mode) { mode = it }
+            FoodModeButton("PHOTO", FoodAddMode.Photo, mode) { mode = it }
+            FoodModeButton("FAVORITES", FoodAddMode.Favorites, mode) { mode = it }
+            FoodModeButton("MANUAL", FoodAddMode.Manual, mode) { mode = it }
+        }
+    }
+}
+
+@Composable
+private fun FoodModeButton(label: String, value: FoodAddMode, selected: FoodAddMode, onSelect: (FoodAddMode) -> Unit) {
+    Box(
+        Modifier.clip(CircleShape).background(if (selected == value) SurfaceHigh else Color.Transparent)
+            .clickable { onSelect(value) }.padding(horizontal = 11.dp, vertical = 9.dp),
+    ) {
+        Text(label, color = if (selected == value) Bone else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun FoodReviewScreen(initial: FoodDraft, onBack: () -> Unit, onLog: (FoodDraft) -> Unit) {
+    var name by rememberSaveable { mutableStateOf(initial.name) }
+    var amount by rememberSaveable { mutableStateOf(initial.amountGrams.toString().removeSuffix(".0")) }
+    var calories by rememberSaveable { mutableStateOf(initial.calories.toString()) }
+    var carbs by rememberSaveable { mutableStateOf(initial.carbsGrams.toString().removeSuffix(".0")) }
+    var protein by rememberSaveable { mutableStateOf(initial.proteinGrams.toString().removeSuffix(".0")) }
+    var fat by rememberSaveable { mutableStateOf(initial.fatGrams.toString().removeSuffix(".0")) }
+    LazyColumn(
+        Modifier.fillMaxSize().background(Ink),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 20.dp, end = 20.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 30.dp,
+        ),
+        verticalArrangement = Arrangement.spacedBy(13.dp),
+    ) {
+        item { TopBack("REVIEW FOOD", onBack) }
+        item {
+            if (initial.healthScore != null) Label("HEALTHINESS · ${initial.healthScore}/10", Recovery)
+            VeyraTextInput(name, "Food name", Modifier.fillMaxWidth()) { name = it.take(80) }
+        }
+        item { Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            NutritionInput("AMOUNT", amount, Modifier.weight(1f)) { amount = it }
+            NutritionInput("CALORIES", calories, Modifier.weight(1f)) { calories = it }
+        } }
+        item { Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            NutritionInput("CARBS", carbs, Modifier.weight(1f)) { carbs = it }
+            NutritionInput("PROTEIN", protein, Modifier.weight(1f)) { protein = it }
+            NutritionInput("FAT", fat, Modifier.weight(1f)) { fat = it }
+        } }
+        if (initial.ingredients.isNotEmpty()) {
+            item { SectionHeader("INGREDIENTS", "${initial.ingredients.size}") }
+            items(initial.ingredients, key = { it.name }) { ingredient -> IngredientCard(ingredient) }
+        }
+        item {
+            PopButton("LOG FOOD", Icons.Outlined.Check, Acid) {
+                if (name.isNotBlank()) {
+                    onLog(
+                        initial.copy(
+                            name = name.trim(),
+                            amountGrams = amount.toDoubleOrNull() ?: 0.0,
+                            calories = calories.toIntOrNull() ?: 0,
+                            carbsGrams = carbs.toDoubleOrNull() ?: 0.0,
+                            proteinGrams = protein.toDoubleOrNull() ?: 0.0,
+                            fatGrams = fat.toDoubleOrNull() ?: 0.0,
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NutritionInput(label: String, value: String, modifier: Modifier, onValueChange: (String) -> Unit) {
+    PremiumCard(modifier) {
+        Column(Modifier.padding(13.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            BasicTextField(
+                value = value,
+                onValueChange = { onValueChange(it.filter { char -> char.isDigit() || char == '.' }.take(7)) },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(color = Bone, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center),
+                modifier = Modifier.fillMaxWidth().padding(top = 7.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun IngredientCard(ingredient: FoodIngredientDraft) {
+    PremiumCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(15.dp)) {
+            Text(ingredient.name, color = Bone, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text("${"%.0f".format(ingredient.amountGrams)} g · ${ingredient.calories} kcal", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 3.dp))
+            Text("C ${"%.1f".format(ingredient.carbsGrams)} · P ${"%.1f".format(ingredient.proteinGrams)} · F ${"%.1f".format(ingredient.fatGrams)}", color = Recovery, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp))
         }
     }
 }

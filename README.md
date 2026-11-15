@@ -24,6 +24,10 @@ Veyra is a local-first personal health companion for Google Fitbit Air. It is de
 - Heaviest-weight, estimated-1RM and session-volume progression modes
 - Numbered exercise setup and execution guidance
 - One-tap export and retry of completed workouts to Health Connect
+- Daily calorie budget and protein, carbohydrate and fat targets
+- Persistent food log with ingredient-level nutrition breakdowns
+- Favorites, description and fully manual food entry flows
+- Camera capture entry point ready for bring-your-own-key photo analysis
 - Durable product structure for Fuel, Coach and personal health records
 
 The Today dashboard uses real Health Connect data after permission is granted. Routines, active workouts and completed history are local-first and remain available after the app or phone restarts.
@@ -67,7 +71,7 @@ A permanent Android signing keystore must be configured before release APKs can 
 ## Next milestones
 
 1. Validate Fitbit Air record coverage on the target phone and tune score thresholds.
-2. Add text, barcode and photo-assisted nutrition logging.
+2. Connect bring-your-own-key food photo analysis and barcode lookup.
 3. Add encrypted medical records and evidence-grounded coach tools.
 4. Add permanent Android release signing and Play distribution.
 
