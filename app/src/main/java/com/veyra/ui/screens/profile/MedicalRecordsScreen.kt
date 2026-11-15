@@ -72,15 +72,15 @@ fun MedicalRecordsScreen(navController: NavController) {
             // Security notice
             GlassCard(
                 gradientColors = listOf(
-                    VeyraColors.Mint.copy(alpha = 0.1f),
-                    VeyraColors.Accent.copy(alpha = 0.05f),
+                    VeyraColors.Green.copy(alpha = 0.1f),
+                    VeyraColors.Green.copy(alpha = 0.05f),
                 ),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Rounded.Shield,
                         contentDescription = null,
-                        tint = VeyraColors.Mint,
+                        tint = VeyraColors.Green,
                         modifier = Modifier.size(VeyraDimens.IconXl),
                     )
                     Spacer(Modifier.width(VeyraDimens.SpaceMd))
@@ -88,7 +88,7 @@ fun MedicalRecordsScreen(navController: NavController) {
                         Text(
                             text = "End-to-End Encrypted",
                             style = MaterialTheme.typography.titleMedium,
-                            color = VeyraColors.Mint,
+                            color = VeyraColors.Green,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
@@ -105,7 +105,7 @@ fun MedicalRecordsScreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .clip(RoundedCornerShape(VeyraDimens.RadiusXl))
+                    .clip(RoundedCornerShape(VeyraDimens.CardRadius))
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
@@ -178,7 +178,7 @@ fun MedicalRecordsScreen(navController: NavController) {
                 listOf("PDF", "JPG", "PNG", "HEIC").forEach { format ->
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(VeyraDimens.RadiusSm))
+                            .clip(RoundedCornerShape(12.dp))
                             .background(VeyraColors.SurfaceElevated)
                             .padding(horizontal = VeyraDimens.SpaceMd, vertical = VeyraDimens.SpaceXs),
                     ) {

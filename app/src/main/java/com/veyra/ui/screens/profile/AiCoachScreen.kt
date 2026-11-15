@@ -87,11 +87,11 @@ fun AiCoachScreen(navController: NavController) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(VeyraDimens.RadiusXl))
+                        .clip(RoundedCornerShape(VeyraDimens.CardRadius))
                         .background(
                             brush = Brush.linearGradient(
                                 colors = listOf(
-                                    VeyraColors.PrimaryStart.copy(alpha = 0.15f),
+                                    VeyraColors.Teal.copy(alpha = 0.15f),
                                     VeyraColors.Purple.copy(alpha = 0.1f),
                                 ),
                             )
@@ -103,7 +103,7 @@ fun AiCoachScreen(navController: NavController) {
                         Icon(
                             Icons.Rounded.Psychology,
                             contentDescription = null,
-                            tint = VeyraColors.PrimaryStart,
+                            tint = VeyraColors.Teal,
                             modifier = Modifier.size(64.dp),
                         )
                         Spacer(Modifier.height(VeyraDimens.SpaceLg))
@@ -149,13 +149,13 @@ fun AiCoachScreen(navController: NavController) {
                             placeholder = { Text("Enter your API key") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(VeyraDimens.RadiusMd),
+                            shape = RoundedCornerShape(VeyraDimens.CardRadiusSm),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = VeyraColors.Surface,
                                 unfocusedContainerColor = VeyraColors.Surface,
                                 focusedTextColor = VeyraColors.TextPrimary,
                                 unfocusedTextColor = VeyraColors.TextPrimary,
-                                cursorColor = VeyraColors.Accent,
+                                cursorColor = VeyraColors.Green,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
                             ),
@@ -175,7 +175,7 @@ fun AiCoachScreen(navController: NavController) {
                         Text(
                             text = "AI Coach Connected",
                             style = MaterialTheme.typography.titleLarge,
-                            color = VeyraColors.Mint,
+                            color = VeyraColors.Green,
                         )
                         Spacer(Modifier.height(VeyraDimens.SpaceSm))
                         Text(
@@ -196,7 +196,7 @@ fun AiCoachScreen(navController: NavController) {
                     VeyraOutlineButton(
                         text = suggestion,
                         onClick = { message = suggestion },
-                        color = VeyraColors.PrimaryStart,
+                        color = VeyraColors.Teal,
                     )
                 }
             }
@@ -217,20 +217,20 @@ fun AiCoachScreen(navController: NavController) {
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Ask your AI coach...") },
                     singleLine = true,
-                    shape = RoundedCornerShape(VeyraDimens.RadiusFull),
+                    shape = RoundedCornerShape(VeyraDimens.PillRadius),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = VeyraColors.SurfaceElevated,
                         unfocusedContainerColor = VeyraColors.SurfaceElevated,
                         focusedTextColor = VeyraColors.TextPrimary,
                         unfocusedTextColor = VeyraColors.TextPrimary,
-                        cursorColor = VeyraColors.Accent,
+                        cursorColor = VeyraColors.Green,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
                 )
                 Spacer(Modifier.width(VeyraDimens.SpaceSm))
                 IconButton(onClick = { /* Send message placeholder */ }) {
-                    Icon(Icons.Rounded.Send, "Send", tint = VeyraColors.Accent)
+                    Icon(Icons.Rounded.Send, "Send", tint = VeyraColors.Green)
                 }
             }
         }

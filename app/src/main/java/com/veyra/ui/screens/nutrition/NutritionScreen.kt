@@ -153,7 +153,7 @@ fun NutritionScreen(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(VeyraDimens.SpaceSm),
                         ) {
-                            MacroBar("Protein", state.totalProtein, state.goal.protein, VeyraColors.Accent)
+                            MacroBar("Protein", state.totalProtein, state.goal.protein, VeyraColors.Green)
                             MacroBar("Carbs", state.totalCarbs, state.goal.carbs, VeyraColors.Amber)
                             MacroBar("Fat", state.totalFat, state.goal.fat, VeyraColors.Coral)
                         }
@@ -183,7 +183,7 @@ fun NutritionScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = VeyraDimens.SpaceLg)
-                            .clip(RoundedCornerShape(VeyraDimens.RadiusMd))
+                            .clip(RoundedCornerShape(VeyraDimens.CardRadiusSm))
                             .background(VeyraColors.SurfaceElevated)
                             .clickable {
                                 viewModel.setMealType(type)
@@ -246,7 +246,7 @@ private fun CalorieRing(
         label = "calProgress",
     )
     val remaining = (goal - consumed).coerceAtLeast(0.0)
-    val color = if (consumed > goal) VeyraColors.Coral else VeyraColors.Mint
+    val color = if (consumed > goal) VeyraColors.Coral else VeyraColors.Green
 
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Canvas(Modifier.matchParentSize()) {

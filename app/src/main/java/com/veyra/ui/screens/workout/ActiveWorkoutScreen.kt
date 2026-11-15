@@ -113,11 +113,11 @@ fun ActiveWorkoutScreen(
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Black,
                     ),
-                    color = VeyraColors.Accent,
+                    color = VeyraColors.Green,
                 )
             }
             TextButton(onClick = { showFinishDialog = true }) {
-                Text("Finish", color = VeyraColors.Mint, fontWeight = FontWeight.Bold)
+                Text("Finish", color = VeyraColors.Green, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -155,7 +155,7 @@ fun ActiveWorkoutScreen(
                     VeyraOutlineButton(
                         text = "Add Exercise",
                         onClick = { navController.navigate(Screen.ExerciseSearch.route) },
-                        color = VeyraColors.Accent,
+                        color = VeyraColors.Green,
                     )
                 }
             }
@@ -181,7 +181,7 @@ fun ActiveWorkoutScreen(
                     showFinishDialog = false
                     viewModel.finishWorkout()
                 }) {
-                    Text("Finish", color = VeyraColors.Mint)
+                    Text("Finish", color = VeyraColors.Green)
                 }
             },
             dismissButton = {
@@ -237,15 +237,15 @@ private fun RestTimerBanner(
     GlassCard(
         modifier = Modifier.padding(horizontal = VeyraDimens.SpaceLg),
         gradientColors = listOf(
-            VeyraColors.Accent.copy(alpha = 0.15f),
-            VeyraColors.PrimaryStart.copy(alpha = 0.1f),
+            VeyraColors.Green.copy(alpha = 0.15f),
+            VeyraColors.Teal.copy(alpha = 0.1f),
         ),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.Rounded.Timer,
                 contentDescription = null,
-                tint = VeyraColors.Accent,
+                tint = VeyraColors.Green,
                 modifier = Modifier.size(VeyraDimens.IconXl),
             )
             Spacer(Modifier.width(VeyraDimens.SpaceMd))
@@ -260,7 +260,7 @@ private fun RestTimerBanner(
                     style = MaterialTheme.typography.headlineLarge.copy(
                         fontWeight = FontWeight.Black,
                     ),
-                    color = VeyraColors.Accent,
+                    color = VeyraColors.Green,
                 )
             }
             TextButton(onClick = onSkip) {
@@ -293,7 +293,7 @@ private fun ExerciseSetCard(
                 Text(
                     text = group.exercise.name,
                     style = MaterialTheme.typography.titleLarge,
-                    color = VeyraColors.Accent,
+                    color = VeyraColors.Green,
                     modifier = Modifier
                         .weight(1f)
                         .clickable(onClick = onExerciseDetail),
@@ -352,7 +352,7 @@ private fun ExerciseSetCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(VeyraDimens.RadiusMd))
+                    .clip(RoundedCornerShape(VeyraDimens.CardRadiusSm))
                     .clickable(onClick = onAddSet)
                     .padding(vertical = VeyraDimens.SpaceSm),
                 horizontalArrangement = Arrangement.Center,
@@ -385,7 +385,7 @@ private fun SetRow(
     var repsText by remember(set.id) { mutableStateOf(if (set.reps > 0) set.reps.toString() else "") }
 
     val bgColor = when {
-        set.isCompleted -> VeyraColors.Mint.copy(alpha = 0.08f)
+        set.isCompleted -> VeyraColors.Green.copy(alpha = 0.08f)
         set.isWarmup -> VeyraColors.Amber.copy(alpha = 0.08f)
         else -> VeyraColors.Surface.copy(alpha = 0.3f)
     }
@@ -394,7 +394,7 @@ private fun SetRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 2.dp)
-            .clip(RoundedCornerShape(VeyraDimens.RadiusSm))
+            .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -439,9 +439,9 @@ private fun SetRow(
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = VeyraColors.Surface.copy(alpha = 0.5f),
                 unfocusedContainerColor = VeyraColors.Surface.copy(alpha = 0.3f),
-                focusedIndicatorColor = VeyraColors.Accent,
+                focusedIndicatorColor = VeyraColors.Green,
                 unfocusedIndicatorColor = VeyraColors.Divider,
-                cursorColor = VeyraColors.Accent,
+                cursorColor = VeyraColors.Green,
             ),
         )
 
@@ -466,9 +466,9 @@ private fun SetRow(
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = VeyraColors.Surface.copy(alpha = 0.5f),
                 unfocusedContainerColor = VeyraColors.Surface.copy(alpha = 0.3f),
-                focusedIndicatorColor = VeyraColors.Accent,
+                focusedIndicatorColor = VeyraColors.Green,
                 unfocusedIndicatorColor = VeyraColors.Divider,
-                cursorColor = VeyraColors.Accent,
+                cursorColor = VeyraColors.Green,
             ),
         )
 
@@ -478,9 +478,9 @@ private fun SetRow(
                 .size(32.dp)
                 .clip(CircleShape)
                 .background(
-                    if (set.isCompleted) VeyraColors.Mint else VeyraColors.SurfaceGlass
+                    if (set.isCompleted) VeyraColors.Green else VeyraColors.SurfaceElevated
                 )
-                .border(1.dp, if (set.isCompleted) VeyraColors.Mint else VeyraColors.Divider, CircleShape)
+                .border(1.dp, if (set.isCompleted) VeyraColors.Green else VeyraColors.Divider, CircleShape)
                 .clickable {
                     if (!set.isCompleted) {
                         onComplete(set.copy(

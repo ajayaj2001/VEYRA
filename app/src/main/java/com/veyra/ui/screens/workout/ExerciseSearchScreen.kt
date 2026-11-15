@@ -114,13 +114,13 @@ fun ExerciseSearchScreen(
                 Icon(Icons.Rounded.Search, null, tint = VeyraColors.TextTertiary)
             },
             singleLine = true,
-            shape = RoundedCornerShape(VeyraDimens.RadiusLg),
+            shape = RoundedCornerShape(VeyraDimens.CardRadiusSm),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = VeyraColors.SurfaceElevated,
                 unfocusedContainerColor = VeyraColors.SurfaceElevated,
                 focusedTextColor = VeyraColors.TextPrimary,
                 unfocusedTextColor = VeyraColors.TextPrimary,
-                cursorColor = VeyraColors.Accent,
+                cursorColor = VeyraColors.Green,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
@@ -146,8 +146,8 @@ fun ExerciseSearchScreen(
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = VeyraColors.SurfaceElevated,
                         labelColor = VeyraColors.TextSecondary,
-                        selectedContainerColor = VeyraColors.PrimaryStart.copy(alpha = 0.2f),
-                        selectedLabelColor = VeyraColors.PrimaryStart,
+                        selectedContainerColor = VeyraColors.Teal.copy(alpha = 0.2f),
+                        selectedLabelColor = VeyraColors.Teal,
                     ),
                 )
             }
@@ -171,8 +171,8 @@ fun ExerciseSearchScreen(
                     colors = FilterChipDefaults.filterChipColors(
                         containerColor = VeyraColors.SurfaceElevated,
                         labelColor = VeyraColors.TextSecondary,
-                        selectedContainerColor = VeyraColors.Accent.copy(alpha = 0.2f),
-                        selectedLabelColor = VeyraColors.Accent,
+                        selectedContainerColor = VeyraColors.Green.copy(alpha = 0.2f),
+                        selectedLabelColor = VeyraColors.Green,
                     ),
                 )
             }
@@ -222,7 +222,7 @@ private fun ExerciseListItem(
             Icon(
                 Icons.Rounded.FitnessCenter,
                 contentDescription = null,
-                tint = VeyraColors.Accent,
+                tint = VeyraColors.Green,
                 modifier = Modifier.size(VeyraDimens.IconLg),
             )
             Spacer(Modifier.width(VeyraDimens.SpaceMd))

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -89,7 +90,7 @@ fun ProfileScreen(navController: NavController) {
                         .clip(CircleShape)
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(VeyraColors.PrimaryStart, VeyraColors.Accent),
+                                colors = listOf(VeyraColors.Teal, VeyraColors.Green),
                             )
                         ),
                     contentAlignment = Alignment.Center,
@@ -97,7 +98,7 @@ fun ProfileScreen(navController: NavController) {
                     Icon(
                         Icons.Rounded.Person,
                         contentDescription = null,
-                        tint = VeyraColors.TextOnPrimary,
+                        tint = Color.White,
                         modifier = Modifier.size(40.dp),
                     )
                 }
@@ -110,7 +111,7 @@ fun ProfileScreen(navController: NavController) {
                 Text(
                     text = "Premium Member",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = VeyraColors.Accent,
+                    color = VeyraColors.Green,
                 )
             }
         }
@@ -124,7 +125,7 @@ fun ProfileScreen(navController: NavController) {
         ) {
             GradientCard(
                 modifier = Modifier.padding(horizontal = VeyraDimens.SpaceLg),
-                startColor = VeyraColors.PrimaryStart,
+                startColor = VeyraColors.Teal,
                 endColor = VeyraColors.Purple,
                 onClick = { navController.navigate(Screen.AiCoach.route) },
             ) {
@@ -132,7 +133,7 @@ fun ProfileScreen(navController: NavController) {
                     Icon(
                         Icons.Rounded.Psychology,
                         contentDescription = null,
-                        tint = VeyraColors.TextOnPrimary,
+                        tint = Color.White,
                         modifier = Modifier.size(VeyraDimens.IconXl),
                     )
                     Spacer(Modifier.width(VeyraDimens.SpaceMd))
@@ -140,19 +141,19 @@ fun ProfileScreen(navController: NavController) {
                         Text(
                             text = "AI Health Coach",
                             style = MaterialTheme.typography.titleLarge,
-                            color = VeyraColors.TextOnPrimary,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
                             text = "Get personalized insights and recommendations",
                             style = MaterialTheme.typography.bodySmall,
-                            color = VeyraColors.TextOnPrimary.copy(alpha = 0.8f),
+                            color = Color.White.copy(alpha = 0.8f),
                         )
                     }
                     Icon(
                         Icons.Rounded.ChevronRight,
                         contentDescription = null,
-                        tint = VeyraColors.TextOnPrimary.copy(alpha = 0.6f),
+                        tint = Color.White.copy(alpha = 0.6f),
                     )
                 }
             }
@@ -222,7 +223,7 @@ private fun ProfileMenuItem(
             Icon(
                 icon,
                 contentDescription = null,
-                tint = VeyraColors.Accent,
+                tint = VeyraColors.Green,
                 modifier = Modifier.size(VeyraDimens.IconLg),
             )
             Spacer(Modifier.width(VeyraDimens.SpaceMd))

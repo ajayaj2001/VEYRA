@@ -104,12 +104,12 @@ fun ExerciseDetailScreen(
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = VeyraColors.Background,
-            contentColor = VeyraColors.Accent,
+            contentColor = VeyraColors.Green,
             indicator = { tabPositions ->
                 if (selectedTab < tabPositions.size) {
                     SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = VeyraColors.Accent,
+                        color = VeyraColors.Green,
                     )
                 }
             },
@@ -121,7 +121,7 @@ fun ExerciseDetailScreen(
                     text = {
                         Text(
                             title,
-                            color = if (selectedTab == index) VeyraColors.Accent else VeyraColors.TextTertiary,
+                            color = if (selectedTab == index) VeyraColors.Green else VeyraColors.TextTertiary,
                             fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
                         )
                     },
@@ -157,7 +157,7 @@ private fun ExerciseSummaryTab(exercise: Exercise) {
                 Icon(
                     Icons.Rounded.FitnessCenter,
                     contentDescription = null,
-                    tint = VeyraColors.Accent,
+                    tint = VeyraColors.Green,
                     modifier = Modifier.size(80.dp),
                 )
                 Spacer(Modifier.height(VeyraDimens.SpaceSm))
@@ -209,7 +209,7 @@ private fun ExerciseSummaryTab(exercise: Exercise) {
                 Text(
                     text = "Primary: ${exercise.primaryMuscles.joinToString { it.displayName }}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = VeyraColors.Accent,
+                    color = VeyraColors.Green,
                 )
                 if (exercise.secondaryMuscles.isNotEmpty()) {
                     Text(
@@ -312,7 +312,7 @@ private fun ExerciseHistoryTab(exerciseId: String) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(VeyraDimens.RadiusSm))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(VeyraColors.SurfaceElevated)
                         .padding(VeyraDimens.SpaceMd),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -343,7 +343,7 @@ private fun RecordRow(label: String, value: String) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(label, style = MaterialTheme.typography.bodyMedium, color = VeyraColors.TextTertiary)
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = VeyraColors.Accent, fontWeight = FontWeight.Bold)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = VeyraColors.Green, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -362,7 +362,7 @@ private fun SimpleVolumeChart(
         volumes.forEachIndexed { index, volume ->
             val barHeight = (volume / maxVolume * size.height * 0.9f).toFloat()
             drawRoundRect(
-                color = VeyraColors.Accent.copy(alpha = 0.6f),
+                color = VeyraColors.Green.copy(alpha = 0.6f),
                 topLeft = Offset(index * barWidth + barWidth * 0.1f, size.height - barHeight),
                 size = Size(barWidth * 0.8f, barHeight),
                 cornerRadius = androidx.compose.ui.geometry.CornerRadius(4f, 4f),
@@ -391,7 +391,7 @@ private fun ExerciseHowToTab(exercise: Exercise) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(VeyraDimens.RadiusMd))
+                        .clip(RoundedCornerShape(VeyraDimens.CardRadiusSm))
                         .background(VeyraColors.SurfaceElevated)
                         .padding(VeyraDimens.SpaceMd),
                 ) {
@@ -399,13 +399,13 @@ private fun ExerciseHowToTab(exercise: Exercise) {
                         modifier = Modifier
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(VeyraColors.PrimaryStart.copy(alpha = 0.2f)),
+                            .background(VeyraColors.Teal.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = "${index + 1}",
                             style = MaterialTheme.typography.labelLarge,
-                            color = VeyraColors.PrimaryStart,
+                            color = VeyraColors.Teal,
                         )
                     }
                     Spacer(Modifier.width(VeyraDimens.SpaceMd))
@@ -431,21 +431,21 @@ private fun ExerciseHowToTab(exercise: Exercise) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(VeyraDimens.RadiusMd))
-                        .background(VeyraColors.Accent.copy(alpha = 0.08f))
+                        .clip(RoundedCornerShape(VeyraDimens.CardRadiusSm))
+                        .background(VeyraColors.Green.copy(alpha = 0.08f))
                         .padding(VeyraDimens.SpaceMd),
                     verticalAlignment = Alignment.Top,
                 ) {
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = VeyraColors.Accent,
+                        color = VeyraColors.Green,
                     )
                     Spacer(Modifier.width(VeyraDimens.SpaceSm))
                     Text(
                         text = cue,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = VeyraColors.Accent,
+                        color = VeyraColors.Green,
                     )
                 }
             }
@@ -475,7 +475,7 @@ private fun MuscleBodyDiagram(
         Canvas(
             modifier = Modifier
                 .size(120.dp, 200.dp)
-                .clip(RoundedCornerShape(VeyraDimens.RadiusMd))
+                .clip(RoundedCornerShape(VeyraDimens.CardRadiusSm))
                 .background(VeyraColors.SurfaceElevated),
         ) {
             val w = size.width
@@ -512,7 +512,7 @@ private fun MuscleBodyDiagram(
             highlightedPrimary.forEach { muscle ->
                 val (offset, mSize) = getMusclePosition(muscle, w, h)
                 drawRoundRect(
-                    color = VeyraColors.Accent.copy(alpha = 0.6f),
+                    color = VeyraColors.Green.copy(alpha = 0.6f),
                     topLeft = offset,
                     size = mSize,
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f),
@@ -523,7 +523,7 @@ private fun MuscleBodyDiagram(
             highlightedSecondary.forEach { muscle ->
                 val (offset, mSize) = getMusclePosition(muscle, w, h)
                 drawRoundRect(
-                    color = VeyraColors.Accent.copy(alpha = 0.25f),
+                    color = VeyraColors.Green.copy(alpha = 0.25f),
                     topLeft = offset,
                     size = mSize,
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f),
@@ -538,7 +538,7 @@ private fun MuscleBodyDiagram(
             Text(
                 text = muscle.displayName,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (muscle in highlightedPrimary) VeyraColors.Accent else VeyraColors.TextTertiary,
+                color = if (muscle in highlightedPrimary) VeyraColors.Green else VeyraColors.TextTertiary,
             )
         }
     }

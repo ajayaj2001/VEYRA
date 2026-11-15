@@ -117,7 +117,7 @@ fun WorkoutHistoryScreen(
                                     Text(
                                         if (h > 0) "${h}h ${m}m" else "${m}m",
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = VeyraColors.Accent,
+                                        color = VeyraColors.Green,
                                         fontWeight = FontWeight.Bold,
                                     )
                                 }
@@ -126,7 +126,7 @@ fun WorkoutHistoryScreen(
                                     Text(
                                         "%.0f kg".format(workout.totalVolume),
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = VeyraColors.Mint,
+                                        color = VeyraColors.Green,
                                         fontWeight = FontWeight.Bold,
                                     )
                                 }

@@ -1,7 +1,6 @@
 package com.veyra.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -12,26 +11,26 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val VeyraColorScheme = darkColorScheme(
-    primary = VeyraColors.PrimaryStart,
-    onPrimary = VeyraColors.TextOnPrimary,
-    primaryContainer = VeyraColors.PrimaryEnd,
-    onPrimaryContainer = VeyraColors.TextOnPrimary,
-    secondary = VeyraColors.Accent,
-    onSecondary = VeyraColors.Background,
+    primary = VeyraColors.Green,
+    onPrimary = Color.Black,
+    primaryContainer = VeyraColors.GreenDark,
+    onPrimaryContainer = Color.White,
+    secondary = VeyraColors.Teal,
+    onSecondary = Color.Black,
     secondaryContainer = VeyraColors.SurfaceElevated,
-    onSecondaryContainer = VeyraColors.Accent,
-    tertiary = VeyraColors.Mint,
-    onTertiary = VeyraColors.Background,
+    onSecondaryContainer = VeyraColors.Teal,
+    tertiary = VeyraColors.Blue,
+    onTertiary = Color.Black,
     background = VeyraColors.Background,
     onBackground = VeyraColors.TextPrimary,
     surface = VeyraColors.Surface,
     onSurface = VeyraColors.TextPrimary,
     surfaceVariant = VeyraColors.SurfaceElevated,
     onSurfaceVariant = VeyraColors.TextSecondary,
-    outline = VeyraColors.SurfaceBorder,
+    outline = VeyraColors.Divider,
     outlineVariant = VeyraColors.Divider,
     error = VeyraColors.Coral,
-    onError = VeyraColors.TextOnPrimary,
+    onError = Color.White,
     scrim = VeyraColors.Scrim,
 )
 

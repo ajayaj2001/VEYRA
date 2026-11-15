@@ -110,7 +110,7 @@ fun FoodEntryScreen(
             )
             // Camera placeholder
             IconButton(onClick = { /* Photo capture placeholder */ }) {
-                Icon(Icons.Rounded.CameraAlt, "Camera", tint = VeyraColors.Accent)
+                Icon(Icons.Rounded.CameraAlt, "Camera", tint = VeyraColors.Green)
             }
         }
 
@@ -118,12 +118,12 @@ fun FoodEntryScreen(
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = VeyraColors.Background,
-            contentColor = VeyraColors.Accent,
+            contentColor = VeyraColors.Green,
             indicator = { tabPositions ->
                 if (selectedTab < tabPositions.size) {
                     SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = VeyraColors.Accent,
+                        color = VeyraColors.Green,
                     )
                 }
             },
@@ -135,7 +135,7 @@ fun FoodEntryScreen(
                     text = {
                         Text(
                             title,
-                            color = if (selectedTab == index) VeyraColors.Accent else VeyraColors.TextTertiary,
+                            color = if (selectedTab == index) VeyraColors.Green else VeyraColors.TextTertiary,
                         )
                     },
                 )
@@ -162,13 +162,13 @@ fun FoodEntryScreen(
                     placeholder = { Text("Search foods...") },
                     leadingIcon = { Icon(Icons.Rounded.Search, null, tint = VeyraColors.TextTertiary) },
                     singleLine = true,
-                    shape = RoundedCornerShape(VeyraDimens.RadiusLg),
+                    shape = RoundedCornerShape(VeyraDimens.CardRadiusSm),
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = VeyraColors.SurfaceElevated,
                         unfocusedContainerColor = VeyraColors.SurfaceElevated,
                         focusedTextColor = VeyraColors.TextPrimary,
                         unfocusedTextColor = VeyraColors.TextPrimary,
-                        cursorColor = VeyraColors.Accent,
+                        cursorColor = VeyraColors.Green,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
@@ -328,15 +328,15 @@ private fun NutritionTextField(
         label = { Text(label) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        shape = RoundedCornerShape(VeyraDimens.RadiusMd),
+        shape = RoundedCornerShape(VeyraDimens.CardRadiusSm),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = VeyraColors.SurfaceElevated,
             unfocusedContainerColor = VeyraColors.SurfaceElevated,
             focusedTextColor = VeyraColors.TextPrimary,
             unfocusedTextColor = VeyraColors.TextPrimary,
-            focusedLabelColor = VeyraColors.Accent,
+            focusedLabelColor = VeyraColors.Green,
             unfocusedLabelColor = VeyraColors.TextTertiary,
-            cursorColor = VeyraColors.Accent,
+            cursorColor = VeyraColors.Green,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
         ),

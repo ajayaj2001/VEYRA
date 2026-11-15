@@ -22,10 +22,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,11 +34,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -108,6 +103,10 @@ fun VeyraMainScreen() {
     }
 }
 
+/**
+ * Samsung Health-style bottom navigation bar.
+ * Selected tab gets a dark gray pill background. Clean, minimal.
+ */
 @Composable
 fun VeyraBottomBar(
     items: List<BottomNavItem>,
@@ -116,63 +115,58 @@ fun VeyraBottomBar(
 ) {
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.Transparent,
-                        VeyraColors.Background.copy(alpha = 0.95f),
-                        VeyraColors.Background,
-                    ),
-                )
-            )
-            .padding(bottom = navBarPadding.calculateBottomPadding()),
+            .background(VeyraColors.Background)
+            .padding(bottom = navBarPadding.calculateBottomPadding())
+            .padding(horizontal = VeyraDimens.SpaceSm)
+            .height(VeyraDimens.BottomNavHeight),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = VeyraDimens.SpaceLg)
-                .padding(top = VeyraDimens.SpaceSm, bottom = VeyraDimens.SpaceSm)
-                .clip(RoundedCornerShape(VeyraDimens.RadiusXxl))
-                .background(VeyraColors.SurfaceElevated.copy(alpha = 0.7f))
-                .padding(horizontal = VeyraDimens.SpaceMd, vertical = VeyraDimens.SpaceSm),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items.forEach { item ->
-                val selected = currentRoute == item.screen.route
-                val scale by animateFloatAsState(
-                    targetValue = if (selected) 1.1f else 1f,
-                    animationSpec = tween(200),
-                    label = "navScale",
-                )
+        items.forEach { item ->
+            val selected = currentRoute == item.screen.route
+            val scale by animateFloatAsState(
+                targetValue = if (selected) 1.05f else 1f,
+                animationSpec = tween(150),
+                label = "navScale",
+            )
 
+            // Samsung-style: selected item gets pill background
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .scale(scale)
+                    .clip(RoundedCornerShape(VeyraDimens.PillRadius))
+                    .then(
+                        if (selected) Modifier.background(VeyraColors.NavPill)
+                        else Modifier
+                    )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onItemClick(item) },
+                    )
+                    .padding(vertical = VeyraDimens.SpaceSm),
+                contentAlignment = Alignment.Center,
+            ) {
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .scale(scale)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { onItemClick(item) },
-                        )
-                        .padding(vertical = VeyraDimens.SpaceSm),
                     horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.label,
-                        tint = if (selected) VeyraColors.Accent else VeyraColors.TextTertiary,
+                        tint = if (selected) VeyraColors.TextPrimary else VeyraColors.TextTertiary,
                         modifier = Modifier.size(VeyraDimens.IconLg),
                     )
                     Text(
                         text = item.label,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                         ),
-                        color = if (selected) VeyraColors.Accent else VeyraColors.TextTertiary,
+                        color = if (selected) VeyraColors.TextPrimary else VeyraColors.TextTertiary,
                     )
                 }
             }

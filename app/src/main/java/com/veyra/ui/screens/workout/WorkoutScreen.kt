@@ -110,7 +110,7 @@ fun WorkoutScreen(
                 GradientCard(
                     modifier = Modifier.padding(horizontal = VeyraDimens.SpaceLg),
                     startColor = VeyraColors.Coral,
-                    endColor = VeyraColors.PrimaryStart,
+                    endColor = VeyraColors.Teal,
                     onClick = {
                         navController.navigate(Screen.WorkoutActive.createRoute())
                     },
@@ -121,7 +121,7 @@ fun WorkoutScreen(
                         Icon(
                             Icons.Rounded.Timer,
                             contentDescription = null,
-                            tint = VeyraColors.TextOnPrimary,
+                            tint = Color.White,
                             modifier = Modifier.size(VeyraDimens.IconXl),
                         )
                         Spacer(Modifier.width(VeyraDimens.SpaceMd))
@@ -129,19 +129,19 @@ fun WorkoutScreen(
                             Text(
                                 text = "Workout in Progress",
                                 style = MaterialTheme.typography.titleLarge,
-                                color = VeyraColors.TextOnPrimary,
+                                color = Color.White,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
                                 text = state.activeWorkout!!.name,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = VeyraColors.TextOnPrimary.copy(alpha = 0.8f),
+                                color = Color.White.copy(alpha = 0.8f),
                             )
                         }
                         Icon(
                             Icons.Rounded.PlayArrow,
                             contentDescription = "Resume",
-                            tint = VeyraColors.TextOnPrimary,
+                            tint = Color.White,
                             modifier = Modifier.size(VeyraDimens.IconXl),
                         )
                     }
@@ -233,7 +233,7 @@ fun WorkoutScreen(
                     Icon(
                         Icons.Rounded.PlayArrow,
                         contentDescription = "Start",
-                        tint = VeyraColors.Accent,
+                        tint = VeyraColors.Green,
                     )
                 }
             }
@@ -277,7 +277,7 @@ fun WorkoutScreen(
                             Text(
                                 text = formatDuration(workout.durationSeconds),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = VeyraColors.Accent,
+                                color = VeyraColors.Green,
                             )
                             Text(
                                 text = "%.0f kg".format(workout.totalVolume),
@@ -313,8 +313,8 @@ fun WorkoutScreen(
                         unfocusedContainerColor = VeyraColors.Surface,
                         focusedTextColor = VeyraColors.TextPrimary,
                         unfocusedTextColor = VeyraColors.TextPrimary,
-                        cursorColor = VeyraColors.Accent,
-                        focusedIndicatorColor = VeyraColors.Accent,
+                        cursorColor = VeyraColors.Green,
+                        focusedIndicatorColor = VeyraColors.Green,
                     ),
                 )
             },
@@ -327,7 +327,7 @@ fun WorkoutScreen(
                         }
                     },
                 ) {
-                    Text("Create", color = VeyraColors.Accent)
+                    Text("Create", color = VeyraColors.Green)
                 }
             },
             dismissButton = {

@@ -10,10 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import com.veyra.ui.theme.VeyraColors
 import com.veyra.ui.theme.VeyraDimens
 
+/**
+ * Samsung Health-style section header: gray label text, optional action link.
+ */
 @Composable
 fun SectionHeader(
     title: String,
@@ -25,7 +27,7 @@ fun SectionHeader(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                horizontal = VeyraDimens.SpaceLg,
+                horizontal = VeyraDimens.ScreenPadding,
                 vertical = VeyraDimens.SpaceSm,
             ),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -33,16 +35,14 @@ fun SectionHeader(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold,
-            ),
-            color = VeyraColors.TextPrimary,
+            style = MaterialTheme.typography.titleSmall,
+            color = VeyraColors.TextSecondary,
         )
         if (action != null && onAction != null) {
             Text(
                 text = action,
-                style = MaterialTheme.typography.labelMedium,
-                color = VeyraColors.Accent,
+                style = MaterialTheme.typography.titleSmall,
+                color = VeyraColors.Teal,
                 modifier = Modifier.clickable(onClick = onAction),
             )
         }
