@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Veyra "V" logo -->
+    <path
+        android:pathData="M54,28L38,80L44,80L54,52L64,80L70,80Z"
+        android:fillColor="#6C63FF"/>
+    <path
+        android:pathData="M54,36L42,76L46,76L54,54L62,76L66,76Z"
+        android:fillColor="#00D2FF"/>
+</vector>
