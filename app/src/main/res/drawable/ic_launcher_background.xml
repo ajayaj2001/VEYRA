@@ -4,7 +4,16 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Pure black background -->
     <path
         android:pathData="M0,0h108v108h-108z"
-        android:fillColor="#0A0B14"/>
+        android:fillColor="#000000"/>
+
+    <!-- Subtle radial accent glow -->
+    <path
+        android:pathData="M54,54 m-40,0 a40,40 0 1,1 80,0 a40,40 0 1,1 -80,0"
+        android:fillColor="#2EC4A0"
+        android:fillAlpha="0.03"/>
+
 </vector>
