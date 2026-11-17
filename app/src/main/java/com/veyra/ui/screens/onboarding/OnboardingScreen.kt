@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -123,45 +124,46 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
 @Composable
 private fun OnboardingPageContent(page: OnboardingPage) {
-    Column(
+    Box(
         Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(48.dp))
-
+        // Title pinned to top
         Text(
             text = page.title,
             style = MaterialTheme.typography.displaySmall,
             color = V.White,
             textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 32.dp)
+                .align(Alignment.TopCenter),
         )
 
-        Spacer(Modifier.height(16.dp))
-
-        // Animated SVG illustration via WebView
+        // Illustration centered in screen — offset up to sit between title and text
         Box(
             Modifier
-                .size(280.dp)
-                .clip(RoundedCornerShape(16.dp)),
+                .size(300.dp)
+                .align(Alignment.Center)
+                .offset(y = (-60).dp),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedSvgView(assetPath = page.htmlAsset)
         }
 
-        Spacer(Modifier.height(24.dp))
-
+        // Body text below center
         Text(
             text = page.body,
             style = MaterialTheme.typography.bodyMedium,
             color = V.Gray,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+                .offset(y = 120.dp)
+                .padding(horizontal = 16.dp),
         )
-
-        Spacer(Modifier.weight(1f))
-        Spacer(Modifier.height(140.dp))
     }
 }
 
