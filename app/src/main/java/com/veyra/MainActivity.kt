@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +25,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -38,14 +43,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.veyra.navigation.BottomNavItem
-import com.veyra.navigation.Screen
-import com.veyra.navigation.VeyraNavHost
-import com.veyra.ui.theme.VeyraColors
-import com.veyra.ui.theme.VeyraDimens
+import com.veyra.navigation.Routes
+import com.veyra.navigation.Tab
+import com.veyra.navigation.VeyraNavGraph
+import com.veyra.ui.theme.V
 import com.veyra.ui.theme.VeyraTheme
 
 class MainActivity : ComponentActivity() {
@@ -53,123 +56,135 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            VeyraTheme {
-                VeyraMainScreen()
-            }
+            VeyraTheme { VeyraRoot() }
         }
     }
 }
 
 @Composable
-fun VeyraMainScreen() {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
+private fun VeyraRoot() {
+    val nav = rememberNavController()
+    val entry by nav.currentBackStackEntryAsState()
+    val route = entry?.destination?.route
 
-    val bottomNavRoutes = BottomNavItem.entries.map { it.screen.route }
-    val showBottomBar = currentDestination?.route in bottomNavRoutes
+    val tabRoutes = Tab.entries.map { it.route }
+    val showNav = route in tabRoutes
 
     Scaffold(
-        containerColor = VeyraColors.Background,
-        contentColor = VeyraColors.TextPrimary,
+        containerColor = V.Black,
         bottomBar = {
             AnimatedVisibility(
-                visible = showBottomBar,
+                visible = showNav,
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it },
             ) {
-                VeyraBottomBar(
-                    items = BottomNavItem.entries.toList(),
-                    currentRoute = currentDestination?.route,
-                    onItemClick = { item ->
-                        if (currentDestination?.route != item.screen.route) {
-                            navController.navigate(item.screen.route) {
-                                popUpTo(Screen.Home.route) { saveState = true }
+                BottomBar(
+                    currentRoute = route,
+                    onTab = { tab ->
+                        if (route != tab.route) {
+                            nav.navigate(tab.route) {
+                                popUpTo(Routes.HOME) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
                         }
                     },
+                    onFab = { /* Quick Add */ },
                 )
             }
         },
-    ) { innerPadding ->
-        VeyraNavHost(
-            navController = navController,
+    ) { padding ->
+        VeyraNavGraph(
+            nav = nav,
+            startDestination = Routes.ONBOARDING,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(padding),
         )
     }
 }
 
-/**
- * Samsung Health-style bottom navigation bar.
- * Selected tab gets a dark gray pill background. Clean, minimal.
- */
 @Composable
-fun VeyraBottomBar(
-    items: List<BottomNavItem>,
+private fun BottomBar(
     currentRoute: String?,
-    onItemClick: (BottomNavItem) -> Unit,
+    onTab: (Tab) -> Unit,
+    onFab: () -> Unit,
 ) {
-    val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+    val navPadding = WindowInsets.navigationBars.asPaddingValues()
 
     Row(
-        modifier = Modifier
+        Modifier
             .fillMaxWidth()
-            .background(VeyraColors.Background)
-            .padding(bottom = navBarPadding.calculateBottomPadding())
-            .padding(horizontal = VeyraDimens.SpaceSm)
-            .height(VeyraDimens.BottomNavHeight),
-        horizontalArrangement = Arrangement.SpaceEvenly,
+            .background(V.Black)
+            .padding(bottom = navPadding.calculateBottomPadding())
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        items.forEach { item ->
-            val selected = currentRoute == item.screen.route
-            val scale by animateFloatAsState(
-                targetValue = if (selected) 1.05f else 1f,
-                animationSpec = tween(150),
-                label = "navScale",
-            )
+        // Nav pill container
+        Row(
+            Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(9999.dp))
+                .background(V.Surface)
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Tab.entries.forEach { tab ->
+                val selected = currentRoute == tab.route
+                val scale by animateFloatAsState(
+                    if (selected) 1.05f else 1f, tween(150), label = "nav"
+                )
 
-            // Samsung-style: selected item gets pill background
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .scale(scale)
-                    .clip(RoundedCornerShape(VeyraDimens.PillRadius))
-                    .then(
-                        if (selected) Modifier.background(VeyraColors.NavPill)
-                        else Modifier
-                    )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { onItemClick(item) },
-                    )
-                    .padding(vertical = VeyraDimens.SpaceSm),
-                contentAlignment = Alignment.Center,
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .scale(scale)
+                        .clip(RoundedCornerShape(9999.dp))
+                        .then(
+                            if (selected) Modifier.background(V.SurfaceElevated)
+                            else Modifier
+                        )
+                        .clickable(
+                            remember { MutableInteractionSource() }, null,
+                            onClick = { onTab(tab) },
+                        )
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        imageVector = item.icon,
-                        contentDescription = item.label,
-                        tint = if (selected) VeyraColors.TextPrimary else VeyraColors.TextTertiary,
-                        modifier = Modifier.size(VeyraDimens.IconLg),
-                    )
-                    Text(
-                        text = item.label,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                        ),
-                        color = if (selected) VeyraColors.TextPrimary else VeyraColors.TextTertiary,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Icon(
+                            tab.icon, tab.label,
+                            tint = if (selected) V.Teal else V.GrayDark,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Text(
+                            tab.label,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                            ),
+                            color = if (selected) V.White else V.GrayDark,
+                        )
+                    }
                 }
             }
+        }
+
+        Spacer(Modifier.width(8.dp))
+
+        // FAB
+        Box(
+            Modifier
+                .size(52.dp)
+                .clip(CircleShape)
+                .background(V.Teal)
+                .clickable(onClick = onFab),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Rounded.Add, "Quick Add", tint = V.Black, modifier = Modifier.size(24.dp))
         }
     }
 }

@@ -10,28 +10,24 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val VeyraColorScheme = darkColorScheme(
-    primary = VeyraColors.Green,
-    onPrimary = Color.Black,
-    primaryContainer = VeyraColors.GreenDark,
-    onPrimaryContainer = Color.White,
-    secondary = VeyraColors.Teal,
-    onSecondary = Color.Black,
-    secondaryContainer = VeyraColors.SurfaceElevated,
-    onSecondaryContainer = VeyraColors.Teal,
-    tertiary = VeyraColors.Blue,
-    onTertiary = Color.Black,
-    background = VeyraColors.Background,
-    onBackground = VeyraColors.TextPrimary,
-    surface = VeyraColors.Surface,
-    onSurface = VeyraColors.TextPrimary,
-    surfaceVariant = VeyraColors.SurfaceElevated,
-    onSurfaceVariant = VeyraColors.TextSecondary,
-    outline = VeyraColors.Divider,
-    outlineVariant = VeyraColors.Divider,
-    error = VeyraColors.Coral,
-    onError = Color.White,
-    scrim = VeyraColors.Scrim,
+private val VeyraScheme = darkColorScheme(
+    primary = V.Teal,
+    onPrimary = V.Black,
+    primaryContainer = V.Teal,
+    onPrimaryContainer = V.Black,
+    secondary = V.Gray,
+    onSecondary = V.Black,
+    background = V.Black,
+    onBackground = V.White,
+    surface = V.Surface,
+    onSurface = V.White,
+    surfaceVariant = V.SurfaceElevated,
+    onSurfaceVariant = V.Gray,
+    outline = V.SurfaceBright,
+    outlineVariant = V.Divider,
+    error = V.Error,
+    onError = V.Black,
+    scrim = V.Scrim,
 )
 
 @Composable
@@ -50,9 +46,8 @@ fun VeyraTheme(content: @Composable () -> Unit) {
             }
         }
     }
-
     MaterialTheme(
-        colorScheme = VeyraColorScheme,
+        colorScheme = VeyraScheme,
         typography = VeyraTypography,
         content = content,
     )
