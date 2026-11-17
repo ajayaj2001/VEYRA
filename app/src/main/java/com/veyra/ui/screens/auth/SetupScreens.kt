@@ -245,17 +245,16 @@ fun SetupBodyScreen(
     var activityLevel by remember { mutableIntStateOf(2) }
 
     data class ActivityOption(
-        val title: String,
-        val desc: String,
+        val label: String,
         val icon: androidx.compose.ui.graphics.vector.ImageVector,
         val iconColor: Color,
     )
 
     val activities = listOf(
-        ActivityOption("Sedentary", "Little or no exercise", Icons.Rounded.SelfImprovement, V.Teal),
-        ActivityOption("Lightly Active", "Exercise 1–3 days/week", Icons.Rounded.DirectionsWalk, V.Green),
-        ActivityOption("Moderately Active", "Exercise 3–5 days/week", Icons.Rounded.DirectionsRun, V.Amber),
-        ActivityOption("Very Active", "Exercise 6–7 days/week", Icons.Rounded.LocalFireDepartment, V.Red),
+        ActivityOption("Sedentary", Icons.Rounded.SelfImprovement, V.Teal),
+        ActivityOption("Light", Icons.Rounded.DirectionsWalk, V.Green),
+        ActivityOption("Moderate", Icons.Rounded.DirectionsRun, V.Amber),
+        ActivityOption("Intense", Icons.Rounded.LocalFireDepartment, V.Red),
     )
 
     Column(
@@ -325,76 +324,45 @@ fun SetupBodyScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // Activity level
-            Text("ACTIVITY LEVEL", style = MaterialTheme.typography.labelSmall, color = V.Gray, letterSpacing = 1.sp)
+            // Activity level — compact icon chips
+            Text("Activity Level", style = MaterialTheme.typography.labelMedium, color = V.Gray)
             Spacer(Modifier.height(12.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 activities.forEachIndexed { i, option ->
                     val sel = i == activityLevel
-                    Row(
+                    Column(
                         Modifier
-                            .fillMaxWidth()
+                            .weight(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(V.Surface)
+                            .background(if (sel) V.Teal.copy(alpha = 0.1f) else V.Surface)
                             .then(
-                                if (sel) Modifier.border(1.5.dp, V.Teal.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
-                                else Modifier
+                                if (sel) Modifier.border(1.5.dp, V.Teal, RoundedCornerShape(16.dp))
+                                else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
                             )
                             .clickable { activityLevel = i }
-                            .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                            .padding(vertical = 14.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        // Colored icon circle
                         Box(
                             Modifier
-                                .size(44.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
-                                .background(option.iconColor.copy(alpha = 0.12f)),
+                                .background(option.iconColor.copy(alpha = if (sel) 0.2f else 0.1f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(
-                                option.icon, null,
-                                tint = option.iconColor,
-                                modifier = Modifier.size(22.dp),
-                            )
+                            Icon(option.icon, null, tint = option.iconColor, modifier = Modifier.size(20.dp))
                         }
-                        Spacer(Modifier.width(14.dp))
-                        // Title + subtitle
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                option.title,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = V.White,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            Text(
-                                option.desc,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = V.Gray,
-                            )
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        // Radio circle
-                        Box(
-                            Modifier
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .then(
-                                    if (sel) Modifier.background(V.Teal)
-                                    else Modifier.border(1.5.dp, V.SurfaceBright, CircleShape)
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            if (sel) {
-                                Box(
-                                    Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(V.Black)
-                                )
-                            }
-                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            option.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (sel) V.White else V.Gray,
+                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
+                        )
                     }
                 }
             }
