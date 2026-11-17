@@ -2,54 +2,104 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:viewportWidth="512"
+    android:viewportHeight="512">
 
-    <!-- Outer subtle ring -->
+    <!-- Subtle orbital ring -->
     <path
-        android:pathData="M54,20 A34,34 0 1,1 53.99,20"
+        android:pathData="M256,84 A172,172 0 1,1 255.9,84"
         android:strokeColor="#2EC4A0"
-        android:strokeWidth="0.8"
-        android:strokeAlpha="0.15"
+        android:strokeWidth="2.5"
+        android:strokeAlpha="0.12"
         android:fillColor="#00000000"/>
 
-    <!-- Inner glow circle -->
+    <!-- Inner depth ring -->
     <path
-        android:pathData="M54,28 A26,26 0 1,1 53.99,28"
+        android:pathData="M256,110 A146,146 0 1,1 255.9,110"
+        android:strokeColor="#161A1D"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"/>
+
+    <!-- Ambient glow circle -->
+    <path
+        android:pathData="M256,116 A140,140 0 1,1 255.9,116"
         android:fillColor="#2EC4A0"
         android:fillAlpha="0.06"/>
 
-    <!-- Stylized V shape — bold geometric, premium -->
+    <!-- Bold V — Left Wing -->
     <path
-        android:pathData="M34,36 L46.5,68 C47.5,70.5 49,72 51,72 L51,72
-                          C51.5,72 52,71.8 52.5,71.2 L54,68
-                          L55.5,71.2 C56,71.8 56.5,72 57,72 L57,72
-                          C59,72 60.5,70.5 61.5,68 L74,36
-                          C74.5,34.8 74,34 72.8,34 L69,34
-                          C67.5,34 66.5,35 66,36.2 L57,58
-                          L54,65 L51,58 L42,36.2
-                          C41.5,35 40.5,34 39,34 L35.2,34
-                          C34,34 33.5,34.8 34,36Z"
+        android:pathData="M124,148 L182,148 L256,322 L232,376 Z"
         android:fillColor="#2EC4A0"/>
 
-    <!-- Pulse line through the V — health identity -->
+    <!-- Bold V — Right Wing -->
     <path
-        android:pathData="M30,54 L40,54 L43,54 L46,48 L49,60 L52,44 L55,62 L58,46 L61,54 L64,54 L78,54"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="1.5"
+        android:pathData="M388,148 L330,148 L256,322 L280,376 Z"
+        android:fillColor="#2EC4A0"/>
+
+    <!-- V — Bottom Apex joint (smooth cap) -->
+    <path
+        android:pathData="M232,376 C244,402 268,402 280,376 L256,322 Z"
+        android:fillColor="#2EC4A0"/>
+
+    <!-- V — Lighter top edge highlight -->
+    <path
+        android:pathData="M124,148 L182,148 L192,170 L134,170 Z"
+        android:fillColor="#48E8C0"
+        android:fillAlpha="0.4"/>
+    <path
+        android:pathData="M388,148 L330,148 L320,170 L378,170 Z"
+        android:fillColor="#48E8C0"
+        android:fillAlpha="0.4"/>
+
+    <!-- ECG Pulse — teal glow behind -->
+    <path
+        android:pathData="M88,274 L172,274 L194,246 L220,326 L256,160 L292,352 L316,274 L424,274"
+        android:strokeColor="#2EC4A0"
+        android:strokeWidth="12"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:fillColor="#00000000"
-        android:strokeAlpha="0.9"/>
+        android:strokeAlpha="0.18"
+        android:fillColor="#00000000"/>
 
-    <!-- Small accent dots at pulse peaks -->
+    <!-- ECG Pulse — crisp white signal -->
     <path
-        android:pathData="M52,44 m-1.5,0 a1.5,1.5 0 1,1 3,0 a1.5,1.5 0 1,1 -3,0"
-        android:fillColor="#FFFFFF"
-        android:fillAlpha="0.7"/>
+        android:pathData="M88,274 L172,274 L194,246 L220,326 L256,160 L292,352 L316,274 L424,274"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"/>
 
+    <!-- Peak node at R-wave summit -->
     <path
-        android:pathData="M55,62 m-1.2,0 a1.2,1.2 0 1,1 2.4,0 a1.2,1.2 0 1,1 -2.4,0"
+        android:pathData="M256,160 m-7,0 a7,7 0 1,1 14,0 a7,7 0 1,1 -14,0"
+        android:fillColor="#2EC4A0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"/>
+
+    <!-- Sensor dots at lead in/out -->
+    <path
+        android:pathData="M106,274 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0"
+        android:fillColor="#48E8C0"/>
+    <path
+        android:pathData="M406,274 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0"
+        android:fillColor="#48E8C0"/>
+
+    <!-- Cardinal sensor dots on orbital ring -->
+    <path
+        android:pathData="M256,84 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#2EC4A0"
+        android:fillAlpha="0.5"/>
+    <path
+        android:pathData="M256,428 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0"
+        android:fillColor="#2EC4A0"
+        android:fillAlpha="0.3"/>
+    <path
+        android:pathData="M84,256 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0"
+        android:fillColor="#2EC4A0"
+        android:fillAlpha="0.3"/>
+    <path
+        android:pathData="M428,256 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
         android:fillColor="#2EC4A0"
         android:fillAlpha="0.5"/>
 
