@@ -73,7 +73,7 @@ fun HomeScreen(nav: NavController) {
         // Header
         Appear(visible, 0) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-                Text("Veyra", style = MaterialTheme.typography.headlineLarge, color = V.White)
+                Text("Aura", style = MaterialTheme.typography.headlineLarge, color = V.White)
                 Text(greeting(), style = MaterialTheme.typography.bodyMedium, color = V.Gray)
             }
         }

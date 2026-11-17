@@ -54,7 +54,7 @@ fun LoginScreen(
 
         // Wordmark
         Text(
-            text = "VEYRA",
+            text = "AURA",
             style = MaterialTheme.typography.displayMedium.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 4.sp,
