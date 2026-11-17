@@ -84,7 +84,7 @@ fun VButton(
         Text(
             text,
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = V.Black.copy(alpha = alpha),
+            color = V.White.copy(alpha = alpha),
         )
     }
 }

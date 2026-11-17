@@ -1,6 +1,12 @@
 package com.veyra.ui.screens.onboarding
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -165,69 +171,144 @@ private fun OnboardingPageContent(page: OnboardingPage) {
 
 @Composable
 private fun OnboardingIllustration(colors: List<Color>) {
+    // Continuous orbit rotation
+    val infiniteTransition = rememberInfiniteTransition(label = "orbit")
+    val orbitAngle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "orbitAngle",
+    )
+
+    // Center pulse
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "pulse",
+    )
+
+    // Glow breathing
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.05f,
+        targetValue = 0.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "glow",
+    )
+
+    // Secondary ring counter-rotation
+    val ring2Angle by infiniteTransition.animateFloat(
+        initialValue = 360f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "ring2",
+    )
+
+    // Dot individual float offsets
+    val floatOffset by infiniteTransition.animateFloat(
+        initialValue = -6f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "float",
+    )
+
     Canvas(Modifier.fillMaxSize()) {
         val cx = size.width / 2
         val cy = size.height / 2
         val radius = size.minDimension * 0.35f
 
-        // Outer ring
-        drawCircle(
-            color = V.SurfaceBright.copy(alpha = 0.3f),
-            radius = radius + 20f,
-            center = Offset(cx, cy),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f),
-        )
-
-        // Inner ring
-        drawCircle(
-            color = V.SurfaceBright.copy(alpha = 0.15f),
-            radius = radius * 0.5f,
-            center = Offset(cx, cy),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(1f),
-        )
-
-        // Center pulse
-        drawCircle(
-            color = colors.firstOrNull()?.copy(alpha = 0.08f) ?: V.Teal.copy(alpha = 0.08f),
-            radius = radius * 0.4f,
-            center = Offset(cx, cy),
-        )
-
-        // Orbiting dots
-        colors.forEachIndexed { i, color ->
-            val angle = (i * 360f / colors.size) - 90f
+        // Outer ring (slowly counter-rotates via dotted pattern)
+        val outerDots = 60
+        for (j in 0 until outerDots) {
+            val angle = (j * 360f / outerDots) + ring2Angle
             val rad = Math.toRadians(angle.toDouble())
-            val dotX = cx + radius * cos(rad).toFloat()
-            val dotY = cy + radius * sin(rad).toFloat()
-
-            // Glow
+            val dx = cx + (radius + 24f) * cos(rad).toFloat()
+            val dy = cy + (radius + 24f) * sin(rad).toFloat()
+            val dotAlpha = if (j % 2 == 0) 0.25f else 0.1f
             drawCircle(
-                color = color.copy(alpha = 0.15f),
-                radius = 24f,
-                center = Offset(dotX, dotY),
-            )
-            // Dot
-            drawCircle(
-                color = color,
-                radius = 10f,
-                center = Offset(dotX, dotY),
+                color = V.SurfaceBright.copy(alpha = dotAlpha),
+                radius = if (j % 4 == 0) 2f else 1.2f,
+                center = Offset(dx, dy),
             )
         }
 
-        // Connecting dotted arcs (subtle)
-        val dotCount = 40
-        for (j in 0 until dotCount) {
-            val angle = (j * 360f / dotCount)
+        // Inner ring outline
+        drawCircle(
+            color = V.SurfaceBright.copy(alpha = 0.2f),
+            radius = radius * 0.55f,
+            center = Offset(cx, cy),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(0.8f),
+        )
+
+        // Center pulsing glow
+        val primaryColor = colors.firstOrNull() ?: V.Teal
+        drawCircle(
+            color = primaryColor.copy(alpha = glowAlpha),
+            radius = radius * 0.45f * pulseScale,
+            center = Offset(cx, cy),
+        )
+        drawCircle(
+            color = primaryColor.copy(alpha = glowAlpha * 0.5f),
+            radius = radius * 0.3f * pulseScale,
+            center = Offset(cx, cy),
+        )
+
+        // Orbiting dots (rotate continuously)
+        colors.forEachIndexed { i, color ->
+            val baseAngle = (i * 360f / colors.size) - 90f
+            val angle = baseAngle + orbitAngle
             val rad = Math.toRadians(angle.toDouble())
-            val dx = cx + (radius + 20f) * cos(rad).toFloat()
-            val dy = cy + (radius + 20f) * sin(rad).toFloat()
-            if (j % 3 == 0) {
+            // Each dot floats slightly with offset
+            val individualFloat = floatOffset * (if (i % 2 == 0) 1f else -1f)
+            val dotX = cx + radius * cos(rad).toFloat()
+            val dotY = cy + radius * sin(rad).toFloat() + individualFloat
+
+            // Motion trail (3 fading dots behind)
+            for (trail in 1..3) {
+                val trailAngle = angle - trail * 8f
+                val trailRad = Math.toRadians(trailAngle.toDouble())
+                val tx = cx + radius * cos(trailRad).toFloat()
+                val ty = cy + radius * sin(trailRad).toFloat() + individualFloat
                 drawCircle(
-                    color = V.SurfaceBright.copy(alpha = 0.2f),
-                    radius = 1.5f,
-                    center = Offset(dx, dy),
+                    color = color.copy(alpha = 0.08f / trail),
+                    radius = 8f - trail * 1.5f,
+                    center = Offset(tx, ty),
                 )
             }
+
+            // Glow halo
+            drawCircle(
+                color = color.copy(alpha = 0.12f),
+                radius = 28f,
+                center = Offset(dotX, dotY),
+            )
+            // Main dot
+            drawCircle(
+                color = color,
+                radius = 11f,
+                center = Offset(dotX, dotY),
+            )
+            // Inner bright core
+            drawCircle(
+                color = Color.White.copy(alpha = 0.4f),
+                radius = 4f,
+                center = Offset(dotX, dotY),
+            )
         }
     }
 }
