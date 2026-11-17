@@ -27,7 +27,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.Weekend
+import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -251,7 +251,7 @@ fun SetupBodyScreen(
     )
 
     val activities = listOf(
-        ActivityOption("Sedentary", "Little or no exercise", Icons.Rounded.Weekend, V.Teal),
+        ActivityOption("Sedentary", "Little or no exercise", Icons.Rounded.SelfImprovement, V.Teal),
         ActivityOption("Lightly Active", "Exercise 1–3 days/week", Icons.Rounded.DirectionsWalk, V.Green),
         ActivityOption("Moderately Active", "Exercise 3–5 days/week", Icons.Rounded.DirectionsRun, V.Amber),
         ActivityOption("Very Active", "Exercise 6–7 days/week", Icons.Rounded.LocalFireDepartment, V.Red),
