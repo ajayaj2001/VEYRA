@@ -13,6 +13,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -124,11 +125,20 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
 @Composable
 private fun OnboardingPageContent(page: OnboardingPage) {
-    Box(
+    BoxWithConstraints(
         Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
     ) {
+        val screenHeight = maxHeight
+        val screenWidth = maxWidth
+
+        // Responsive sizes based on screen height
+        val illustrationSize = (screenHeight * 0.35f).coerceAtMost(320.dp)
+        val titleTopPadding = screenHeight * 0.04f
+        val illustrationOffset = -(screenHeight * 0.06f)
+        val textOffset = illustrationSize * 0.45f
+
         // Title pinned to top
         Text(
             text = page.title,
@@ -137,22 +147,22 @@ private fun OnboardingPageContent(page: OnboardingPage) {
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 32.dp)
+                .padding(top = titleTopPadding)
                 .align(Alignment.TopCenter),
         )
 
-        // Illustration centered in screen — offset up to sit between title and text
+        // Illustration centered — responsive offset
         Box(
             Modifier
-                .size(300.dp)
+                .size(illustrationSize)
                 .align(Alignment.Center)
-                .offset(y = (-60).dp),
+                .offset(y = illustrationOffset),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedSvgView(assetPath = page.htmlAsset)
         }
 
-        // Body text below center
+        // Body text below illustration
         Text(
             text = page.body,
             style = MaterialTheme.typography.bodyMedium,
@@ -161,7 +171,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.Center)
-                .offset(y = 120.dp)
+                .offset(y = textOffset)
                 .padding(horizontal = 16.dp),
         )
     }
