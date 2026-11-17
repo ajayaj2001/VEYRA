@@ -114,7 +114,6 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         dao.updateSet(set.copy(isCompleted = true, timestamp = System.currentTimeMillis()))
         haptic()
         loadSets()
-        startRest(set.restSeconds)
     }
 
     fun removeExercise(exerciseId: String) = viewModelScope.launch {
@@ -187,7 +186,6 @@ fun ActiveWorkoutScreen(nav: NavController, routineId: Long?, vm: ActiveWorkoutV
             IconButton(onClick = { showDiscard = true }) { Icon(Icons.Rounded.Close, "Close", tint = V.Gray) }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(s.workout?.name ?: "Workout", style = MaterialTheme.typography.titleLarge, color = V.White)
-                Text(formatTime(s.elapsed), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = V.Teal)
             }
             TextButton(onClick = { showFinish = true }) { Text("Finish", color = V.Teal, fontWeight = FontWeight.Bold) }
         }
@@ -197,24 +195,9 @@ fun ActiveWorkoutScreen(nav: NavController, routineId: Long?, vm: ActiveWorkoutV
             val sets = s.groups.flatMap { it.sets }
             val completed = sets.count { it.isCompleted }
             val vol = sets.filter { it.isCompleted }.sumOf { it.weight * it.reps }
-            StatChip("Duration", formatTime(s.elapsed), V.Teal)
+            StatChip("Exercises", "${s.groups.size}", V.Teal)
             StatChip("Volume", "%.0f kg".format(vol), V.White)
             StatChip("Sets", "$completed", V.White)
-        }
-
-        // Rest timer
-        if (s.resting) {
-            VCard(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = V.Teal.copy(alpha = 0.08f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Timer, null, tint = V.Teal, modifier = Modifier.size(24.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Rest Timer", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-                        Text("${s.restSec / 60}:%02d".format(s.restSec % 60), style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = V.Teal)
-                    }
-                    TextButton(onClick = { vm.skipRest() }) { Text("Skip", color = V.Gray) }
-                }
-            }
         }
 
         // Exercise groups
