@@ -103,7 +103,7 @@ private fun ChipRow(
                 Text(
                     label,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (sel) V.Black else V.White,
+                    color = if (sel) V.White else V.White,
                     fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
                 )
             }
@@ -146,7 +146,8 @@ fun SetupBasicScreen(
     onBack: () -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
-    var gender by remember { mutableIntStateOf(0) }
+    var dob by remember { mutableStateOf("") }
+    var gender by remember { mutableIntStateOf(-1) } // -1 = none selected
 
     Column(
         Modifier
@@ -162,7 +163,7 @@ fun SetupBasicScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(top = 32.dp),
+                .padding(top = 24.dp),
         ) {
             Text(
                 "Let's get to know you",
@@ -171,7 +172,7 @@ fun SetupBasicScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
                 "This helps us personalize your experience",
                 style = MaterialTheme.typography.bodyMedium,
@@ -180,22 +181,30 @@ fun SetupBasicScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(36.dp))
 
             Text("Name", style = MaterialTheme.typography.labelMedium, color = V.Gray)
             Spacer(Modifier.height(8.dp))
             VField(name, { name = it }, "Your name")
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(20.dp))
+
+            Text("Date of Birth", style = MaterialTheme.typography.labelMedium, color = V.Gray)
+            Spacer(Modifier.height(8.dp))
+            VField(dob, { dob = it }, "DD / MM / YYYY", keyboardType = KeyboardType.Number)
+
+            Spacer(Modifier.height(20.dp))
 
             Text("Gender", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             ChipRow(listOf("Male", "Female", "Other"), gender, { gender = it })
+
+            Spacer(Modifier.height(20.dp))
         }
 
         // Bottom
         Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
-            VButton("Continue", onClick = onContinue, enabled = name.isNotBlank())
+            VButton("Continue", onClick = onContinue)
             Spacer(Modifier.height(12.dp))
             Text(
                 "Skip for now",
