@@ -119,7 +119,7 @@ private fun ChipRow(
 
 // ─── Shared header ───
 @Composable
-private fun SetupHeader(step: Int, onBack: () -> Unit) {
+private fun SetupHeader(step: Int, onBack: () -> Unit, onSkip: (() -> Unit)? = null) {
     Column {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
@@ -135,8 +135,20 @@ private fun SetupHeader(step: Int, onBack: () -> Unit) {
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.size(48.dp))
+            if (onSkip != null) {
+                Text(
+                    "Skip",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = V.Gray,
+                    modifier = Modifier
+                        .clickable(onClick = onSkip)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                )
+            } else {
+                Spacer(Modifier.size(48.dp))
+            }
         }
+        Spacer(Modifier.height(4.dp))
         StepProgress(current = step, total = 3)
     }
 }
@@ -162,7 +174,7 @@ fun SetupBasicScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        SetupHeader(step = 1, onBack = onBack)
+        SetupHeader(step = 1, onBack = onBack, onSkip = onSkip)
 
         Column(
             Modifier
@@ -209,19 +221,8 @@ fun SetupBasicScreen(
         }
 
         // Bottom
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
             VButton("Continue", onClick = onContinue)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "Skip for now",
-                style = MaterialTheme.typography.labelLarge,
-                color = V.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onSkip)
-                    .padding(8.dp),
-            )
         }
     }
 }
@@ -264,14 +265,14 @@ fun SetupBodyScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        SetupHeader(step = 2, onBack = onBack)
+        SetupHeader(step = 2, onBack = onBack, onSkip = onSkip)
 
         Column(
             Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(top = 32.dp),
+                .padding(top = 24.dp),
         ) {
             Text(
                 "Your body metrics",
@@ -401,19 +402,8 @@ fun SetupBodyScreen(
             Spacer(Modifier.height(24.dp))
         }
 
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
+        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
             VButton("Continue", onClick = onContinue)
-            Spacer(Modifier.height(12.dp))
-            Text(
-                "Skip for now",
-                style = MaterialTheme.typography.labelLarge,
-                color = V.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onSkip)
-                    .padding(8.dp),
-            )
         }
     }
 }
