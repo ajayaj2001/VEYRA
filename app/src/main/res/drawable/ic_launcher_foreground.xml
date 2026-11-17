@@ -2,105 +2,119 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="512"
-    android:viewportHeight="512">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
 
-    <!-- Subtle orbital ring -->
+    <!-- === CONCENTRIC VITALS — Health OS === -->
+
+    <!-- Outer ring track (subtle) -->
     <path
-        android:pathData="M256,84 A172,172 0 1,1 255.9,84"
+        android:pathData="M54,16 A38,38 0 1,1 53.99,16"
         android:strokeColor="#2EC4A0"
-        android:strokeWidth="2.5"
-        android:strokeAlpha="0.12"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.08"
         android:fillColor="#00000000"/>
 
-    <!-- Inner depth ring -->
+    <!-- Middle ring track (subtle) -->
     <path
-        android:pathData="M256,110 A146,146 0 1,1 255.9,110"
-        android:strokeColor="#161A1D"
-        android:strokeWidth="1.5"
+        android:pathData="M54,24 A30,30 0 1,1 53.99,24"
+        android:strokeColor="#E07070"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.06"
         android:fillColor="#00000000"/>
 
-    <!-- Ambient glow circle -->
+    <!-- Inner ring track (subtle) -->
     <path
-        android:pathData="M256,116 A140,140 0 1,1 255.9,116"
-        android:fillColor="#2EC4A0"
-        android:fillAlpha="0.06"/>
+        android:pathData="M54,32 A22,22 0 1,1 53.99,32"
+        android:strokeColor="#CC8844"
+        android:strokeWidth="0.6"
+        android:strokeAlpha="0.06"
+        android:fillColor="#00000000"/>
 
-    <!-- Bold V — Left Wing -->
+    <!-- OUTER ARC — Activity (Teal) ~260 degrees starting from top -->
     <path
-        android:pathData="M124,148 L182,148 L256,322 L232,376 Z"
-        android:fillColor="#2EC4A0"/>
-
-    <!-- Bold V — Right Wing -->
-    <path
-        android:pathData="M388,148 L330,148 L256,322 L280,376 Z"
-        android:fillColor="#2EC4A0"/>
-
-    <!-- V — Bottom Apex joint (smooth cap) -->
-    <path
-        android:pathData="M232,376 C244,402 268,402 280,376 L256,322 Z"
-        android:fillColor="#2EC4A0"/>
-
-    <!-- V — Lighter top edge highlight -->
-    <path
-        android:pathData="M124,148 L182,148 L192,170 L134,170 Z"
-        android:fillColor="#48E8C0"
-        android:fillAlpha="0.4"/>
-    <path
-        android:pathData="M388,148 L330,148 L320,170 L378,170 Z"
-        android:fillColor="#48E8C0"
-        android:fillAlpha="0.4"/>
-
-    <!-- ECG Pulse — teal glow behind -->
-    <path
-        android:pathData="M88,274 L172,274 L194,246 L220,326 L256,160 L292,352 L316,274 L424,274"
+        android:pathData="M54,16 A38,38 0 1,1 20.7,34.5"
         android:strokeColor="#2EC4A0"
-        android:strokeWidth="12"
+        android:strokeWidth="4.5"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeAlpha="0.18"
         android:fillColor="#00000000"/>
 
-    <!-- ECG Pulse — crisp white signal -->
+    <!-- Outer arc leading dot -->
     <path
-        android:pathData="M88,274 L172,274 L194,246 L220,326 L256,160 L292,352 L316,274 L424,274"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="7"
+        android:pathData="M54,16 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:fillColor="#2EC4A0"/>
+
+    <!-- Outer arc glow dot at start -->
+    <path
+        android:pathData="M54,16 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0"
+        android:fillColor="#2EC4A0"
+        android:fillAlpha="0.2"/>
+
+    <!-- MIDDLE ARC — Recovery (Coral) ~240 degrees, rotated 80deg -->
+    <path
+        android:pathData="M82.8,42.5 A30,30 0 1,1 38.2,80.5"
+        android:strokeColor="#E07070"
+        android:strokeWidth="3.8"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
         android:fillColor="#00000000"/>
 
-    <!-- Peak node at R-wave summit -->
+    <!-- Middle arc leading dot -->
     <path
-        android:pathData="M256,160 m-7,0 a7,7 0 1,1 14,0 a7,7 0 1,1 -14,0"
-        android:fillColor="#2EC4A0"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3"/>
+        android:pathData="M82.8,42.5 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0"
+        android:fillColor="#E07070"/>
 
-    <!-- Sensor dots at lead in/out -->
+    <!-- Middle arc glow -->
     <path
-        android:pathData="M106,274 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0"
-        android:fillColor="#48E8C0"/>
-    <path
-        android:pathData="M406,274 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0"
-        android:fillColor="#48E8C0"/>
+        android:pathData="M82.8,42.5 m-4.5,0 a4.5,4.5 0 1,1 9,0 a4.5,4.5 0 1,1 -9,0"
+        android:fillColor="#E07070"
+        android:fillAlpha="0.18"/>
 
-    <!-- Cardinal sensor dots on orbital ring -->
+    <!-- INNER ARC — Nutrition (Amber) ~220 degrees, rotated 160deg -->
     <path
-        android:pathData="M256,84 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
-        android:fillColor="#2EC4A0"
-        android:fillAlpha="0.5"/>
+        android:pathData="M36.5,39 A22,22 0 1,1 65,73"
+        android:strokeColor="#CC8844"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"/>
+
+    <!-- Inner arc leading dot -->
     <path
-        android:pathData="M256,428 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0"
-        android:fillColor="#2EC4A0"
-        android:fillAlpha="0.3"/>
+        android:pathData="M36.5,39 m-2.2,0 a2.2,2.2 0 1,1 4.4,0 a2.2,2.2 0 1,1 -4.4,0"
+        android:fillColor="#CC8844"/>
+
+    <!-- Inner arc glow -->
     <path
-        android:pathData="M84,256 m-2.5,0 a2.5,2.5 0 1,1 5,0 a2.5,2.5 0 1,1 -5,0"
-        android:fillColor="#2EC4A0"
-        android:fillAlpha="0.3"/>
+        android:pathData="M36.5,39 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0"
+        android:fillColor="#CC8844"
+        android:fillAlpha="0.15"/>
+
+    <!-- Data flow connector dots (white, tiny) -->
     <path
-        android:pathData="M428,256 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0"
+        android:pathData="M70,22 m-1,0 a1,1 0 1,1 2,0 a1,1 0 1,1 -2,0"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.35"/>
+    <path
+        android:pathData="M30,62 m-1,0 a1,1 0 1,1 2,0 a1,1 0 1,1 -2,0"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.35"/>
+    <path
+        android:pathData="M72,70 m-1,0 a1,1 0 1,1 2,0 a1,1 0 1,1 -2,0"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.35"/>
+
+    <!-- CENTER CORE — Health OS nucleus -->
+    <!-- Outer glow -->
+    <path
+        android:pathData="M54,54 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0"
         android:fillColor="#2EC4A0"
-        android:fillAlpha="0.5"/>
+        android:fillAlpha="0.1"/>
+    <!-- Teal core -->
+    <path
+        android:pathData="M54,54 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0"
+        android:fillColor="#2EC4A0"/>
+    <!-- White inner dot -->
+    <path
+        android:pathData="M54,54 m-2,0 a2,2 0 1,1 4,0 a2,2 0 1,1 -4,0"
+        android:fillColor="#FFFFFF"/>
 
 </vector>
