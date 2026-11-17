@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -237,11 +239,18 @@ fun SetupBodyScreen(
     var weightUnit by remember { mutableIntStateOf(0) }
     var activityLevel by remember { mutableIntStateOf(2) }
 
+    data class ActivityOption(
+        val title: String,
+        val desc: String,
+        val emoji: String,
+        val bars: Int, // 1-4 intensity bars
+    )
+
     val activities = listOf(
-        "Sedentary" to "Little or no exercise",
-        "Light" to "Exercise 1-3 days/week",
-        "Moderate" to "Exercise 3-5 days/week",
-        "Very Active" to "Exercise 6-7 days/week",
+        ActivityOption("Sedentary", "Little or no exercise", "🛋️", 1),
+        ActivityOption("Light", "Exercise 1–3 days/week", "🚶", 2),
+        ActivityOption("Moderate", "Exercise 3–5 days/week", "🏃", 3),
+        ActivityOption("Very Active", "Exercise 6–7 days/week", "🔥", 4),
     )
 
     Column(
@@ -314,39 +323,81 @@ fun SetupBodyScreen(
             // Activity level
             Text("Activity Level", style = MaterialTheme.typography.labelMedium, color = V.Gray)
             Spacer(Modifier.height(12.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                activities.forEachIndexed { i, (title, desc) ->
-                    val sel = i == activityLevel
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(V.Surface)
-                            .then(
-                                if (sel) Modifier.border(2.dp, V.Teal, RoundedCornerShape(16.dp))
-                                else Modifier.border(1.dp, V.SurfaceBright, RoundedCornerShape(16.dp))
-                            )
-                            .clickable { activityLevel = i }
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(title, style = MaterialTheme.typography.titleLarge, color = V.White)
-                            Text(desc, style = MaterialTheme.typography.bodySmall, color = V.Gray)
-                        }
-                        if (sel) {
-                            Box(
-                                Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(V.Teal),
-                                contentAlignment = Alignment.Center,
+
+            // 2x2 grid
+            val rows = activities.chunked(2)
+            rows.forEach { row ->
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    row.forEachIndexed { _, option ->
+                        val i = activities.indexOf(option)
+                        val sel = i == activityLevel
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .height(110.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(if (sel) V.Surface else V.Surface)
+                                .then(
+                                    if (sel) Modifier.border(2.dp, V.Teal, RoundedCornerShape(20.dp))
+                                    else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                                )
+                                .clickable { activityLevel = i }
+                                .padding(14.dp),
+                        ) {
+                            Column(
+                                Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Icon(Icons.Rounded.Check, null, tint = V.Black, modifier = Modifier.size(16.dp))
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(option.emoji, fontSize = 22.sp)
+                                    if (sel) {
+                                        Box(
+                                            Modifier.size(20.dp).clip(CircleShape).background(V.Teal),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Icon(Icons.Rounded.Check, null, tint = V.White, modifier = Modifier.size(14.dp))
+                                        }
+                                    }
+                                }
+                                Column {
+                                    Text(
+                                        option.title,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = if (sel) V.White else V.White,
+                                        fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    // Intensity bars
+                                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        repeat(4) { bar ->
+                                            Box(
+                                                Modifier
+                                                    .width(16.dp)
+                                                    .height(4.dp)
+                                                    .clip(RoundedCornerShape(2.dp))
+                                                    .background(
+                                                        if (bar < option.bars) {
+                                                            if (sel) V.Teal else V.Gray
+                                                        } else {
+                                                            V.SurfaceBright.copy(alpha = 0.4f)
+                                                        }
+                                                    )
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                Spacer(Modifier.height(10.dp))
             }
 
             Spacer(Modifier.height(24.dp))
