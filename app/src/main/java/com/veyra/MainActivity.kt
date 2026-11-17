@@ -132,19 +132,11 @@ private fun BottomBar(
         ) {
             Tab.entries.forEach { tab ->
                 val selected = currentRoute == tab.route
-                val scale by animateFloatAsState(
-                    if (selected) 1.05f else 1f, tween(150), label = "nav"
-                )
 
                 Box(
                     Modifier
                         .weight(1f)
-                        .scale(scale)
                         .clip(RoundedCornerShape(9999.dp))
-                        .then(
-                            if (selected) Modifier.background(V.SurfaceElevated)
-                            else Modifier
-                        )
                         .clickable(
                             remember { MutableInteractionSource() }, null,
                             onClick = { onTab(tab) },
@@ -154,19 +146,31 @@ private fun BottomBar(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
-                        Icon(
-                            tab.icon, tab.label,
-                            tint = if (selected) V.Teal else V.GrayDark,
-                            modifier = Modifier.size(22.dp),
-                        )
+                        // Icon with glow behind it when selected
+                        Box(contentAlignment = Alignment.Center) {
+                            if (selected) {
+                                // Teal glow circle behind icon
+                                Box(
+                                    Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(V.Teal.copy(alpha = 0.15f))
+                                )
+                            }
+                            Icon(
+                                tab.icon, tab.label,
+                                tint = if (selected) V.Teal else V.GrayDark,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
                         Text(
                             tab.label,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                             ),
-                            color = if (selected) V.White else V.GrayDark,
+                            color = if (selected) V.Teal else V.GrayDark,
                         )
                     }
                 }

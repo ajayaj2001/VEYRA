@@ -200,7 +200,11 @@ fun ProfileScreen(nav: NavController) {
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { }
+                .clickable {
+                    nav.navigate(Routes.LOGIN) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
                 .padding(16.dp),
         )
     }

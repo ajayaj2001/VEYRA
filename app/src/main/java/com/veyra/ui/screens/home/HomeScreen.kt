@@ -3,12 +3,19 @@ package com.veyra.ui.screens.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke as DrawStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -181,7 +188,7 @@ fun HomeScreen(nav: NavController) {
         Appear(visible, 500) {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SmallMetric("Heart Rate", "72", "bpm", V.Red, Modifier.weight(1f))
+                    HeartRateCard(Modifier.weight(1f))
                     SmallMetric("Resting HR", "58", "bpm", V.Red, Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -245,6 +252,76 @@ private fun SmallMetric(label: String, value: String, unit: String, color: Color
 }
 
 @Composable
+private fun HeartRateCard(modifier: Modifier = Modifier) {
+    val inf = rememberInfiniteTransition(label = "hr")
+    val phase by inf.animateFloat(
+        initialValue = 0f, targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Restart),
+        label = "hrPhase",
+    )
+
+    VCard(modifier) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(32.dp).clip(CircleShape).background(V.Red.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) { Box(Modifier.size(12.dp).clip(CircleShape).background(V.Red)) }
+                Spacer(Modifier.width(8.dp))
+                Text("Heart Rate", style = MaterialTheme.typography.titleSmall, color = V.Gray)
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("72", style = MaterialTheme.typography.headlineMedium, color = V.White)
+                Spacer(Modifier.width(4.dp))
+                Text("bpm", style = MaterialTheme.typography.bodySmall, color = V.Gray)
+            }
+            Spacer(Modifier.height(8.dp))
+            // ECG wave
+            Canvas(Modifier.fillMaxWidth().height(32.dp)) {
+                val w = size.width
+                val h = size.height
+                val mid = h / 2
+                val offset = phase * w * 0.5f // Scrolling offset
+
+                val path = Path()
+                val segW = w / 5f // One heartbeat segment width
+
+                path.moveTo(-offset, mid)
+
+                // Draw repeating ECG pattern across width + extra for scrolling
+                var x = -offset
+                while (x < w + segW) {
+                    // Flat baseline
+                    path.lineTo(x + segW * 0.3f, mid)
+                    // Small P wave
+                    path.lineTo(x + segW * 0.35f, mid - h * 0.08f)
+                    path.lineTo(x + segW * 0.4f, mid)
+                    // Sharp QRS complex
+                    path.lineTo(x + segW * 0.45f, mid + h * 0.1f) // Q dip
+                    path.lineTo(x + segW * 0.5f, mid - h * 0.4f)  // R peak
+                    path.lineTo(x + segW * 0.55f, mid + h * 0.15f) // S dip
+                    // Return to baseline
+                    path.lineTo(x + segW * 0.6f, mid)
+                    // T wave
+                    path.lineTo(x + segW * 0.7f, mid - h * 0.12f)
+                    path.lineTo(x + segW * 0.8f, mid)
+                    // Flat
+                    path.lineTo(x + segW, mid)
+                    x += segW
+                }
+
+                drawPath(
+                    path = path,
+                    color = V.Red.copy(alpha = 0.7f),
+                    style = DrawStroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ProgressBar(progress: Float, color: Color) {
     val anim by animateFloatAsState(progress, tween(1000), label = "prog")
     Box(Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(V.SurfaceBright)) {
@@ -279,15 +356,16 @@ private fun WeekBars(values: List<Float>, color: Color) {
     Column {
         Canvas(Modifier.fillMaxWidth().height(60.dp)) {
             val barW = size.width / values.size
-            val w = barW * 0.4f
+            val w = barW * 0.35f
+            val halfW = w / 2f // For full capsule: radius = half width
             values.forEachIndexed { i, v ->
-                val h = (v / max * size.height * 0.9f)
+                val h = (v / max * size.height * 0.9f).coerceAtLeast(w) // Min height = width for pill shape
                 val x = i * barW + (barW - w) / 2
                 drawRoundRect(
                     color = if (i == values.lastIndex) color else color.copy(alpha = 0.4f),
                     topLeft = Offset(x, size.height - h),
                     size = Size(w, h),
-                    cornerRadius = CornerRadius(4f),
+                    cornerRadius = CornerRadius(halfW, halfW), // Full capsule ends
                 )
             }
         }
