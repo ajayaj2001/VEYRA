@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.veyra.data.local.dao.NutritionDao
 import com.veyra.data.local.dao.WorkoutDao
 import com.veyra.data.local.entity.*
 
@@ -13,12 +14,16 @@ import com.veyra.data.local.entity.*
         RoutineExerciseEntity::class,
         WorkoutEntity::class,
         WorkoutSetEntity::class,
+        FoodItemEntity::class,
+        FoodLogEntity::class,
+        NutritionGoalEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
+    abstract fun nutritionDao(): NutritionDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null

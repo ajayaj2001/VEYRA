@@ -21,8 +21,12 @@ import com.veyra.ui.screens.home.HomeScreen
 import com.veyra.ui.screens.onboarding.OnboardingScreen
 import com.veyra.ui.screens.profile.ProfileScreen
 import com.veyra.ui.screens.workout.ActiveWorkoutScreen
+import com.veyra.ui.screens.workout.ExerciseDetailScreen
 import com.veyra.ui.screens.workout.ExerciseSearchScreen
 import com.veyra.ui.screens.workout.WorkoutScreen
+import com.veyra.ui.screens.nutrition.NutritionScreen
+import com.veyra.ui.screens.profile.CoachScreen
+import com.veyra.ui.screens.profile.MedicalScreen
 import com.veyra.data.model.ExerciseLib
 
 private const val ANIM = 300
@@ -117,12 +121,21 @@ fun VeyraNavGraph(
         composable("exercise/search") {
             ExerciseSearchScreen(nav = nav)
         }
+        composable("exercise/{exerciseId}") { entry ->
+            val id = entry.arguments?.getString("exerciseId") ?: return@composable
+            ExerciseDetailScreen(nav = nav, exerciseId = id)
+        }
         composable(Routes.NUTRITION) {
-            // Placeholder
-            HomeScreen(nav = nav)
+            NutritionScreen(nav = nav)
         }
         composable(Routes.PROFILE) {
             ProfileScreen(nav = nav)
+        }
+        composable(Routes.COACH) {
+            CoachScreen(nav = nav)
+        }
+        composable(Routes.MEDICAL) {
+            MedicalScreen(nav = nav)
         }
     }
 }
