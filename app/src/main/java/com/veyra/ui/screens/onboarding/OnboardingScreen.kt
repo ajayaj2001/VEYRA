@@ -136,7 +136,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
         // Responsive sizes based on screen height
         val illustrationSize = (screenHeight * 0.35f).coerceAtMost(320.dp)
         val titleTopPadding = screenHeight * 0.08f
-        val illustrationOffset = -(screenHeight * 0.06f)
+        val illustrationOffset = -(screenHeight * 0.10f)
         val textOffset = illustrationSize * 0.45f
 
         // Title pinned to top
