@@ -24,6 +24,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DirectionsRun
+import androidx.compose.material.icons.rounded.DirectionsWalk
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Weekend
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -242,15 +246,15 @@ fun SetupBodyScreen(
     data class ActivityOption(
         val title: String,
         val desc: String,
-        val emoji: String,
-        val bars: Int, // 1-4 intensity bars
+        val icon: androidx.compose.ui.graphics.vector.ImageVector,
+        val iconColor: Color,
     )
 
     val activities = listOf(
-        ActivityOption("Sedentary", "Little or no exercise", "🛋️", 1),
-        ActivityOption("Light", "Exercise 1–3 days/week", "🚶", 2),
-        ActivityOption("Moderate", "Exercise 3–5 days/week", "🏃", 3),
-        ActivityOption("Very Active", "Exercise 6–7 days/week", "🔥", 4),
+        ActivityOption("Sedentary", "Little or no exercise", Icons.Rounded.Weekend, V.Teal),
+        ActivityOption("Lightly Active", "Exercise 1–3 days/week", Icons.Rounded.DirectionsWalk, V.Green),
+        ActivityOption("Moderately Active", "Exercise 3–5 days/week", Icons.Rounded.DirectionsRun, V.Amber),
+        ActivityOption("Very Active", "Exercise 6–7 days/week", Icons.Rounded.LocalFireDepartment, V.Red),
     )
 
     Column(
@@ -321,83 +325,77 @@ fun SetupBodyScreen(
             Spacer(Modifier.height(24.dp))
 
             // Activity level
-            Text("Activity Level", style = MaterialTheme.typography.labelMedium, color = V.Gray)
+            Text("ACTIVITY LEVEL", style = MaterialTheme.typography.labelSmall, color = V.Gray, letterSpacing = 1.sp)
             Spacer(Modifier.height(12.dp))
 
-            // 2x2 grid
-            val rows = activities.chunked(2)
-            rows.forEach { row ->
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    row.forEachIndexed { _, option ->
-                        val i = activities.indexOf(option)
-                        val sel = i == activityLevel
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                activities.forEachIndexed { i, option ->
+                    val sel = i == activityLevel
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(V.Surface)
+                            .then(
+                                if (sel) Modifier.border(1.5.dp, V.Teal.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                                else Modifier
+                            )
+                            .clickable { activityLevel = i }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Colored icon circle
                         Box(
                             Modifier
-                                .weight(1f)
-                                .height(110.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(if (sel) V.Surface else V.Surface)
-                                .then(
-                                    if (sel) Modifier.border(2.dp, V.Teal, RoundedCornerShape(20.dp))
-                                    else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
-                                )
-                                .clickable { activityLevel = i }
-                                .padding(14.dp),
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(option.iconColor.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Column(
-                                Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(option.emoji, fontSize = 22.sp)
-                                    if (sel) {
-                                        Box(
-                                            Modifier.size(20.dp).clip(CircleShape).background(V.Teal),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
-                                            Icon(Icons.Rounded.Check, null, tint = V.White, modifier = Modifier.size(14.dp))
-                                        }
-                                    }
-                                }
-                                Column {
-                                    Text(
-                                        option.title,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = if (sel) V.White else V.White,
-                                        fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
-                                    )
-                                    Spacer(Modifier.height(2.dp))
-                                    // Intensity bars
-                                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                                        repeat(4) { bar ->
-                                            Box(
-                                                Modifier
-                                                    .width(16.dp)
-                                                    .height(4.dp)
-                                                    .clip(RoundedCornerShape(2.dp))
-                                                    .background(
-                                                        if (bar < option.bars) {
-                                                            if (sel) V.Teal else V.Gray
-                                                        } else {
-                                                            V.SurfaceBright.copy(alpha = 0.4f)
-                                                        }
-                                                    )
-                                            )
-                                        }
-                                    }
-                                }
+                            Icon(
+                                option.icon, null,
+                                tint = option.iconColor,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        // Title + subtitle
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                option.title,
+                                style = MaterialTheme.typography.titleLarge,
+                                color = V.White,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                option.desc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = V.Gray,
+                            )
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        // Radio circle
+                        Box(
+                            Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .then(
+                                    if (sel) Modifier.background(V.Teal)
+                                    else Modifier.border(1.5.dp, V.SurfaceBright, CircleShape)
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (sel) {
+                                Box(
+                                    Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(V.Black)
+                                )
                             }
                         }
                     }
                 }
-                Spacer(Modifier.height(10.dp))
             }
 
             Spacer(Modifier.height(24.dp))
