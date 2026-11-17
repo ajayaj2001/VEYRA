@@ -1,6 +1,7 @@
 package com.veyra.ui.screens.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +27,12 @@ import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DirectionsRun
 import androidx.compose.material.icons.rounded.DirectionsWalk
+import androidx.compose.material.icons.rounded.Bedtime
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.MonitorWeight
+import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -382,16 +388,17 @@ fun SetupBodyScreen(
 
 private data class GoalItem(
     val label: String,
+    val asset: String,
     val color: Color,
 )
 
 private val goals = listOf(
-    GoalItem("Lose Weight", V.Red),
-    GoalItem("Build Muscle", V.Teal),
-    GoalItem("Get Fitter", V.Green),
-    GoalItem("Eat Better", V.Amber),
-    GoalItem("Sleep Better", V.Blue),
-    GoalItem("Reduce Stress", V.Gray),
+    GoalItem("Lose Weight", "goals/weight.html", V.Red),
+    GoalItem("Build Muscle", "goals/muscle.html", V.Teal),
+    GoalItem("Get Fitter", "goals/fitter.html", V.Green),
+    GoalItem("Eat Better", "goals/eat.html", V.Amber),
+    GoalItem("Sleep Better", "goals/sleep.html", V.Blue),
+    GoalItem("Less Stress", "goals/stress.html", V.Gray),
 )
 
 @Composable
@@ -436,12 +443,12 @@ fun SetupGoalsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // 2-column grid
-            val rows = goals.chunked(2)
+            // 3-column animated grid
+            val rows = goals.chunked(3)
             rows.forEach { row ->
                 Row(
                     Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     row.forEach { goal ->
                         val idx = goals.indexOf(goal)
@@ -449,63 +456,67 @@ fun SetupGoalsScreen(
                         Box(
                             Modifier
                                 .weight(1f)
-                                .height(120.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(V.Surface)
+                                .height(130.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (sel) goal.color.copy(alpha = 0.06f) else V.Surface)
                                 .then(
-                                    if (sel) Modifier.border(2.dp, V.Teal, RoundedCornerShape(20.dp))
-                                    else Modifier.border(1.dp, V.SurfaceBright, RoundedCornerShape(20.dp))
+                                    if (sel) Modifier.border(1.5.dp, goal.color, RoundedCornerShape(16.dp))
+                                    else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                                 )
                                 .clickable {
                                     selected = if (sel) selected - idx else selected + idx
-                                }
-                                .padding(16.dp),
+                                },
                         ) {
                             Column(
-                                Modifier.fillMaxSize(),
-                                verticalArrangement = Arrangement.Center,
+                                Modifier.fillMaxSize().padding(vertical = 12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
                             ) {
-                                // Icon circle
-                                Box(
-                                    Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(goal.color.copy(alpha = 0.15f)),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Box(
-                                        Modifier
-                                            .size(16.dp)
-                                            .clip(CircleShape)
-                                            .background(goal.color)
+                                // Animated SVG illustration
+                                Box(Modifier.size(64.dp)) {
+                                    AndroidView(
+                                        factory = { ctx ->
+                                            android.webkit.WebView(ctx).apply {
+                                                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                                settings.javaScriptEnabled = false
+                                                settings.loadWithOverviewMode = true
+                                                settings.useWideViewPort = true
+                                                isVerticalScrollBarEnabled = false
+                                                isHorizontalScrollBarEnabled = false
+                                                webViewClient = android.webkit.WebViewClient()
+                                                loadUrl("file:///android_asset/${goal.asset}")
+                                            }
+                                        },
+                                        modifier = Modifier.fillMaxSize(),
                                     )
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Text(
                                     goal.label,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = V.White,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (sel) V.White else V.Gray,
+                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
                                     textAlign = TextAlign.Center,
                                 )
                             }
-                            // Checkmark
+                            // Checkmark badge
                             if (sel) {
                                 Box(
                                     Modifier
                                         .align(Alignment.TopEnd)
-                                        .size(22.dp)
+                                        .padding(6.dp)
+                                        .size(18.dp)
                                         .clip(CircleShape)
-                                        .background(V.Teal),
+                                        .background(goal.color),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Icon(Icons.Rounded.Check, null, tint = V.Black, modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Rounded.Check, null, tint = V.White, modifier = Modifier.size(12.dp))
                                 }
                             }
                         }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
             }
 
             Spacer(Modifier.height(16.dp))
