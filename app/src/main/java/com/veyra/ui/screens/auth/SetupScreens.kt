@@ -388,17 +388,17 @@ fun SetupBodyScreen(
 
 private data class GoalItem(
     val label: String,
-    val asset: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val color: Color,
 )
 
 private val goals = listOf(
-    GoalItem("Lose Weight", "goals/weight.html", V.Red),
-    GoalItem("Build Muscle", "goals/muscle.html", V.Teal),
-    GoalItem("Get Fitter", "goals/fitter.html", V.Green),
-    GoalItem("Eat Better", "goals/eat.html", V.Amber),
-    GoalItem("Sleep Better", "goals/sleep.html", V.Blue),
-    GoalItem("Less Stress", "goals/stress.html", V.Gray),
+    GoalItem("Lose Weight", Icons.Rounded.MonitorWeight, V.Red),
+    GoalItem("Build Muscle", Icons.Rounded.FitnessCenter, V.Teal),
+    GoalItem("Get Fitter", Icons.Rounded.Favorite, V.Green),
+    GoalItem("Eat Better", Icons.Rounded.Restaurant, V.Amber),
+    GoalItem("Sleep Better", Icons.Rounded.Bedtime, V.Blue),
+    GoalItem("Less Stress", Icons.Rounded.SelfImprovement, V.Gray),
 )
 
 @Composable
@@ -443,7 +443,7 @@ fun SetupGoalsScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // 3-column animated grid
+            // 3-column visual grid
             val rows = goals.chunked(3)
             rows.forEach { row ->
                 Row(
@@ -456,47 +456,58 @@ fun SetupGoalsScreen(
                         Box(
                             Modifier
                                 .weight(1f)
-                                .height(130.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(if (sel) goal.color.copy(alpha = 0.06f) else V.Surface)
+                                .height(120.dp)
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(if (sel) goal.color.copy(alpha = 0.08f) else V.Surface)
                                 .then(
-                                    if (sel) Modifier.border(1.5.dp, goal.color, RoundedCornerShape(16.dp))
-                                    else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                                    if (sel) Modifier.border(2.dp, goal.color, RoundedCornerShape(18.dp))
+                                    else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.3f), RoundedCornerShape(18.dp))
                                 )
                                 .clickable {
                                     selected = if (sel) selected - idx else selected + idx
                                 },
                         ) {
                             Column(
-                                Modifier.fillMaxSize().padding(vertical = 12.dp),
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center,
                             ) {
-                                // Animated SVG illustration
-                                Box(Modifier.size(64.dp)) {
-                                    AndroidView(
-                                        factory = { ctx ->
-                                            android.webkit.WebView(ctx).apply {
-                                                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                                                settings.javaScriptEnabled = false
-                                                settings.loadWithOverviewMode = true
-                                                settings.useWideViewPort = true
-                                                isVerticalScrollBarEnabled = false
-                                                isHorizontalScrollBarEnabled = false
-                                                webViewClient = android.webkit.WebViewClient()
-                                                loadUrl("file:///android_asset/${goal.asset}")
-                                            }
-                                        },
-                                        modifier = Modifier.fillMaxSize(),
-                                    )
+                                // Icon with double-ring glow effect
+                                Box(contentAlignment = Alignment.Center) {
+                                    // Outer glow ring
+                                    if (sel) {
+                                        Box(
+                                            Modifier
+                                                .size(56.dp)
+                                                .clip(CircleShape)
+                                                .background(goal.color.copy(alpha = 0.08f))
+                                        )
+                                    }
+                                    // Icon circle
+                                    Box(
+                                        Modifier
+                                            .size(46.dp)
+                                            .clip(CircleShape)
+                                            .background(goal.color.copy(alpha = if (sel) 0.2f else 0.1f)),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            goal.icon, null,
+                                            tint = if (sel) goal.color else goal.color.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
                                 }
-                                Spacer(Modifier.height(8.dp))
+                                Spacer(Modifier.height(10.dp))
                                 Text(
                                     goal.label,
                                     style = MaterialTheme.typography.labelMedium,
                                     color = if (sel) V.White else V.Gray,
                                     fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
                                     textAlign = TextAlign.Center,
+                                    maxLines = 2,
                                 )
                             }
                             // Checkmark badge
