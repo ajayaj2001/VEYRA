@@ -96,7 +96,7 @@ private fun VeyraRoot() {
     ) { padding ->
         VeyraNavGraph(
             nav = nav,
-            startDestination = Routes.ONBOARDING,
+            startDestination = Routes.SPLASH,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),

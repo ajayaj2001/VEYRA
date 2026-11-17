@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.veyra.ui.screens.SplashScreen
 import com.veyra.ui.screens.auth.LoginScreen
 import com.veyra.ui.screens.auth.SetupBasicScreen
 import com.veyra.ui.screens.auth.SetupBodyScreen
@@ -42,6 +43,15 @@ fun VeyraNavGraph(
         },
         popExitTransition = { fadeOut(tween(ANIM)) },
     ) {
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onFinished = {
+                    nav.navigate(Routes.ONBOARDING) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(Routes.ONBOARDING) {
             OnboardingScreen(
                 onComplete = {

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.rounded.Restaurant
 import androidx.compose.ui.graphics.vector.ImageVector
 
 object Routes {
+    const val SPLASH = "splash"
     const val ONBOARDING = "onboarding"
     const val LOGIN = "login"
     const val SETUP_BASIC = "setup/basic"
