@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.veyra.ui.components.VCard
+import com.veyra.AppConfig
 import com.veyra.ui.theme.V
 import kotlinx.coroutines.delay
 
@@ -73,7 +74,7 @@ fun HomeScreen(nav: NavController) {
         // Header
         Appear(visible, 0) {
             Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-                Text("Aura", style = MaterialTheme.typography.headlineLarge, color = V.White)
+                Text(AppConfig.APP_NAME, style = MaterialTheme.typography.headlineLarge, color = V.White)
                 Text(greeting(), style = MaterialTheme.typography.bodyMedium, color = V.Gray)
             }
         }

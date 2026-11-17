@@ -1,5 +1,6 @@
 package com.veyra.ui.screens.auth
 
+import com.veyra.AppConfig
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -54,7 +55,7 @@ fun LoginScreen(
 
         // Wordmark
         Text(
-            text = "AURA",
+            text = AppConfig.APP_NAME_UPPER,
             style = MaterialTheme.typography.displayMedium.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 4.sp,
@@ -65,7 +66,7 @@ fun LoginScreen(
         Spacer(Modifier.height(8.dp))
 
         Text(
-            text = "Your health. Connected.",
+            text = AppConfig.APP_TAGLINE,
             style = MaterialTheme.typography.bodyMedium,
             color = V.Gray,
         )

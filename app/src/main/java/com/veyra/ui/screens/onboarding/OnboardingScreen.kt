@@ -1,5 +1,6 @@
 package com.veyra.ui.screens.onboarding
 
+import com.veyra.AppConfig
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -54,7 +55,7 @@ private data class OnboardingPage(
 
 private val pages = listOf(
     OnboardingPage(
-        title = "Meet Veyra",
+        title = "Meet ${AppConfig.APP_NAME}",
         body = "Sleep, training, nutrition, and recovery\u2014all connected in one intelligent health companion.",
         colors = listOf(V.Teal, V.Blue, V.Amber, V.Red),
     ),
