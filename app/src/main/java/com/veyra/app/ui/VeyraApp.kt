@@ -150,8 +150,8 @@ private sealed interface VeyraRoute {
     data object CreateRoutine : VeyraRoute
     data class EditRoutine(val routineId: Long) : VeyraRoute
     data object AddExercise : VeyraRoute
-    data object AddFood : VeyraRoute
-    data class ReviewFood(val draft: FoodDraft) : VeyraRoute
+    data class AddFood(val date: LocalDate) : VeyraRoute
+    data class ReviewFood(val draft: FoodDraft, val date: LocalDate) : VeyraRoute
 }
 
 @Composable
@@ -243,7 +243,8 @@ fun VeyraApp(
                     onRoutine = { route = VeyraRoute.RoutineDetail(it) },
                     onCreateRoutine = { route = VeyraRoute.CreateRoutine },
                     foodState = foodState,
-                    onAddFood = { route = VeyraRoute.AddFood },
+                    onFoodDateChange = foodViewModel::selectDate,
+                    onAddFood = { date -> route = VeyraRoute.AddFood(date) },
                     onDeleteFood = foodViewModel::delete,
                 )
                 is VeyraRoute.ExerciseDetail -> {
@@ -335,15 +336,16 @@ fun VeyraApp(
                         route = VeyraRoute.ActiveWorkout
                     },
                 )
-                VeyraRoute.AddFood -> AddFoodScreen(
+                is VeyraRoute.AddFood -> AddFoodScreen(
                     onBack = { route = VeyraRoute.Main },
-                    onReview = { route = VeyraRoute.ReviewFood(it) },
+                    onReview = { route = VeyraRoute.ReviewFood(it, destination.date) },
                 )
                 is VeyraRoute.ReviewFood -> FoodReviewScreen(
                     initial = destination.draft,
-                    onBack = { route = VeyraRoute.AddFood },
+                    date = destination.date,
+                    onBack = { route = VeyraRoute.AddFood(destination.date) },
                     onLog = { draft ->
-                        foodViewModel.log(draft) {
+                        foodViewModel.log(draft, destination.date) {
                             tab = VeyraTab.Fuel
                             route = VeyraRoute.Main
                         }
@@ -375,7 +377,8 @@ private fun MainShell(
     onRoutine: (Long) -> Unit,
     onCreateRoutine: () -> Unit,
     foodState: FoodDayState,
-    onAddFood: () -> Unit,
+    onFoodDateChange: (LocalDate?) -> Unit,
+    onAddFood: (LocalDate) -> Unit,
     onDeleteFood: (Long) -> Unit,
 ) {
     Column(
@@ -404,7 +407,7 @@ private fun MainShell(
                     onRoutine,
                     onCreateRoutine,
                 )
-                VeyraTab.Fuel -> FuelScreen(foodState, onAddFood, onDeleteFood)
+                VeyraTab.Fuel -> FuelScreen(foodState, onFoodDateChange, onAddFood, onDeleteFood)
                 VeyraTab.Coach -> ComingSoonScreen("Coach", "Your data, explained with evidence.", Recovery)
                 VeyraTab.You -> ComingSoonScreen("You", "Trends, records and private settings.", Sleep)
             }
@@ -1998,7 +2001,12 @@ private fun BottomBar(selected: VeyraTab, onSelect: (VeyraTab) -> Unit) {
 private enum class FoodAddMode { Describe, Photo, Favorites, Manual }
 
 @Composable
-private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood: (Long) -> Unit) {
+private fun FuelScreen(
+    state: FoodDayState,
+    onDateChange: (LocalDate?) -> Unit,
+    onAddFood: (LocalDate) -> Unit,
+    onDeleteFood: (Long) -> Unit,
+) {
     val remaining = (state.calorieGoal - state.totals.calories).coerceAtLeast(0)
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -2006,7 +2014,17 @@ private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood:
         verticalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         item {
-            BrandHeader(state.date.format(DateTimeFormatter.ofPattern("EEEE · d MMM")).uppercase(), "Nutrition")
+            BrandHeader(state.date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)), "Nutrition")
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = { onDateChange(state.date.minusDays(1)) }) { Text("Previous day") }
+                TextButton(onClick = { onDateChange(null) }, enabled = state.date != state.today) { Text("Today") }
+                TextButton(
+                    onClick = { onDateChange(state.date.plusDays(1)) },
+                    enabled = state.date.isBefore(state.today),
+                ) { Text("Next day") }
+            }
         }
         item {
             PremiumCard(Modifier.fillMaxWidth().height(230.dp), border = Acid.copy(.35f)) {
@@ -2041,7 +2059,7 @@ private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood:
                         }
                     }
                     Text(
-                        if (state.totals.calories == 0) "Your day is open." else "${state.entries.size} foods logged today",
+                        if (state.entries.isEmpty()) "No foods logged" else "${state.entries.size} logged",
                         color = Muted,
                         fontSize = 12.sp,
                         modifier = Modifier.align(Alignment.BottomStart),
@@ -2056,7 +2074,7 @@ private fun FuelScreen(state: FoodDayState, onAddFood: () -> Unit, onDeleteFood:
                 MacroProgress("FAT", state.totals.fatGrams, state.fatGoal, Acid, Modifier.weight(1f))
             }
         }
-        item { PopButton("ADD MEAL", Icons.Outlined.Add, Acid, onAddFood) }
+        item { PopButton("ADD MEAL", Icons.Outlined.Add, Acid) { onAddFood(state.date) } }
         item { SectionHeader("LOGGED FOOD", "${state.entries.size}") }
         if (state.entries.isEmpty()) {
             item {
@@ -2225,7 +2243,12 @@ private fun FoodModeButton(label: String, value: FoodAddMode, selected: FoodAddM
 }
 
 @Composable
-private fun FoodReviewScreen(initial: FoodDraft, onBack: () -> Unit, onLog: (FoodDraft) -> Unit) {
+private fun FoodReviewScreen(
+    initial: FoodDraft,
+    date: LocalDate,
+    onBack: () -> Unit,
+    onLog: (FoodDraft) -> Unit,
+) {
     var name by rememberSaveable { mutableStateOf(initial.name) }
     var amount by rememberSaveable { mutableStateOf(initial.amountGrams.toString().removeSuffix(".0")) }
     var calories by rememberSaveable { mutableStateOf(initial.calories.toString()) }
@@ -2242,6 +2265,7 @@ private fun FoodReviewScreen(initial: FoodDraft, onBack: () -> Unit, onLog: (Foo
         verticalArrangement = Arrangement.spacedBy(13.dp),
     ) {
         item { TopBack("REVIEW FOOD", onBack) }
+        item { Label("Logging for ${date.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG))}", Muted) }
         item {
             if (initial.healthScore != null) Label("HEALTHINESS · ${initial.healthScore}/10", Recovery)
             VeyraTextInput(name, "Food name", Modifier.fillMaxWidth()) { name = it.take(80) }
