@@ -8,15 +8,25 @@ import com.veyra.app.data.food.FoodDraft
 import com.veyra.app.data.food.FoodRepository
 import com.veyra.app.data.food.FoodWithIngredients
 import com.veyra.app.data.workout.VeyraDatabase
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class FoodDayState(
     val date: LocalDate,
+    val today: LocalDate,
     val entries: List<FoodWithIngredients>,
     val totals: DailyNutrition,
     val calorieGoal: Int = 3_000,
@@ -27,12 +37,23 @@ data class FoodDayState(
 
 class FoodViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = FoodRepository(VeyraDatabase.get(application))
-    private val today = LocalDate.now()
+    private val selectedDate = MutableStateFlow<LocalDate?>(null)
+    private val localDay = flow {
+        while (true) {
+            val zone = ZoneId.systemDefault()
+            emit(LocalDate.now(zone) to zone)
+            delay(30_000)
+        }
+    }.distinctUntilChanged()
 
-    val state: StateFlow<FoodDayState> = repository.entriesFor(today)
-        .map { entries ->
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val state: StateFlow<FoodDayState> = combine(selectedDate, localDay) { selected, (today, zone) ->
+        Triple(selected?.coerceAtMost(today) ?: today, today, zone)
+    }.flatMapLatest { (date, today, zone) ->
+        repository.entriesFor(date, zone).map { entries ->
             FoodDayState(
-                date = today,
+                date = date,
+                today = today,
                 entries = entries,
                 totals = DailyNutrition(
                     calories = entries.sumOf { it.food.calories },
@@ -42,16 +63,28 @@ class FoodViewModel(application: Application) : AndroidViewModel(application) {
                 ),
             )
         }
+    }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
-            FoodDayState(today, emptyList(), DailyNutrition(0, 0.0, 0.0, 0.0)),
+            LocalDate.now().let { today ->
+                FoodDayState(today, today, emptyList(), DailyNutrition(0, 0.0, 0.0, 0.0))
+            },
         )
 
-    fun log(draft: FoodDraft, onLogged: () -> Unit) {
-        if (draft.name.isBlank() || draft.calories < 0) return
+    fun selectDate(date: LocalDate?) {
+        selectedDate.value = date?.takeIf { it.isBefore(LocalDate.now()) }
+    }
+
+    fun log(draft: FoodDraft, date: LocalDate, onLogged: () -> Unit) {
+        val now = Instant.now()
+        val zone = ZoneId.systemDefault()
+        val today = now.atZone(zone).toLocalDate()
+        if (draft.name.isBlank() || draft.calories < 0 || date.isAfter(today)) return
+        val loggedAt = if (date == today) now else date.atTime(12, 0).atZone(zone).toInstant()
         viewModelScope.launch {
-            repository.log(draft)
+            repository.log(draft, loggedAt.toEpochMilli())
+            selectDate(date)
             onLogged()
         }
     }
