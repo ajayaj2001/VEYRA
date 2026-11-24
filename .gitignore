@@ -15,3 +15,4 @@ local.properties
 *.keystore
 *.env
 local.properties
+.claude/
