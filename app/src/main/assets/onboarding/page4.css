@@ -1,0 +1,48 @@
+[data-motion="2:6924"] {
+  transform: var(--motion-layout-transform, translate(0px)) rotate(var(--rotate-transform, 0rad));
+  transform-origin: 53.154% 54.648%;
+  animation: kf_2_6924_rotate_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:6935"] {
+  transform: var(--motion-layout-transform, translate(0px)) rotate(var(--rotate-transform, 0rad));
+  transform-origin: 60.262% 52.982%;
+  animation: kf_2_6924_rotate_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:6939"] {
+  transform: var(--motion-layout-transform, translate(0px)) scale(var(--scale-transform, 1));
+  transform-origin: 50% 50%;
+  animation: kf_2_6939_opacity_0 8s linear, kf_2_6939_scale_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes kf_2_6924_rotate_0 {
+  0% { animation-timing-function: ease-in-out; --rotate-transform: 0rad; }
+  25% { animation-timing-function: ease-in-out; --rotate-transform: 0.139626rad; }
+  50% { animation-timing-function: ease-in-out; --rotate-transform: 0rad; }
+  75% { animation-timing-function: ease-in-out; --rotate-transform: -0.139626rad; }
+  100% { --rotate-transform: 0rad; }
+}
+
+@keyframes kf_2_6939_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  12.5% { animation-timing-function: ease-in-out; opacity: 0.5; }
+  25% { animation-timing-function: ease-in-out; opacity: 1; }
+  62.5% { animation-timing-function: ease-in-out; opacity: 0.5; }
+  75% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_6939_scale_0 {
+  0% { animation-timing-function: ease-in-out; --scale-transform: 1; }
+  12.5% { animation-timing-function: ease-in-out; --scale-transform: 0.8; }
+  25% { animation-timing-function: ease-in-out; --scale-transform: 1.1; }
+  37.5% { animation-timing-function: ease-in-out; --scale-transform: 1; }
+  62.5% { animation-timing-function: ease-in-out; --scale-transform: 0.8; }
+  75% { animation-timing-function: ease-in-out; --scale-transform: 1.1; }
+  87.5% { --scale-transform: 1; }
+  100% { --scale-transform: 1; }
+}

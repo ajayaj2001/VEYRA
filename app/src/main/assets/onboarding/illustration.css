@@ -1,0 +1,67 @@
+/* Keep Figma’s design coordinates while fitting the available WebView. */
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@property --scale-transform {
+  syntax: '<number>';
+  initial-value: 1;
+  inherits: false;
+}
+
+@property --motion-translate-x {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --motion-translate-y {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@property --rotate-transform {
+  syntax: '<angle>';
+  initial-value: 0rad;
+  inherits: false;
+}
+
+@property --translateY-transform {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --translateX-transform {
+  syntax: '<length>';
+  initial-value: 0px;
+  inherits: false;
+}
+
+@property --scaleY-transform {
+  syntax: '<number>';
+  initial-value: 1;
+  inherits: false;
+}
+
+@property --motion-rotate {
+  syntax: '<number>';
+  initial-value: 0;
+  inherits: false;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion] {
+    animation: none !important;
+  }
+}

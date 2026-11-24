@@ -1,0 +1,470 @@
+[data-motion="2:2662"] {
+  transform: var(--motion-layout-transform, translate(0px)) translateY(var(--translateY-transform, 0px)) rotate(var(--rotate-transform, 0rad));
+  transform-origin: 50% 50%;
+  animation: kf_2_2662_rotate_0 8s linear, kf_2_2662_translateY_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2665"] {
+  transform: var(--motion-layout-transform, translate(0px)) translateX(var(--translateX-transform, 0px));
+  transform-origin: 50% 50%;
+  animation: kf_2_2665_translateX_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2669"] {
+  animation: kf_2_2669_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2670"] {
+  animation: kf_2_2670_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2671"] {
+  animation: kf_2_2671_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2672"] {
+  animation: kf_2_2672_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2673"] {
+  animation: kf_2_2673_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2674"] {
+  animation: kf_2_2674_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2675"] {
+  animation: kf_2_2675_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2676"] {
+  animation: kf_2_2676_opacity_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2678"] {
+  transform: var(--motion-layout-transform, translate(0px)) translateY(var(--translateY-transform, 0px)) scaleY(var(--scaleY-transform, 1));
+  transform-origin: 50% 50%;
+  animation: kf_2_2678_scaleY_0 8s linear, kf_2_2678_translateY_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2681"] {
+  transform: var(--motion-layout-transform, translate(0px)) translateY(var(--translateY-transform, 0px)) scaleY(var(--scaleY-transform, 1));
+  transform-origin: 50% 50%;
+  animation: kf_2_2681_scaleY_0 8s linear, kf_2_2681_translateY_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+[data-motion="2:2684"] {
+  transform: var(--motion-layout-transform, translate(0px)) translateY(var(--translateY-transform, 0px)) scaleY(var(--scaleY-transform, 1));
+  transform-origin: 50% 50%;
+  animation: kf_2_2684_scaleY_0 8s linear, kf_2_2684_translateY_0 8s linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes kf_2_2662_rotate_0 {
+  0% { animation-timing-function: ease-in-out; --rotate-transform: 0rad; }
+  3.125% { animation-timing-function: ease-in-out; --rotate-transform: -0.003405rad; }
+  6.25% { animation-timing-function: ease-in-out; --rotate-transform: -0.006679rad; }
+  9.375% { animation-timing-function: ease-in-out; --rotate-transform: -0.009697rad; }
+  12.5% { animation-timing-function: ease-in-out; --rotate-transform: -0.012341rad; }
+  15.625% { animation-timing-function: ease-in-out; --rotate-transform: -0.014512rad; }
+  18.75% { animation-timing-function: ease-in-out; --rotate-transform: -0.016125rad; }
+  21.875% { animation-timing-function: ease-in-out; --rotate-transform: -0.017118rad; }
+  25% { animation-timing-function: ease-in-out; --rotate-transform: -0.017453rad; }
+  28.125% { animation-timing-function: ease-in-out; --rotate-transform: -0.017118rad; }
+  31.25% { animation-timing-function: ease-in-out; --rotate-transform: -0.016125rad; }
+  34.375% { animation-timing-function: ease-in-out; --rotate-transform: -0.014512rad; }
+  37.5% { animation-timing-function: ease-in-out; --rotate-transform: -0.012341rad; }
+  40.625% { animation-timing-function: ease-in-out; --rotate-transform: -0.009697rad; }
+  43.75% { animation-timing-function: ease-in-out; --rotate-transform: -0.006679rad; }
+  46.875% { animation-timing-function: ease-in-out; --rotate-transform: -0.003405rad; }
+  50% { animation-timing-function: ease-in-out; --rotate-transform: 0rad; }
+  53.125% { animation-timing-function: ease-in-out; --rotate-transform: 0.003405rad; }
+  56.25% { animation-timing-function: ease-in-out; --rotate-transform: 0.006679rad; }
+  59.375% { animation-timing-function: ease-in-out; --rotate-transform: 0.009697rad; }
+  62.5% { animation-timing-function: ease-in-out; --rotate-transform: 0.012341rad; }
+  65.625% { animation-timing-function: ease-in-out; --rotate-transform: 0.014512rad; }
+  68.75% { animation-timing-function: ease-in-out; --rotate-transform: 0.016125rad; }
+  71.875% { animation-timing-function: ease-in-out; --rotate-transform: 0.017118rad; }
+  75% { animation-timing-function: ease-in-out; --rotate-transform: 0.017453rad; }
+  78.125% { animation-timing-function: ease-in-out; --rotate-transform: 0.017118rad; }
+  81.25% { animation-timing-function: ease-in-out; --rotate-transform: 0.016125rad; }
+  84.375% { animation-timing-function: ease-in-out; --rotate-transform: 0.014512rad; }
+  87.5% { animation-timing-function: ease-in-out; --rotate-transform: 0.012341rad; }
+  90.625% { animation-timing-function: ease-in-out; --rotate-transform: 0.009697rad; }
+  93.75% { animation-timing-function: ease-in-out; --rotate-transform: 0.006679rad; }
+  96.875% { animation-timing-function: ease-in-out; --rotate-transform: 0.003405rad; }
+  100% { --rotate-transform: 0rad; }
+}
+
+@keyframes kf_2_2662_translateY_0 {
+  0% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  3.125% { animation-timing-function: ease-in-out; --translateY-transform: -0.585px; }
+  6.25% { animation-timing-function: ease-in-out; --translateY-transform: -1.148px; }
+  9.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.667px; }
+  12.5% { animation-timing-function: ease-in-out; --translateY-transform: -2.121px; }
+  15.625% { animation-timing-function: ease-in-out; --translateY-transform: -2.494px; }
+  18.75% { animation-timing-function: ease-in-out; --translateY-transform: -2.772px; }
+  21.875% { animation-timing-function: ease-in-out; --translateY-transform: -2.942px; }
+  25% { animation-timing-function: ease-in-out; --translateY-transform: -3px; }
+  28.125% { animation-timing-function: ease-in-out; --translateY-transform: -2.942px; }
+  31.25% { animation-timing-function: ease-in-out; --translateY-transform: -2.772px; }
+  34.375% { animation-timing-function: ease-in-out; --translateY-transform: -2.494px; }
+  37.5% { animation-timing-function: ease-in-out; --translateY-transform: -2.121px; }
+  40.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.667px; }
+  43.75% { animation-timing-function: ease-in-out; --translateY-transform: -1.148px; }
+  46.875% { animation-timing-function: ease-in-out; --translateY-transform: -0.585px; }
+  50% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  53.125% { animation-timing-function: ease-in-out; --translateY-transform: 0.585px; }
+  56.25% { animation-timing-function: ease-in-out; --translateY-transform: 1.148px; }
+  59.375% { animation-timing-function: ease-in-out; --translateY-transform: 1.667px; }
+  62.5% { animation-timing-function: ease-in-out; --translateY-transform: 2.121px; }
+  65.625% { animation-timing-function: ease-in-out; --translateY-transform: 2.494px; }
+  68.75% { animation-timing-function: ease-in-out; --translateY-transform: 2.772px; }
+  71.875% { animation-timing-function: ease-in-out; --translateY-transform: 2.942px; }
+  75% { animation-timing-function: ease-in-out; --translateY-transform: 3px; }
+  78.125% { animation-timing-function: ease-in-out; --translateY-transform: 2.942px; }
+  81.25% { animation-timing-function: ease-in-out; --translateY-transform: 2.772px; }
+  84.375% { animation-timing-function: ease-in-out; --translateY-transform: 2.494px; }
+  87.5% { animation-timing-function: ease-in-out; --translateY-transform: 2.121px; }
+  90.625% { animation-timing-function: ease-in-out; --translateY-transform: 1.667px; }
+  93.75% { animation-timing-function: ease-in-out; --translateY-transform: 1.148px; }
+  96.875% { animation-timing-function: ease-in-out; --translateY-transform: 0.585px; }
+  100% { --translateY-transform: 0px; }
+}
+
+@keyframes kf_2_2665_translateX_0 {
+  0% { animation-timing-function: ease-in-out; --translateX-transform: 0px; }
+  3.125% { animation-timing-function: ease-in-out; --translateX-transform: 0.585px; }
+  6.25% { animation-timing-function: ease-in-out; --translateX-transform: 1.148px; }
+  9.375% { animation-timing-function: ease-in-out; --translateX-transform: 1.667px; }
+  12.5% { animation-timing-function: ease-in-out; --translateX-transform: 2.121px; }
+  15.625% { animation-timing-function: ease-in-out; --translateX-transform: 2.494px; }
+  18.75% { animation-timing-function: ease-in-out; --translateX-transform: 2.772px; }
+  21.875% { animation-timing-function: ease-in-out; --translateX-transform: 2.942px; }
+  25% { animation-timing-function: ease-in-out; --translateX-transform: 3px; }
+  28.125% { animation-timing-function: ease-in-out; --translateX-transform: 2.942px; }
+  31.25% { animation-timing-function: ease-in-out; --translateX-transform: 2.772px; }
+  34.375% { animation-timing-function: ease-in-out; --translateX-transform: 2.494px; }
+  37.5% { animation-timing-function: ease-in-out; --translateX-transform: 2.121px; }
+  40.625% { animation-timing-function: ease-in-out; --translateX-transform: 1.667px; }
+  43.75% { animation-timing-function: ease-in-out; --translateX-transform: 1.148px; }
+  46.875% { animation-timing-function: ease-in-out; --translateX-transform: 0.585px; }
+  50% { animation-timing-function: ease-in-out; --translateX-transform: 0px; }
+  53.125% { animation-timing-function: ease-in-out; --translateX-transform: -0.585px; }
+  56.25% { animation-timing-function: ease-in-out; --translateX-transform: -1.148px; }
+  59.375% { animation-timing-function: ease-in-out; --translateX-transform: -1.667px; }
+  62.5% { animation-timing-function: ease-in-out; --translateX-transform: -2.121px; }
+  65.625% { animation-timing-function: ease-in-out; --translateX-transform: -2.494px; }
+  68.75% { animation-timing-function: ease-in-out; --translateX-transform: -2.772px; }
+  71.875% { animation-timing-function: ease-in-out; --translateX-transform: -2.942px; }
+  75% { animation-timing-function: ease-in-out; --translateX-transform: -3px; }
+  78.125% { animation-timing-function: ease-in-out; --translateX-transform: -2.942px; }
+  81.25% { animation-timing-function: ease-in-out; --translateX-transform: -2.772px; }
+  84.375% { animation-timing-function: ease-in-out; --translateX-transform: -2.494px; }
+  87.5% { animation-timing-function: ease-in-out; --translateX-transform: -2.121px; }
+  90.625% { animation-timing-function: ease-in-out; --translateX-transform: -1.667px; }
+  93.75% { animation-timing-function: ease-in-out; --translateX-transform: -1.148px; }
+  96.875% { animation-timing-function: ease-in-out; --translateX-transform: -0.585px; }
+  100% { --translateX-transform: 0px; }
+}
+
+@keyframes kf_2_2669_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  7.5% { animation-timing-function: ease-in-out; opacity: 0.45; }
+  22.5% { animation-timing-function: ease-in-out; opacity: 1; }
+  57.5% { animation-timing-function: ease-in-out; opacity: 0.45; }
+  72.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2670_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  9% { animation-timing-function: ease-in-out; opacity: 0.55; }
+  24% { animation-timing-function: ease-in-out; opacity: 1; }
+  59% { animation-timing-function: ease-in-out; opacity: 0.55; }
+  74% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2671_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  10.5% { animation-timing-function: ease-in-out; opacity: 0.65; }
+  25.5% { animation-timing-function: ease-in-out; opacity: 1; }
+  60.5% { animation-timing-function: ease-in-out; opacity: 0.65; }
+  75.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2672_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  12% { animation-timing-function: ease-in-out; opacity: 0.45; }
+  27% { animation-timing-function: ease-in-out; opacity: 1; }
+  62% { animation-timing-function: ease-in-out; opacity: 0.45; }
+  77% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2673_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  13.5% { animation-timing-function: ease-in-out; opacity: 0.55; }
+  28.5% { animation-timing-function: ease-in-out; opacity: 1; }
+  63.5% { animation-timing-function: ease-in-out; opacity: 0.55; }
+  78.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2674_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  15% { animation-timing-function: ease-in-out; opacity: 0.65; }
+  30% { animation-timing-function: ease-in-out; opacity: 1; }
+  65% { animation-timing-function: ease-in-out; opacity: 0.65; }
+  80% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2675_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  16.5% { animation-timing-function: ease-in-out; opacity: 0.45; }
+  31.5% { animation-timing-function: ease-in-out; opacity: 1; }
+  66.5% { animation-timing-function: ease-in-out; opacity: 0.45; }
+  81.5% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2676_opacity_0 {
+  0% { animation-timing-function: ease-in-out; opacity: 1; }
+  18% { animation-timing-function: ease-in-out; opacity: 0.55; }
+  33% { animation-timing-function: ease-in-out; opacity: 1; }
+  68% { animation-timing-function: ease-in-out; opacity: 0.55; }
+  83% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes kf_2_2678_scaleY_0 {
+  0% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  3.125% { animation-timing-function: ease-in-out; --scaleY-transform: 1.022961; }
+  6.25% { animation-timing-function: ease-in-out; --scaleY-transform: 1.042426; }
+  9.375% { animation-timing-function: ease-in-out; --scaleY-transform: 1.055433; }
+  12.5% { animation-timing-function: ease-in-out; --scaleY-transform: 1.06; }
+  15.625% { animation-timing-function: ease-in-out; --scaleY-transform: 1.055433; }
+  18.75% { animation-timing-function: ease-in-out; --scaleY-transform: 1.042426; }
+  21.875% { animation-timing-function: ease-in-out; --scaleY-transform: 1.022961; }
+  25% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  28.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.977039; }
+  31.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.957574; }
+  34.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.944567; }
+  37.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.94; }
+  40.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.944567; }
+  43.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.957574; }
+  46.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.977039; }
+  50% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  53.125% { animation-timing-function: ease-in-out; --scaleY-transform: 1.022961; }
+  56.25% { animation-timing-function: ease-in-out; --scaleY-transform: 1.042426; }
+  59.375% { animation-timing-function: ease-in-out; --scaleY-transform: 1.055433; }
+  62.5% { animation-timing-function: ease-in-out; --scaleY-transform: 1.06; }
+  65.625% { animation-timing-function: ease-in-out; --scaleY-transform: 1.055433; }
+  68.75% { animation-timing-function: ease-in-out; --scaleY-transform: 1.042426; }
+  71.875% { animation-timing-function: ease-in-out; --scaleY-transform: 1.022961; }
+  75% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  78.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.977039; }
+  81.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.957574; }
+  84.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.944567; }
+  87.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.94; }
+  90.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.944567; }
+  93.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.957574; }
+  96.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.977039; }
+  100% { --scaleY-transform: 1; }
+}
+
+@keyframes kf_2_2678_translateY_0 {
+  0% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  3.125% { animation-timing-function: ease-in-out; --translateY-transform: 0.765px; }
+  6.25% { animation-timing-function: ease-in-out; --translateY-transform: 1.414px; }
+  9.375% { animation-timing-function: ease-in-out; --translateY-transform: 1.848px; }
+  12.5% { animation-timing-function: ease-in-out; --translateY-transform: 2px; }
+  15.625% { animation-timing-function: ease-in-out; --translateY-transform: 1.848px; }
+  18.75% { animation-timing-function: ease-in-out; --translateY-transform: 1.414px; }
+  21.875% { animation-timing-function: ease-in-out; --translateY-transform: 0.765px; }
+  25% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  28.125% { animation-timing-function: ease-in-out; --translateY-transform: -0.765px; }
+  31.25% { animation-timing-function: ease-in-out; --translateY-transform: -1.414px; }
+  34.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.848px; }
+  37.5% { animation-timing-function: ease-in-out; --translateY-transform: -2px; }
+  40.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.848px; }
+  43.75% { animation-timing-function: ease-in-out; --translateY-transform: -1.414px; }
+  46.875% { animation-timing-function: ease-in-out; --translateY-transform: -0.765px; }
+  50% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  53.125% { animation-timing-function: ease-in-out; --translateY-transform: 0.765px; }
+  56.25% { animation-timing-function: ease-in-out; --translateY-transform: 1.414px; }
+  59.375% { animation-timing-function: ease-in-out; --translateY-transform: 1.848px; }
+  62.5% { animation-timing-function: ease-in-out; --translateY-transform: 2px; }
+  65.625% { animation-timing-function: ease-in-out; --translateY-transform: 1.848px; }
+  68.75% { animation-timing-function: ease-in-out; --translateY-transform: 1.414px; }
+  71.875% { animation-timing-function: ease-in-out; --translateY-transform: 0.765px; }
+  75% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  78.125% { animation-timing-function: ease-in-out; --translateY-transform: -0.765px; }
+  81.25% { animation-timing-function: ease-in-out; --translateY-transform: -1.414px; }
+  84.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.848px; }
+  87.5% { animation-timing-function: ease-in-out; --translateY-transform: -2px; }
+  90.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.848px; }
+  93.75% { animation-timing-function: ease-in-out; --translateY-transform: -1.414px; }
+  96.875% { animation-timing-function: ease-in-out; --translateY-transform: -0.765px; }
+  100% { --translateY-transform: 0px; }
+}
+
+@keyframes kf_2_2681_scaleY_0 {
+  0% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  3.125% { animation-timing-function: ease-in-out; --scaleY-transform: 1.007525; }
+  6.25% { animation-timing-function: ease-in-out; --scaleY-transform: 1.005994; }
+  9.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.99564; }
+  12.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.978038; }
+  15.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.95587; }
+  18.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.932509; }
+  21.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.911513; }
+  25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.896077; }
+  28.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.888552; }
+  31.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.890083; }
+  34.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.900437; }
+  37.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.918038; }
+  40.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.940207; }
+  43.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.963568; }
+  46.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.984564; }
+  50% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  53.125% { animation-timing-function: ease-in-out; --scaleY-transform: 1.007525; }
+  56.25% { animation-timing-function: ease-in-out; --scaleY-transform: 1.005994; }
+  59.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.99564; }
+  62.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.978038; }
+  65.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.95587; }
+  68.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.932509; }
+  71.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.911513; }
+  75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.896077; }
+  78.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.888552; }
+  81.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.890083; }
+  84.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.900437; }
+  87.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.918038; }
+  90.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.940207; }
+  93.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.963568; }
+  96.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.984564; }
+  100% { --scaleY-transform: 1; }
+}
+
+@keyframes kf_2_2681_translateY_0 {
+  0% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  3.125% { animation-timing-function: ease-in-out; --translateY-transform: 0.251px; }
+  6.25% { animation-timing-function: ease-in-out; --translateY-transform: 0.2px; }
+  9.375% { animation-timing-function: ease-in-out; --translateY-transform: -0.145px; }
+  12.5% { animation-timing-function: ease-in-out; --translateY-transform: -0.732px; }
+  15.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.471px; }
+  18.75% { animation-timing-function: ease-in-out; --translateY-transform: -2.25px; }
+  21.875% { animation-timing-function: ease-in-out; --translateY-transform: -2.95px; }
+  25% { animation-timing-function: ease-in-out; --translateY-transform: -3.464px; }
+  28.125% { animation-timing-function: ease-in-out; --translateY-transform: -3.715px; }
+  31.25% { animation-timing-function: ease-in-out; --translateY-transform: -3.664px; }
+  34.375% { animation-timing-function: ease-in-out; --translateY-transform: -3.319px; }
+  37.5% { animation-timing-function: ease-in-out; --translateY-transform: -2.732px; }
+  40.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.993px; }
+  43.75% { animation-timing-function: ease-in-out; --translateY-transform: -1.214px; }
+  46.875% { animation-timing-function: ease-in-out; --translateY-transform: -0.515px; }
+  50% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  53.125% { animation-timing-function: ease-in-out; --translateY-transform: 0.251px; }
+  56.25% { animation-timing-function: ease-in-out; --translateY-transform: 0.2px; }
+  59.375% { animation-timing-function: ease-in-out; --translateY-transform: -0.145px; }
+  62.5% { animation-timing-function: ease-in-out; --translateY-transform: -0.732px; }
+  65.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.471px; }
+  68.75% { animation-timing-function: ease-in-out; --translateY-transform: -2.25px; }
+  71.875% { animation-timing-function: ease-in-out; --translateY-transform: -2.95px; }
+  75% { animation-timing-function: ease-in-out; --translateY-transform: -3.464px; }
+  78.125% { animation-timing-function: ease-in-out; --translateY-transform: -3.715px; }
+  81.25% { animation-timing-function: ease-in-out; --translateY-transform: -3.664px; }
+  84.375% { animation-timing-function: ease-in-out; --translateY-transform: -3.319px; }
+  87.5% { animation-timing-function: ease-in-out; --translateY-transform: -2.732px; }
+  90.625% { animation-timing-function: ease-in-out; --translateY-transform: -1.993px; }
+  93.75% { animation-timing-function: ease-in-out; --translateY-transform: -1.214px; }
+  96.875% { animation-timing-function: ease-in-out; --translateY-transform: -0.515px; }
+  100% { --translateY-transform: 0px; }
+}
+
+@keyframes kf_2_2684_scaleY_0 {
+  0% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  3.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.984564; }
+  6.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.963568; }
+  9.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.940207; }
+  12.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.918038; }
+  15.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.900437; }
+  18.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.890083; }
+  21.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.888552; }
+  25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.896077; }
+  28.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.911513; }
+  31.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.932509; }
+  34.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.95587; }
+  37.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.978038; }
+  40.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.99564; }
+  43.75% { animation-timing-function: ease-in-out; --scaleY-transform: 1.005994; }
+  46.875% { animation-timing-function: ease-in-out; --scaleY-transform: 1.007525; }
+  50% { animation-timing-function: ease-in-out; --scaleY-transform: 1; }
+  53.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.984564; }
+  56.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.963568; }
+  59.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.940207; }
+  62.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.918038; }
+  65.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.900437; }
+  68.75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.890083; }
+  71.875% { animation-timing-function: ease-in-out; --scaleY-transform: 0.888552; }
+  75% { animation-timing-function: ease-in-out; --scaleY-transform: 0.896077; }
+  78.125% { animation-timing-function: ease-in-out; --scaleY-transform: 0.911513; }
+  81.25% { animation-timing-function: ease-in-out; --scaleY-transform: 0.932509; }
+  84.375% { animation-timing-function: ease-in-out; --scaleY-transform: 0.95587; }
+  87.5% { animation-timing-function: ease-in-out; --scaleY-transform: 0.978038; }
+  90.625% { animation-timing-function: ease-in-out; --scaleY-transform: 0.99564; }
+  93.75% { animation-timing-function: ease-in-out; --scaleY-transform: 1.005994; }
+  96.875% { animation-timing-function: ease-in-out; --scaleY-transform: 1.007525; }
+  100% { --scaleY-transform: 1; }
+}
+
+@keyframes kf_2_2684_translateY_0 {
+  0% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  3.125% { animation-timing-function: ease-in-out; --translateY-transform: -0.515px; }
+  6.25% { animation-timing-function: ease-in-out; --translateY-transform: -1.214px; }
+  9.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.993px; }
+  12.5% { animation-timing-function: ease-in-out; --translateY-transform: -2.732px; }
+  15.625% { animation-timing-function: ease-in-out; --translateY-transform: -3.319px; }
+  18.75% { animation-timing-function: ease-in-out; --translateY-transform: -3.664px; }
+  21.875% { animation-timing-function: ease-in-out; --translateY-transform: -3.715px; }
+  25% { animation-timing-function: ease-in-out; --translateY-transform: -3.464px; }
+  28.125% { animation-timing-function: ease-in-out; --translateY-transform: -2.95px; }
+  31.25% { animation-timing-function: ease-in-out; --translateY-transform: -2.25px; }
+  34.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.471px; }
+  37.5% { animation-timing-function: ease-in-out; --translateY-transform: -0.732px; }
+  40.625% { animation-timing-function: ease-in-out; --translateY-transform: -0.145px; }
+  43.75% { animation-timing-function: ease-in-out; --translateY-transform: 0.2px; }
+  46.875% { animation-timing-function: ease-in-out; --translateY-transform: 0.251px; }
+  50% { animation-timing-function: ease-in-out; --translateY-transform: 0px; }
+  53.125% { animation-timing-function: ease-in-out; --translateY-transform: -0.515px; }
+  56.25% { animation-timing-function: ease-in-out; --translateY-transform: -1.214px; }
+  59.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.993px; }
+  62.5% { animation-timing-function: ease-in-out; --translateY-transform: -2.732px; }
+  65.625% { animation-timing-function: ease-in-out; --translateY-transform: -3.319px; }
+  68.75% { animation-timing-function: ease-in-out; --translateY-transform: -3.664px; }
+  71.875% { animation-timing-function: ease-in-out; --translateY-transform: -3.715px; }
+  75% { animation-timing-function: ease-in-out; --translateY-transform: -3.464px; }
+  78.125% { animation-timing-function: ease-in-out; --translateY-transform: -2.95px; }
+  81.25% { animation-timing-function: ease-in-out; --translateY-transform: -2.25px; }
+  84.375% { animation-timing-function: ease-in-out; --translateY-transform: -1.471px; }
+  87.5% { animation-timing-function: ease-in-out; --translateY-transform: -0.732px; }
+  90.625% { animation-timing-function: ease-in-out; --translateY-transform: -0.145px; }
+  93.75% { animation-timing-function: ease-in-out; --translateY-transform: 0.2px; }
+  96.875% { animation-timing-function: ease-in-out; --translateY-transform: 0.251px; }
+  100% { --translateY-transform: 0px; }
+}
