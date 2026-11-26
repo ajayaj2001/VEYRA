@@ -3,14 +3,15 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 android {
-    namespace = "com.veyra"
+    namespace = "com.aura"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.veyra"
+        applicationId = "com.aura"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
@@ -77,6 +78,9 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 
     implementation(libs.coil.compose)
     implementation(libs.gson)

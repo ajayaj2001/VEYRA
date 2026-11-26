@@ -1,6 +1,6 @@
-# Veyra for Android
+# Aura for Android
 
-Veyra is a local-first personal health companion for Google Fitbit Air. It is designed to combine a readable daily health dashboard, fast strength training, low-friction nutrition logging, and a bring-your-own-key AI coach in one premium Android experience.
+Aura is a local-first personal health companion for Google Fitbit Air. It is designed to combine a readable daily health dashboard, fast strength training, low-friction nutrition logging, and a bring-your-own-key AI coach in one premium Android experience.
 
 ## Current prototype
 
@@ -51,7 +51,7 @@ The Today dashboard uses real Health Connect data after permission is granted. R
 
 Planned platform components include WorkManager, CameraX, ML Kit and Android Keystore.
 
-Exercise movement frames are loaded from the public-domain [free-exercise-db](https://github.com/yuhonas/free-exercise-db) dataset and cached on-device. VEYRA's generated vector demonstration remains available when media cannot be reached.
+Exercise movement frames are loaded from the public-domain [free-exercise-db](https://github.com/yuhonas/free-exercise-db) dataset and cached on-device. AURA's generated vector demonstration remains available when media cannot be reached.
 
 ## Build
 

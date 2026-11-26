@@ -6,7 +6,7 @@
 # Gson
 -keepattributes Signature
 -keepattributes *Annotation*
--keep class com.veyra.data.model.** { *; }
+-keep class com.aura.data.model.** { *; }
 
 # Health Connect
 -keep class androidx.health.connect.** { *; }

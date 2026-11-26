@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "772947319479",
+    "project_id": "employee-crud-8572d",
+    "storage_bucket": "employee-crud-8572d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:772947319479:android:6a8d447ebee8543d978b32",
+        "android_client_info": {
+          "package_name": "com.aura.debug"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "772947319479-enarp8a20dtel5lk0vannsf1fc5122nn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAhDuAB-wd6Cd81Ov3A_n0X-KGM9F__oRs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "772947319479-enarp8a20dtel5lk0vannsf1fc5122nn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

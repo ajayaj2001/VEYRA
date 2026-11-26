@@ -29,13 +29,13 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v7
         with:
-          name: veyra-debug-${{ github.run_number }}
+          name: aura-debug-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
       - name: Upload release APK
         uses: actions/upload-artifact@v7
         with:
-          name: veyra-release-unsigned-${{ github.run_number }}
+          name: aura-release-unsigned-${{ github.run_number }}
           path: app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 14
       - name: Publish latest milestone release
@@ -44,9 +44,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: >-
           gh release create "build-${GITHUB_RUN_NUMBER}"
-          app/build/outputs/apk/debug/app-debug.apk#VEYRA-debug-installable.apk
-          app/build/outputs/apk/release/app-release-unsigned.apk#VEYRA-release-unsigned.apk
+          app/build/outputs/apk/debug/app-debug.apk#AURA-debug-installable.apk
+          app/build/outputs/apk/release/app-release-unsigned.apk#AURA-release-unsigned.apk
           --repo "${GITHUB_REPOSITORY}"
-          --title "VEYRA milestone build ${GITHUB_RUN_NUMBER}"
+          --title "AURA milestone build ${GITHUB_RUN_NUMBER}"
           --notes "Automated milestone build from ${GITHUB_SHA}. The debug APK is installable. The release APK is unsigned until production signing is configured."
           --latest
