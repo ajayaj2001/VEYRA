@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+val personalBuild = providers.gradleProperty("auraPersonalBuild").map(String::toBoolean).orElse(false)
+
 android {
     namespace = "com.aura"
     compileSdk = 36
@@ -22,6 +24,11 @@ android {
 
     buildTypes {
         release {
+            if (personalBuild.get()) {
+                // Keep personal installs compatible with the registered Firebase test app.
+                applicationIdSuffix = ".debug"
+                signingConfig = signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -78,9 +85,15 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+    implementation(libs.guava.android)
 
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.identity)
+    implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(libs.coil.compose)
     implementation(libs.gson)

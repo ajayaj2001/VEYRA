@@ -3,9 +3,7 @@ package com.aura.ui.screens.workout
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,14 +16,13 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,8 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
@@ -51,7 +46,6 @@ import com.aura.ui.components.AuraTextField
 import com.aura.AuraApp
 import com.aura.data.local.entity.RoutineEntity
 import com.aura.data.local.entity.WorkoutEntity
-import com.aura.navigation.Routes
 import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
@@ -81,18 +75,19 @@ class WorkoutVM(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch { dao.getAllRoutines().collect { _routines.value = it } }
-        viewModelScope.launch { dao.getWorkoutHistory().collect { _history.value = it.take(5) } }
+        viewModelScope.launch {
+            dao.getWorkoutHistory().collect {
+                _history.value = it.take(5)
+                _totalCount.value = it.size
+            }
+        }
         viewModelScope.launch { dao.observeActiveWorkout().collect { _activeWorkout.value = it } }
-        viewModelScope.launch { _totalCount.value = dao.getTotalWorkoutCount() }
     }
 
     fun createRoutine(name: String) = viewModelScope.launch {
         dao.insertRoutine(RoutineEntity(name = name))
     }
 
-    fun startEmptyWorkout() = viewModelScope.launch {
-        dao.insertWorkout(WorkoutEntity(name = "Quick Workout", isActive = true))
-    }
 }
 
 @Composable
@@ -123,52 +118,26 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
             }
         }
 
-        // Active workout banner
-        if (active != null) {
-            item {
-                VCard(
-                    Modifier.padding(horizontal = AuraScreenInset),
-                    color = V.Teal.copy(alpha = 0.12f),
-                    onClick = { nav.navigate("workout/active") },
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Timer, null, tint = V.Teal, modifier = Modifier.size(28.dp))
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Workout in Progress", style = MaterialTheme.typography.titleLarge, color = V.White, fontWeight = FontWeight.Bold)
-                            Text(active!!.name, style = MaterialTheme.typography.bodySmall, color = V.Gray)
-                        }
-                        Icon(Icons.Rounded.PlayArrow, null, tint = V.Teal, modifier = Modifier.size(28.dp))
-                    }
-                }
-            }
-        }
-
-        // Start empty workout
         item {
             AuraPrimaryButton(
-                "Start Empty Workout",
-                onClick = {
-                    vm.startEmptyWorkout()
-                    nav.navigate("workout/active")
-                },
+                if (active == null) "Start empty workout" else "Resume workout",
+                onClick = { nav.navigate("workout/active") },
                 modifier = Modifier.padding(horizontal = AuraScreenInset),
             )
         }
 
-        // Routines section
         item {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("My Routines", style = MaterialTheme.typography.titleLarge, color = V.White, modifier = Modifier.weight(1f))
-                Box(
-                    Modifier.size(32.dp).clip(CircleShape).background(V.SurfaceRaised).clickable { showNewDialog = true },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Rounded.Add, "New", tint = V.Gray, modifier = Modifier.size(18.dp))
+                Text("Routines", style = MaterialTheme.typography.headlineMedium, color = V.White)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WorkoutAction("New routine", Icons.Rounded.Add, { showNewDialog = true }, Modifier.weight(1f))
+                    WorkoutAction("Exercise library", Icons.Rounded.Search,
+                        { nav.navigate("exercise/search?picker=false") }, Modifier.weight(1f))
                 }
+                Text("My routines · ${routines.size}", style = MaterialTheme.typography.labelMedium, color = V.Gray)
             }
         }
 
@@ -185,24 +154,20 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
             }
         }
 
-        items(routines) { routine ->
-            VCard(
-                Modifier.padding(horizontal = AuraScreenInset),
-                onClick = { nav.navigate("workout/active?routineId=${routine.id}") },
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(routine.name, style = MaterialTheme.typography.titleLarge, color = V.White, fontWeight = FontWeight.SemiBold)
-                        if (routine.description.isNotEmpty()) {
-                            Text(routine.description, style = MaterialTheme.typography.bodySmall, color = V.Gray, maxLines = 1)
-                        }
+        items(routines, key = { it.id }) { routine ->
+            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(routine.name, style = MaterialTheme.typography.titleLarge, color = V.White, fontWeight = FontWeight.SemiBold)
+                    if (routine.description.isNotBlank()) {
+                        Text(routine.description, style = MaterialTheme.typography.bodySmall, color = V.Gray)
                     }
-                    Spacer(Modifier.width(8.dp))
-                    Box(
-                        Modifier.size(36.dp).clip(CircleShape).background(V.Teal.copy(alpha = 0.12f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Rounded.PlayArrow, "Start", tint = V.Teal, modifier = Modifier.size(20.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        WorkoutAction("View routine", Icons.Rounded.FitnessCenter,
+                            { nav.navigate("workout/routine/${routine.id}") }, Modifier.weight(1f))
+                        if (active == null) {
+                            WorkoutAction("Start", Icons.Rounded.PlayArrow,
+                                { nav.navigate("workout/active?routineId=${routine.id}") }, Modifier.weight(1f))
+                        }
                     }
                 }
             }

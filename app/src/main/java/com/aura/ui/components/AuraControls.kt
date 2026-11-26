@@ -3,12 +3,14 @@ package com.aura.ui.components
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.aura.ui.theme.AuraBody
 import com.aura.ui.theme.AuraButtonLabel
@@ -37,6 +39,7 @@ internal fun AuraTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     leadingIcon: (@Composable () -> Unit)? = null,
+    keyboardType: KeyboardType = KeyboardType.Text,
 ) {
     TextField(
         value = value,
@@ -45,6 +48,7 @@ internal fun AuraTextField(
         placeholder = { Text(placeholder, style = AuraBody, color = V.Gray) },
         leadingIcon = leadingIcon,
         singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         shape = RoundedCornerShape(AuraFieldRadius),
         textStyle = AuraBody,
         colors = TextFieldDefaults.colors(

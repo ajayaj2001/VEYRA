@@ -49,7 +49,7 @@ private val SignInCaption = TextStyle(
 )
 
 @Composable
-fun LoginScreen(onGoogleSignIn: () -> Unit) {
+fun LoginScreen(onGoogleSignIn: () -> Unit, signingIn: Boolean, error: String?) {
     BoxWithConstraints(
         Modifier.fillMaxSize().background(V.Black)
             .statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp),
@@ -66,7 +66,8 @@ fun LoginScreen(onGoogleSignIn: () -> Unit) {
             Spacer(Modifier.weight(62f))
             AuraOrbit(loading = false, diameter = diameter)
             Spacer(Modifier.weight(122f))
-            GoogleButton(onGoogleSignIn)
+            if (error != null) Text(error, color = V.Error, style = SignInCaption, textAlign = TextAlign.Center)
+            GoogleButton(onGoogleSignIn, signingIn)
             Spacer(Modifier.height(20.dp))
             Text(
                 "By continuing, you agree to our",
@@ -91,19 +92,19 @@ fun LoginScreen(onGoogleSignIn: () -> Unit) {
 }
 
 @Composable
-private fun GoogleButton(onClick: () -> Unit) {
+private fun GoogleButton(onClick: () -> Unit, signingIn: Boolean) {
     val shape = RoundedCornerShape(50)
     Row(
         Modifier.fillMaxWidth().heightIn(min = 58.dp).clip(shape)
             .background(Color(0xFF1E2020)).border(1.dp, V.SurfaceBright, shape)
-            .clickable(role = Role.Button, onClick = onClick)
+            .clickable(enabled = !signingIn, role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
     ) {
         Image(painterResource(R.drawable.auth_login_google_g_brand_colors), null, Modifier.size(24.dp))
         Text(
-            "Continue with Google",
+            if (signingIn) "Signing in…" else "Continue with Google",
             color = V.White,
             style = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,
                 fontSize = 18.sp, lineHeight = 24.sp),

@@ -48,13 +48,13 @@ interface WorkoutDao {
     suspend fun deleteWorkout(workout: WorkoutEntity)
 
     // Sets
-    @Query("SELECT * FROM workout_sets WHERE workoutId = :workoutId ORDER BY exerciseId, setNumber")
+    @Query("SELECT * FROM workout_sets WHERE workoutId = :workoutId ORDER BY id")
     fun getWorkoutSets(workoutId: Long): Flow<List<WorkoutSetEntity>>
 
-    @Query("SELECT * FROM workout_sets WHERE workoutId = :workoutId ORDER BY exerciseId, setNumber")
+    @Query("SELECT * FROM workout_sets WHERE workoutId = :workoutId ORDER BY id")
     suspend fun getWorkoutSetsList(workoutId: Long): List<WorkoutSetEntity>
 
-    @Query("SELECT * FROM workout_sets WHERE exerciseId = :exerciseId AND isCompleted = 1 ORDER BY timestamp DESC LIMIT :limit")
+    @Query("SELECT workout_sets.* FROM workout_sets INNER JOIN workouts ON workouts.id = workout_sets.workoutId WHERE exerciseId = :exerciseId AND isCompleted = 1 AND workouts.isActive = 0 ORDER BY workouts.startTime DESC, workout_sets.setNumber LIMIT :limit")
     suspend fun getRecentSetsForExercise(exerciseId: String, limit: Int = 50): List<WorkoutSetEntity>
 
     @Query("SELECT * FROM workout_sets WHERE exerciseId = :exerciseId AND isCompleted = 1 ORDER BY weight DESC LIMIT 1")

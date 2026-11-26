@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /profiles/{uid} {
+      function owner() {
+        return request.auth != null && request.auth.uid == uid;
+      }
+      function validProfile() {
+        let profile = request.resource.data;
+        return profile.keys().hasOnly(['basic', 'body', 'goals', 'updatedAt'])
+          && profile.basic is map
+          && profile.body is map
+          && profile.goals is map
+          && profile.updatedAt == request.time;
+      }
+      allow get: if owner();
+      allow create, update: if owner() && validProfile();
+    }
+  }
+}

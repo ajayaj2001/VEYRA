@@ -1,167 +1,132 @@
 package com.aura.ui.screens.workout
 
-import android.app.Application
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.aura.AuraApp
 import com.aura.data.local.entity.WorkoutSetEntity
+import com.aura.data.model.Exercise
 import com.aura.data.model.ExerciseLib
+import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
+import com.aura.ui.theme.AuraScreenInset
 import com.aura.ui.theme.V
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+
+private data class ExerciseSession(val name: String, val date: Long, val sets: List<WorkoutSetEntity>)
 
 @Composable
-fun ExerciseDetailScreen(nav: NavController, exerciseId: String) {
-    val exercise = remember { ExerciseLib.getById(exerciseId) }
-    var tab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Summary", "History", "How to")
-
-    if (exercise == null) {
-        Box(Modifier.fillMaxSize().background(V.Black), contentAlignment = Alignment.Center) {
-            Text("Exercise not found", color = V.Gray)
-        }
-        return
-    }
-
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding()) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Rounded.ArrowBack, "Back", tint = V.White) }
-            Text(exercise.name, style = MaterialTheme.typography.titleLarge, color = V.White, modifier = Modifier.weight(1f), maxLines = 1)
-        }
-
-        TabRow(
-            selectedTabIndex = tab, containerColor = V.Black, contentColor = V.Teal,
-            indicator = { positions ->
-                if (tab < positions.size) SecondaryIndicator(Modifier.tabIndicatorOffset(positions[tab]), color = V.Teal)
-            },
-        ) {
-            tabs.forEachIndexed { i, title ->
-                Tab(selected = tab == i, onClick = { tab = i }, text = {
-                    Text(title, color = if (tab == i) V.Teal else V.Gray, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Normal)
-                })
-            }
-        }
-
-        AnimatedContent(tab, label = "tab") { t ->
-            when (t) {
-                0 -> SummaryTab(exercise)
-                1 -> HistoryTab(exerciseId)
-                2 -> HowToTab(exercise)
-            }
-        }
-    }
-}
-
-@Composable
-private fun SummaryTab(ex: com.aura.data.model.Exercise) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        VCard {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(Icons.Rounded.FitnessCenter, null, tint = V.Teal, modifier = Modifier.size(60.dp))
-                Spacer(Modifier.height(8.dp))
-                Text(ex.name, style = MaterialTheme.typography.headlineMedium, color = V.White)
-                Text("${ex.category} · ${ex.equipment}", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
-            }
-        }
-        VCard {
-            Column {
-                Text("Target Muscles", style = MaterialTheme.typography.titleLarge, color = V.White)
-                Spacer(Modifier.height(8.dp))
-                Text("Primary: ${ex.primaryMuscles.joinToString()}", style = MaterialTheme.typography.bodyMedium, color = V.Teal)
-                if (ex.secondaryMuscles.isNotEmpty())
-                    Text("Secondary: ${ex.secondaryMuscles.joinToString()}", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
-            }
-        }
-    }
-}
-
-@Composable
-private fun HistoryTab(exerciseId: String) {
-    val ctx = LocalContext.current
-    var history by remember { mutableStateOf<List<WorkoutSetEntity>>(emptyList()) }
+fun ExerciseDetailScreen(nav: NavController, exerciseId: String, onAdd: (() -> Unit)? = null) {
+    val exercise = remember(exerciseId) { ExerciseLib.getById(exerciseId) }
+    val dao = (LocalContext.current.applicationContext as AuraApp).db.workoutDao()
+    var tab by rememberSaveable(exerciseId) { mutableIntStateOf(0) }
+    var history by remember(exerciseId) { mutableStateOf<List<ExerciseSession>?>(null) }
 
     LaunchedEffect(exerciseId) {
-        withContext(Dispatchers.IO) {
-            history = (ctx.applicationContext as AuraApp).db.workoutDao().getRecentSetsForExercise(exerciseId, 50)
+        history = dao.getRecentSetsForExercise(exerciseId).groupBy { it.workoutId }.mapNotNull { (id, sets) ->
+            val workout = dao.getWorkoutById(id) ?: return@mapNotNull null
+            if (workout.isActive) return@mapNotNull null
+            ExerciseSession(workout.name, workout.startTime, sets.sortedBy { it.setNumber })
+        }.sortedByDescending { it.date }
+    }
+
+    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding()) {
+        WorkoutHeader(exercise?.name ?: "Exercise", { nav.popBackStack() })
+        if (exercise == null) {
+            Text("Exercise unavailable", Modifier.padding(AuraScreenInset), color = V.Gray)
+            return@Column
+        }
+        TabRow(selectedTabIndex = tab, containerColor = V.Black, contentColor = V.Teal) {
+            listOf("Overview", "History", "Technique").forEachIndexed { index, title ->
+                Tab(
+                    selected = tab == index,
+                    onClick = { tab = index },
+                    selectedContentColor = V.Teal,
+                    unselectedContentColor = V.Gray,
+                    text = { Text(title, style = MaterialTheme.typography.labelMedium) },
+                )
+            }
+        }
+        key(tab) {
+            Column(
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(AuraScreenInset),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                when (tab) {
+                    0 -> ExerciseOverview(exercise, history)
+                    1 -> ExerciseHistory(history)
+                    2 -> Technique(exercise)
+                }
+            }
+        }
+        if (onAdd != null) {
+            AuraPrimaryButton("Add to workout", onAdd, Modifier.padding(horizontal = AuraScreenInset, vertical = 8.dp))
+        }
+    }
+}
+
+@Composable
+private fun ExerciseOverview(exercise: Exercise, history: List<ExerciseSession>?) {
+    VCard {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ExerciseGlyph(52.dp)
+            Text(exercise.name, style = MaterialTheme.typography.headlineMedium, color = V.White)
+            Text("${exercise.category} · ${exercise.equipment}", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
+            HorizontalDivider(color = V.SurfaceBright)
+            Text("Primary  ·  ${exercise.primaryMuscles.joinToString()}", color = V.White)
+            if (exercise.secondaryMuscles.isNotEmpty()) {
+                Text("Secondary  ·  ${exercise.secondaryMuscles.joinToString()}", color = V.Gray)
+            }
         }
     }
 
-    if (history.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("No history yet", style = MaterialTheme.typography.titleMedium, color = V.Gray)
-                Text("Complete sets to see progress", style = MaterialTheme.typography.bodySmall, color = V.Gray)
+    var metric by rememberSaveable { mutableIntStateOf(0) }
+    VCard {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Progress", style = MaterialTheme.typography.titleLarge, color = V.White)
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("Top weight", "Est. 1RM", "Volume").forEachIndexed { index, label ->
+                    WorkoutMetricFilter(label, metric == index) { metric = index }
+                }
             }
+            val points = history.orEmpty().asReversed().map { session ->
+                session.date to when (metric) {
+                    0 -> session.sets.maxOf { it.weight }
+                    1 -> session.sets.maxOf { if (it.reps <= 1) it.weight else it.weight * (1 + it.reps / 30.0) }
+                    else -> session.sets.sumOf { it.weight * it.reps }
+                }
+            }
+            ProgressChart(points, "kg", if (history == null) "Loading workout history…" else "Complete a workout with this exercise to see progress.")
         }
-    } else {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Simple volume chart
-            VCard {
-                Column {
-                    Text("Volume Progression", style = MaterialTheme.typography.titleLarge, color = V.White)
-                    Spacer(Modifier.height(12.dp))
-                    val vols = history.reversed().map { it.weight * it.reps }
-                    if (vols.isNotEmpty()) {
-                        val max = vols.max().coerceAtLeast(1.0)
-                        Canvas(Modifier.fillMaxWidth().height(80.dp)) {
-                            val bw = size.width / vols.size
-                            val w = bw * 0.4f
-                            vols.forEachIndexed { i, v ->
-                                val h = (v / max * size.height * 0.85f).toFloat()
-                                drawRoundRect(
-                                    V.Teal.copy(alpha = 0.6f),
-                                    Offset(i * bw + (bw - w) / 2, size.height - h),
-                                    Size(w, h), CornerRadius(w / 2, w / 2),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
+    }
+}
 
-            // PR
-            val best = history.maxByOrNull { it.weight }
-            if (best != null) {
-                VCard {
+@Composable
+private fun ExerciseHistory(history: List<ExerciseSession>?) {
+    if (history.isNullOrEmpty()) {
+        Text(if (history == null) "Loading workout history…" else "No completed workouts with this exercise yet.", color = V.Gray)
+        return
+    }
+    history.forEach { session ->
+        VCard {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(session.name, style = MaterialTheme.typography.titleLarge, color = V.White)
+                Text(workoutDate(session.date), style = MaterialTheme.typography.labelMedium, color = V.Gray)
+                HorizontalDivider(color = V.SurfaceBright)
+                session.sets.forEach { set ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Personal Best", style = MaterialTheme.typography.titleMedium, color = V.Gray)
-                        Text("${best.weight}kg × ${best.reps}", style = MaterialTheme.typography.titleMedium, color = V.Teal, fontWeight = FontWeight.Bold)
+                        Text("Set ${set.setNumber}", color = V.Gray)
+                        Text("${workoutNumber(set.weight)} kg × ${set.reps}", color = V.White)
                     }
-                }
-            }
-
-            // Recent sets
-            history.take(15).forEach { set ->
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.SurfaceRaised).padding(14.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Set ${set.setNumber}", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
-                    Text("${set.weight}kg × ${set.reps}", style = MaterialTheme.typography.bodyMedium, color = V.White, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -169,36 +134,20 @@ private fun HistoryTab(exerciseId: String) {
 }
 
 @Composable
-private fun HowToTab(ex: com.aura.data.model.Exercise) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (ex.instructions.isNotEmpty()) {
-            Text("Instructions", style = MaterialTheme.typography.titleLarge, color = V.White)
-            ex.instructions.forEachIndexed { i, inst ->
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.SurfaceRaised).padding(14.dp),
-                ) {
-                    Box(
-                        Modifier.size(28.dp).clip(CircleShape).background(V.Teal.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("${i + 1}", style = MaterialTheme.typography.labelLarge, color = V.Teal)
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Text(inst, style = MaterialTheme.typography.bodyMedium, color = V.White, modifier = Modifier.weight(1f))
-                }
-            }
+private fun Technique(exercise: Exercise) {
+    Text("How to perform", style = MaterialTheme.typography.headlineMedium, color = V.White)
+    if (exercise.instructions.isEmpty()) Text("Technique instructions are unavailable.", color = V.Gray)
+    exercise.instructions.forEachIndexed { index, step ->
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+            Text("${index + 1}", Modifier.width(28.dp), color = V.Teal, style = MaterialTheme.typography.titleMedium)
+            Text(step, Modifier.weight(1f), color = V.White, style = MaterialTheme.typography.bodyMedium)
         }
-        if (ex.tips.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
-            Text("Coaching Tips", style = MaterialTheme.typography.titleLarge, color = V.White)
-            ex.tips.forEach { tip ->
-                Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.Teal.copy(alpha = 0.06f)).padding(14.dp),
-                ) {
-                    Text("•", style = MaterialTheme.typography.bodyLarge, color = V.Teal)
-                    Spacer(Modifier.width(8.dp))
-                    Text(tip, style = MaterialTheme.typography.bodyMedium, color = V.Teal)
-                }
+    }
+    if (exercise.tips.isNotEmpty()) {
+        VCard {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Coaching cues", style = MaterialTheme.typography.titleLarge, color = V.White)
+                exercise.tips.forEach { Text(it, color = V.Gray) }
             }
         }
     }

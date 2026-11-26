@@ -1,5 +1,8 @@
 package com.aura.ui.screens.auth
 
+import android.os.Bundle
+import androidx.core.os.bundleOf
+
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,8 +23,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -31,12 +32,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -45,7 +44,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -73,7 +71,6 @@ import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 private val Raised = Color(0xFF1E2020)
 private val Caption = TextStyle(color = V.Gray, fontFamily = FontFamily.Default,
@@ -91,6 +88,7 @@ private fun SetupLayout(
     onBack: () -> Unit,
     onSkip: (() -> Unit)? = null,
     enabled: Boolean = true,
+    error: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
@@ -120,6 +118,7 @@ private fun SetupLayout(
             Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (error != null) Text(error, color = V.Error, style = Caption)
             VButton(action, onAction, Modifier.height(58.dp), enabled = enabled,
                 contentColor = V.Black, labelStyle = Action)
             if (onSkip != null) {
@@ -210,15 +209,15 @@ private fun PickerField(
 }
 
 @Composable
-fun SetupBasicScreen(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+fun SetupBasicScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     var birthDate by rememberSaveable { mutableStateOf("") }
     var gender by rememberSaveable { mutableIntStateOf(-1) }
-    var country by rememberSaveable { mutableStateOf("") }
     var showBirthDate by rememberSaveable { mutableStateOf(false) }
-    var showCountries by rememberSaveable { mutableStateOf(false) }
 
-    SetupLayout(1, "Continue", onContinue, onBack, onSkip) {
+    SetupLayout(1, "Continue", {
+        onContinue(bundleOf("name" to name.trim(), "birthDate" to birthDate, "gender" to gender))
+    }, onBack, onSkip) {
         Intro("Let’s get to\nknow you", "This helps us personalize\nyour experience.")
         Spacer(Modifier.height(32.dp))
         FieldLabel("Name")
@@ -244,18 +243,11 @@ fun SetupBasicScreen(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> U
                 }
             }
         }
-        Spacer(Modifier.height(20.dp))
-        FieldLabel("Country")
-        PickerField("Country", country, "Select country", R.drawable.profile_setup_chevron) { showCountries = true }
     }
 
     if (showBirthDate) BirthDatePicker(birthDate, onDismiss = { showBirthDate = false }, onSelect = {
         birthDate = it
         showBirthDate = false
-    })
-    if (showCountries) CountryPicker(onDismiss = { showCountries = false }, onSelect = {
-        country = it
-        showCountries = false
     })
 }
 
@@ -287,30 +279,6 @@ private fun BirthDatePicker(value: String, onDismiss: () -> Unit, onSelect: (Str
     ) {
         DatePicker(state, Modifier.verticalScroll(rememberScrollState()))
     }
-}
-
-@Composable
-private fun CountryPicker(onDismiss: () -> Unit, onSelect: (String) -> Unit) {
-    var query by rememberSaveable { mutableStateOf("") }
-    val countries = remember {
-        Locale.getISOCountries().map { Locale.Builder().setRegion(it).build().displayCountry }.sorted()
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Select country") },
-        text = {
-            Column {
-                OutlinedTextField(query, { query = it }, singleLine = true, label = { Text("Search countries") })
-                LazyColumn(Modifier.height(300.dp).fillMaxWidth()) {
-                    items(countries.filter { it.contains(query.trim(), ignoreCase = true) }) { country ->
-                        Text(country, Modifier.fillMaxWidth().clickable { onSelect(country) }
-                            .padding(vertical = 12.dp), style = Body)
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
 }
 
 @Composable
@@ -363,7 +331,7 @@ private fun convertMetric(value: String, factor: String, toMetric: Boolean): Str
 }
 
 @Composable
-fun SetupBodyScreen(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+fun SetupBodyScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
     var height by rememberSaveable { mutableStateOf("") }
     var weight by rememberSaveable { mutableStateOf("") }
     var target by rememberSaveable { mutableStateOf("") }
@@ -372,7 +340,13 @@ fun SetupBodyScreen(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> Un
     var activity by rememberSaveable { mutableIntStateOf(2) }
     val weightUnits = listOf("kg", "lbs")
 
-    SetupLayout(2, "Continue", onContinue, onBack, onSkip) {
+    SetupLayout(2, "Continue", {
+        onContinue(bundleOf(
+            "height" to height, "weight" to weight, "targetWeight" to target,
+            "heightUnit" to if (heightUnit == 0) "cm" else "ft",
+            "weightUnit" to weightUnits[weightUnit], "activity" to activities[activity].label,
+        ))
+    }, onBack, onSkip) {
         Intro("Your body metrics", "Used for accurate calorie and\nrecovery calculations.", gap = 14)
         Spacer(Modifier.height(23.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -440,11 +414,14 @@ private val goals = listOf(
 )
 
 @Composable
-fun SetupGoalsScreen(onComplete: () -> Unit, onBack: () -> Unit) {
+fun SetupGoalsScreen(onComplete: (Bundle) -> Unit, onBack: () -> Unit, saving: Boolean, error: String?) {
     var selected by rememberSaveable { mutableIntStateOf((1 shl 1) or (1 shl 2)) }
     var reminders by rememberSaveable { mutableStateOf(true) }
 
-    SetupLayout(3, "Get Started", onComplete, onBack, enabled = selected != 0) {
+    SetupLayout(3, if (saving) "Saving…" else "Get Started", {
+        val chosen = goals.filterIndexed { index, _ -> selected and (1 shl index) != 0 }
+        onComplete(bundleOf("selected" to ArrayList(chosen.map { it.label }), "reminders" to reminders))
+    }, onBack, enabled = selected != 0 && !saving, error = error) {
         Intro("What are your\ngoals?", "Select all that apply.")
         Spacer(Modifier.height(28.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -60,7 +60,7 @@ private val menuItems = listOf(
 )
 
 @Composable
-fun ProfileScreen(nav: NavController) {
+fun ProfileScreen(nav: NavController, profileName: String, onSignOut: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -106,7 +106,7 @@ fun ProfileScreen(nav: NavController) {
                 Icon(Icons.Rounded.Person, null, tint = V.White, modifier = Modifier.size(40.dp))
             }
             Spacer(Modifier.height(12.dp))
-            Text("${AppConfig.APP_NAME} User", style = MaterialTheme.typography.headlineMedium, color = V.White)
+            Text(profileName.ifBlank { "${AppConfig.APP_NAME} User" }, style = MaterialTheme.typography.headlineMedium, color = V.White)
             Text("Premium Member", style = MaterialTheme.typography.labelMedium, color = V.Teal)
             Text("Member since Nov 2026", style = MaterialTheme.typography.labelSmall, color = V.Gray)
         }
@@ -202,11 +202,7 @@ fun ProfileScreen(nav: NavController) {
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable {
-                    nav.navigate(Routes.LOGIN) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+                .clickable(onClick = onSignOut)
                 .padding(16.dp),
         )
     }
