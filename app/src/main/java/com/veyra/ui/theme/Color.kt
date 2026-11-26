@@ -11,6 +11,7 @@ object V {
     val Black = Color(0xFF000000)
 
     // Surfaces — neutral grays, no color tint
+    val SurfaceRaised = Color(0xFF1E2020)
     val Surface = Color(0xFF1C1C1E)
     val SurfaceDim = Color(0xFF131313)
     val SurfaceElevated = Color(0xFF2C2C2E)
@@ -32,6 +33,7 @@ object V {
     val Green = Color(0xFF4ADE80)
     val Blue = Color(0xFF5E5CE6)
     val Amber = Color(0xFFCC8844)
+    val SleepBlue = Color(0xFF5C8BC0)
     val SkyBlue = Color(0xFF42A5F5)
     val Purple = Color(0xFFAB47BC)
     val Coral = Color(0xFFFFB9A8)

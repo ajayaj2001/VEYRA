@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,10 +29,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.veyra.ui.components.AuraTextField
 import com.veyra.VeyraApp
 import com.veyra.data.local.entity.*
-import com.veyra.ui.components.VButton
 import com.veyra.ui.components.VCard
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -97,12 +99,12 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
     ) {
         item {
             Text("Nutrition", style = MaterialTheme.typography.headlineLarge, color = V.White,
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 20.dp))
+                modifier = Modifier.padding(horizontal = AuraScreenInset, vertical = 16.dp))
         }
 
         // Date selector
         item {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { vm.changeDate(s.date.minusDays(1)) }) {
                     Icon(Icons.Rounded.ChevronLeft, "Prev", tint = V.Gray)
                 }
@@ -118,7 +120,7 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
 
         // Calorie ring + macros
         item {
-            VCard(Modifier.padding(horizontal = 16.dp)) {
+            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     CalRing(s.cal, s.goal.calories, Modifier.size(100.dp))
                     Spacer(Modifier.width(20.dp))
@@ -136,7 +138,7 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
         meals.forEach { (type, label) ->
             val mealLogs = s.logs.filter { it.mealType == type }
             item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(label, style = MaterialTheme.typography.titleLarge, color = V.White, modifier = Modifier.weight(1f))
                     Text("${mealLogs.sumOf { it.calories }.toInt()} kcal", style = MaterialTheme.typography.labelMedium, color = V.Teal)
                 }
@@ -145,29 +147,29 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
             if (mealLogs.isEmpty()) {
                 item {
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(16.dp))
-                            .background(V.Surface).clickable { addMealType = type; showAddDialog = true }.padding(16.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset).clip(RoundedCornerShape(16.dp))
+                            .background(V.SurfaceRaised).clickable { addMealType = type; showAddDialog = true }.padding(16.dp),
                         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Rounded.Add, null, tint = V.GrayDark, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Rounded.Add, null, tint = V.Gray, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Add food", style = MaterialTheme.typography.bodyMedium, color = V.GrayDark)
+                        Text("Add food", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
                     }
                 }
             }
 
             items(mealLogs) { log ->
-                VCard(Modifier.padding(horizontal = 16.dp)) {
+                VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(log.foodName, style = MaterialTheme.typography.titleMedium, color = V.White)
                             Text("P:${log.protein.toInt()}g  C:${log.carbs.toInt()}g  F:${log.fat.toInt()}g",
-                                style = MaterialTheme.typography.labelSmall, color = V.GrayDark)
+                                style = MaterialTheme.typography.labelSmall, color = V.Gray)
                         }
                         Text("${log.calories.toInt()} kcal", style = MaterialTheme.typography.labelMedium, color = V.Gray)
                         Spacer(Modifier.width(8.dp))
                         IconButton(onClick = { vm.deleteLog(log) }, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Rounded.Delete, "Delete", tint = V.GrayDark, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Rounded.Delete, "Delete", tint = V.Gray, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -186,7 +188,8 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
         var fat by remember { mutableStateOf("") }
 
         AlertDialog(
-            onDismissRequest = { showAddDialog = false }, containerColor = V.SurfaceElevated,
+            onDismissRequest = { showAddDialog = false }, containerColor = V.Black,
+            modifier = Modifier.border(1.dp, V.SurfaceBright, RoundedCornerShape(28.dp)),
             title = { Text("Add Food", color = V.White) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -215,22 +218,14 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
 
 @Composable
 private fun MiniField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
-    TextField(
-        value, onChange, modifier.fillMaxWidth(), placeholder = { Text(placeholder, style = MaterialTheme.typography.bodySmall) },
-        singleLine = true, shape = RoundedCornerShape(12.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = V.Surface, unfocusedContainerColor = V.Surface,
-            focusedTextColor = V.White, unfocusedTextColor = V.White,
-            cursorColor = V.Teal, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
-        ),
-    )
+    AuraTextField(value, onChange, placeholder, modifier)
 }
 
 @Composable
 private fun CalRing(consumed: Double, goal: Double, modifier: Modifier) {
     val prog by animateFloatAsState((consumed / goal.coerceAtLeast(1.0)).toFloat().coerceIn(0f, 1.5f), tween(1000), label = "cal")
     val left = (goal - consumed).coerceAtLeast(0.0)
-    val color = if (consumed > goal) V.Red else V.Teal
+    val color = if (consumed > goal) V.Red else V.Amber
 
     Box(modifier, contentAlignment = Alignment.Center) {
         Canvas(Modifier.matchParentSize()) {

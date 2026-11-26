@@ -45,7 +45,10 @@ internal fun WorkoutWithSets.toExerciseSessionRecord(zone: ZoneId): ExerciseSess
         startZoneOffset = zone.rules.getOffset(start),
         endTime = end,
         endZoneOffset = zone.rules.getOffset(end),
-        metadata = Metadata.manualEntry(clientRecordId = "veyra-workout-${workout.id}"),
+        metadata = Metadata(
+            clientRecordId = "veyra-workout-${workout.id}",
+            recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY,
+        ),
         exerciseType = ExerciseSessionRecord.EXERCISE_TYPE_WEIGHTLIFTING,
         title = workout.title,
         notes = notes,

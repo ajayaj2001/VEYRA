@@ -51,10 +51,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.veyra.ui.components.VCard
 import com.veyra.AppConfig
+import com.veyra.ui.theme.AuraScreenInset
+import com.veyra.ui.theme.AuraWordmark
 import com.veyra.ui.theme.V
 import kotlinx.coroutines.delay
 
@@ -73,15 +74,15 @@ fun HomeScreen(nav: NavController) {
     ) {
         // Header
         Appear(visible, 0) {
-            Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-                Text(AppConfig.APP_NAME, style = MaterialTheme.typography.headlineLarge, color = V.White)
+            Column(Modifier.padding(horizontal = AuraScreenInset, vertical = 16.dp)) {
+                Text(AppConfig.APP_NAME, style = AuraWordmark, color = V.White)
                 Text(greeting(), style = MaterialTheme.typography.bodyMedium, color = V.Gray)
             }
         }
 
         // Daily Activity card
         Appear(visible, 100) {
-            VCard(Modifier.padding(horizontal = 16.dp)) {
+            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                 Column {
                     Text("Daily activity", style = MaterialTheme.typography.titleSmall, color = V.Gray)
                     Spacer(Modifier.height(16.dp))
@@ -101,13 +102,13 @@ fun HomeScreen(nav: NavController) {
 
         // Steps card
         Appear(visible, 200) {
-            VCard(Modifier.padding(horizontal = 16.dp)) {
+            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                 Column {
                     Text("Steps", style = MaterialTheme.typography.titleSmall, color = V.Gray)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                         Column {
-                            Text("8,452", style = MaterialTheme.typography.displayLarge.copy(fontSize = 44.sp), color = V.White)
+                            Text("8,452", style = MaterialTheme.typography.displayLarge, color = V.White)
                             Text("steps", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
                         }
                         Spacer(Modifier.weight(1f))
@@ -120,8 +121,8 @@ fun HomeScreen(nav: NavController) {
                     ProgressBar(0.845f, V.Green)
                     Spacer(Modifier.height(4.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("0", style = MaterialTheme.typography.labelSmall, color = V.GrayDark)
-                        Text("10,000", style = MaterialTheme.typography.labelSmall, color = V.GrayDark)
+                        Text("0", style = MaterialTheme.typography.labelSmall, color = V.Gray)
+                        Text("10,000", style = MaterialTheme.typography.labelSmall, color = V.Gray)
                     }
                     Spacer(Modifier.height(16.dp))
                     WeekBars(listOf(3200f, 5100f, 7800f, 4200f, 8500f, 6300f, 8452f), V.Green)
@@ -133,12 +134,12 @@ fun HomeScreen(nav: NavController) {
 
         // Score rings row
         Appear(visible, 300) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 VCard(Modifier.weight(1f)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                        ScoreRing(78, V.Green, "Recovery", 72.dp)
+                        ScoreRing(78, V.Red, "Recovery", 72.dp)
                         Spacer(Modifier.height(4.dp))
-                        Text("Good", style = MaterialTheme.typography.labelSmall, color = V.Green)
+                        Text("Good", style = MaterialTheme.typography.labelSmall, color = V.Red)
                     }
                 }
                 VCard(Modifier.weight(1f)) {
@@ -155,14 +156,14 @@ fun HomeScreen(nav: NavController) {
 
         // Recovery insight
         Appear(visible, 400) {
-            VCard(Modifier.padding(horizontal = 16.dp)) {
+            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(8.dp).clip(CircleShape).background(V.Green))
+                        Box(Modifier.size(8.dp).clip(CircleShape).background(V.Red))
                         Spacer(Modifier.width(8.dp))
                         Text("Recovery", style = MaterialTheme.typography.titleLarge, color = V.White)
                         Spacer(Modifier.weight(1f))
-                        Text("78/100", style = MaterialTheme.typography.headlineMedium, color = V.Green)
+                        Text("78/100", style = MaterialTheme.typography.headlineMedium, color = V.Red)
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
@@ -187,14 +188,14 @@ fun HomeScreen(nav: NavController) {
 
         // Metric cards
         Appear(visible, 500) {
-            Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.padding(horizontal = AuraScreenInset), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     HeartRateCard(Modifier.weight(1f))
                     SmallMetric("Resting HR", "58", "bpm", V.Red, Modifier.weight(1f))
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SmallMetric("HRV", "48", "ms", V.Teal, Modifier.weight(1f))
-                    SmallMetric("Sleep", "7h 12m", "", V.Blue, Modifier.weight(1f))
+                    SmallMetric("Sleep", "7h 12m", "", V.SleepBlue, Modifier.weight(1f))
                 }
             }
         }
@@ -373,7 +374,7 @@ private fun WeekBars(values: List<Float>, color: Color) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             days.forEachIndexed { i, d ->
                 Text(d, style = MaterialTheme.typography.labelSmall,
-                    color = if (i == days.lastIndex) color else V.GrayDark)
+                    color = if (i == days.lastIndex) color else V.Gray)
             }
         }
     }

@@ -3,6 +3,7 @@ package com.veyra.app.data.health
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectFeatures
+import androidx.health.connect.client.feature.ExperimentalFeatureAvailabilityApi
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
 import androidx.health.connect.client.records.HeartRateRecord
@@ -35,6 +36,7 @@ class HealthConnectRepository(private val context: Context) {
 
     private val client: HealthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
+    @OptIn(ExperimentalFeatureAvailabilityApi::class)
     val requestPermissions: Set<String>
         get() = buildSet {
             addAll(corePermissions)

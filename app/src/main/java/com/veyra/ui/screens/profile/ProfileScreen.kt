@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.veyra.navigation.Routes
 import com.veyra.ui.components.VCard
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 
 private data class MenuItem(
@@ -54,8 +55,8 @@ private val menuItems = listOf(
     MenuItem("Goals", "Weight, calorie, macro, and fitness targets", V.Amber),
     MenuItem("Medical Records", "Encrypted health documents", V.Blue, Routes.MEDICAL),
     MenuItem("Notifications", "Reminders and alerts", V.Gray),
-    MenuItem("Appearance", "Dark theme", V.GrayDark),
-    MenuItem("About ${AppConfig.APP_NAME}", "Version ${AppConfig.APP_VERSION}", V.GrayDark),
+    MenuItem("Appearance", "Dark theme", V.Gray),
+    MenuItem("About ${AppConfig.APP_NAME}", "Version ${AppConfig.APP_VERSION}", V.Gray),
 )
 
 @Composable
@@ -82,7 +83,7 @@ fun ProfileScreen(nav: NavController) {
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = { }) {
-                Icon(Icons.Rounded.Settings, "Settings", tint = V.GrayDark)
+                Icon(Icons.Rounded.Settings, "Settings", tint = V.Gray)
             }
         }
 
@@ -113,7 +114,7 @@ fun ProfileScreen(nav: NavController) {
         Spacer(Modifier.height(24.dp))
 
         // Stats row
-        VCard(Modifier.padding(horizontal = 16.dp)) {
+        VCard(Modifier.padding(horizontal = AuraScreenInset)) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -131,8 +132,8 @@ fun ProfileScreen(nav: NavController) {
 
         // AI Coach card
         VCard(
-            Modifier.padding(horizontal = 16.dp),
-            color = V.Surface,
+            Modifier.padding(horizontal = AuraScreenInset),
+            color = V.SurfaceRaised,
             onClick = { nav.navigate(Routes.COACH) },
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -150,14 +151,14 @@ fun ProfileScreen(nav: NavController) {
                     Text("AI Health Coach", style = MaterialTheme.typography.titleLarge, color = V.White)
                     Text("Get personalized insights", style = MaterialTheme.typography.bodySmall, color = V.Gray)
                 }
-                Icon(Icons.Rounded.ChevronRight, null, tint = V.GrayDark)
+                Icon(Icons.Rounded.ChevronRight, null, tint = V.Gray)
             }
         }
 
         Spacer(Modifier.height(24.dp))
 
         // Menu items
-        Column(Modifier.padding(horizontal = 16.dp)) {
+        Column(Modifier.padding(horizontal = AuraScreenInset)) {
             menuItems.forEach { item ->
                 Row(
                     Modifier
@@ -170,7 +171,7 @@ fun ProfileScreen(nav: NavController) {
                         Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(V.SurfaceElevated),
+                            .background(V.SurfaceRaised),
                         contentAlignment = Alignment.Center,
                     ) {
                         Box(
@@ -183,11 +184,11 @@ fun ProfileScreen(nav: NavController) {
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
                         Text(item.title, style = MaterialTheme.typography.titleMedium, color = V.White)
-                        Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                        Text(item.subtitle, style = MaterialTheme.typography.bodySmall, color = V.Gray)
                     }
-                    Icon(Icons.Rounded.ChevronRight, null, tint = V.GrayDark)
+                    Icon(Icons.Rounded.ChevronRight, null, tint = V.Gray)
                 }
-                Box(Modifier.fillMaxWidth().height(1.dp).background(V.Surface))
+                Box(Modifier.fillMaxWidth().height(1.dp).background(V.SurfaceRaised))
             }
         }
 

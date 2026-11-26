@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.FitnessCenter
@@ -18,12 +18,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.veyra.ui.components.AuraTextField
 import com.veyra.data.model.Exercise
 import com.veyra.data.model.ExerciseLib
 import com.veyra.ui.components.VCard
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 
 @Composable
@@ -47,58 +48,57 @@ fun ExerciseSearchScreen(nav: NavController) {
         }
 
         // Search
-        TextField(
-            value = query, onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            placeholder = { Text("Search exercises...") },
-            leadingIcon = { Icon(Icons.Rounded.Search, null, tint = V.GrayDark) },
-            singleLine = true, shape = RoundedCornerShape(16.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = V.Surface, unfocusedContainerColor = V.Surface,
-                focusedTextColor = V.White, unfocusedTextColor = V.White,
-                cursorColor = V.Teal, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
-            ),
+        AuraTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = "Search exercises…",
+            modifier = Modifier.padding(horizontal = AuraScreenInset),
+            leadingIcon = { Icon(Icons.Rounded.Search, null, tint = V.Gray) },
         )
 
         Spacer(Modifier.height(8.dp))
 
         // Muscle filters
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = AuraScreenInset), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ExerciseLib.muscleGroups.forEach { m ->
                 FilterChip(
                     selected = selectedMuscle == m,
                     onClick = { selectedMuscle = if (selectedMuscle == m) null else m },
                     label = { Text(m) },
+                    shape = CircleShape,
+                    border = null,
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = V.Surface, labelColor = V.Gray,
-                        selectedContainerColor = V.Teal.copy(alpha = 0.15f), selectedLabelColor = V.Teal,
+                        containerColor = V.SurfaceRaised, labelColor = V.Gray,
+                        selectedContainerColor = V.Teal, selectedLabelColor = V.Black,
                     ),
                 )
             }
         }
 
         // Equipment filters
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = AuraScreenInset, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ExerciseLib.equipmentList.forEach { e ->
                 FilterChip(
                     selected = selectedEquip == e,
                     onClick = { selectedEquip = if (selectedEquip == e) null else e },
                     label = { Text(e) },
+                    shape = CircleShape,
+                    border = null,
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = V.Surface, labelColor = V.Gray,
-                        selectedContainerColor = V.Amber.copy(alpha = 0.15f), selectedLabelColor = V.Amber,
+                        containerColor = V.SurfaceRaised, labelColor = V.Gray,
+                        selectedContainerColor = V.Teal, selectedLabelColor = V.Black,
                     ),
                 )
             }
         }
 
-        Text("${results.size} exercises", style = MaterialTheme.typography.labelMedium, color = V.GrayDark, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
+        Text("${results.size} exercises", style = MaterialTheme.typography.labelMedium, color = V.Gray, modifier = Modifier.padding(horizontal = AuraScreenInset, vertical = 4.dp))
 
         // Results
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(results) { ex ->
                 VCard(
-                    Modifier.padding(horizontal = 16.dp),
+                    Modifier.padding(horizontal = AuraScreenInset),
                     onClick = {
                         nav.previousBackStackEntry?.savedStateHandle?.set("selectedExerciseId", ex.id)
                         nav.popBackStack()
@@ -112,7 +112,7 @@ fun ExerciseSearchScreen(nav: NavController) {
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(ex.name, style = MaterialTheme.typography.titleMedium, color = V.White)
-                            Text("${ex.primaryMuscles.joinToString()} · ${ex.equipment}", style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                            Text("${ex.primaryMuscles.joinToString()} · ${ex.equipment}", style = MaterialTheme.typography.bodySmall, color = V.Gray)
                         }
                     }
                 }

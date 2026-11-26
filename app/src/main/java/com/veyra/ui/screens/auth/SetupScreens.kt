@@ -1,583 +1,509 @@
 package com.veyra.ui.screens.auth
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.DirectionsRun
-import androidx.compose.material.icons.rounded.DirectionsWalk
-import androidx.compose.material.icons.rounded.Bedtime
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FitnessCenter
-import androidx.compose.material.icons.rounded.LocalFireDepartment
-import androidx.compose.material.icons.rounded.MonitorWeight
-import androidx.compose.material.icons.rounded.Restaurant
-import androidx.compose.material.icons.rounded.SelfImprovement
-import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.veyra.R
 import com.veyra.ui.components.StepProgress
 import com.veyra.ui.components.VButton
 import com.veyra.ui.theme.V
+import java.math.RoundingMode
+import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-// ─── Shared input field ───
+private val Raised = Color(0xFF1E2020)
+private val Caption = TextStyle(color = V.Gray, fontFamily = FontFamily.Default,
+    fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 18.sp)
+private val Body = TextStyle(color = V.White, fontFamily = FontFamily.Default, fontSize = 16.sp, lineHeight = 24.sp)
+private val Heading = Body.copy(fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 41.sp)
+private val Action = Body.copy(fontWeight = FontWeight.Medium, fontSize = 18.sp)
+private val BirthDateFormat = DateTimeFormatter.ofPattern("dd / MM / uuuu")
+
 @Composable
-private fun VField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    modifier: Modifier = Modifier,
-    keyboardType: KeyboardType = KeyboardType.Text,
+private fun SetupLayout(
+    step: Int,
+    action: String,
+    onAction: () -> Unit,
+    onBack: () -> Unit,
+    onSkip: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = V.GrayDark) },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = V.Surface,
-            unfocusedContainerColor = V.Surface,
-            focusedTextColor = V.White,
-            unfocusedTextColor = V.White,
-            cursorColor = V.Teal,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-        ),
-    )
-}
-
-// ─── Shared chip selector ───
-@Composable
-private fun ChipRow(
-    options: List<String>,
-    selected: Int,
-    onSelect: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEachIndexed { i, label ->
-            val sel = i == selected
-            Box(
-                Modifier
-                    .weight(1f)
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(9999.dp))
-                    .background(if (sel) V.Teal else V.Surface)
-                    .then(
-                        if (!sel) Modifier.border(1.dp, V.SurfaceBright, RoundedCornerShape(9999.dp))
-                        else Modifier
-                    )
-                    .clickable { onSelect(i) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (sel) V.White else V.White,
-                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
-                )
-            }
-        }
-    }
-}
-
-// ─── Shared header ───
-@Composable
-private fun SetupHeader(step: Int, onBack: () -> Unit, onSkip: (() -> Unit)? = null) {
-    Column {
+    Column(
+        Modifier.fillMaxSize().background(V.Black)
+            .statusBarsPadding().navigationBarsPadding().imePadding(),
+    ) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().padding(start = 14.dp, end = 24.dp, top = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBack, "Back", tint = V.White)
+                SetupImage(R.drawable.profile_setup_back, Modifier.size(24.dp), "Back")
             }
-            Text(
-                "Set up your profile",
-                style = MaterialTheme.typography.titleLarge,
-                color = V.White,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-            )
+            Text("Set up your profile", Modifier.weight(1f).padding(start = 2.dp), style = Action)
+            Text("$step / 3", Modifier.padding(end = 18.dp), style = Caption)
+        }
+        Spacer(Modifier.height(12.dp))
+        StepProgress(current = step, spacing = 12.dp)
+
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, top = 26.dp, bottom = 12.dp),
+            content = content,
+        )
+
+        Column(
+            Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            VButton(action, onAction, Modifier.height(58.dp), enabled = enabled,
+                contentColor = V.Black, labelStyle = Action)
             if (onSkip != null) {
                 Text(
-                    "Skip",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = V.Gray,
-                    modifier = Modifier
-                        .clickable(onClick = onSkip)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    "Skip for now",
+                    Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onSkip)
+                        .padding(vertical = 12.dp),
+                    style = Caption,
+                    textAlign = TextAlign.Center,
                 )
             } else {
-                Spacer(Modifier.size(48.dp))
+                Text("You can update these anytime.", Modifier.padding(vertical = 12.dp), style = Caption)
             }
-        }
-        Spacer(Modifier.height(4.dp))
-        StepProgress(current = step, total = 3)
-    }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 1: BASIC INFO
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-@Composable
-fun SetupBasicScreen(
-    onContinue: () -> Unit,
-    onSkip: () -> Unit,
-    onBack: () -> Unit,
-) {
-    var name by remember { mutableStateOf("") }
-    var dob by remember { mutableStateOf("") }
-    var gender by remember { mutableIntStateOf(-1) } // -1 = none selected
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(V.Black)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-    ) {
-        SetupHeader(step = 1, onBack = onBack, onSkip = onSkip)
-
-        Column(
-            Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(top = 24.dp),
-        ) {
-            Text(
-                "Let's get to know you",
-                style = MaterialTheme.typography.headlineMedium,
-                color = V.White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "This helps us personalize your experience",
-                style = MaterialTheme.typography.bodyMedium,
-                color = V.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(36.dp))
-
-            Text("Name", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(8.dp))
-            VField(name, { name = it }, "Your name")
-
-            Spacer(Modifier.height(20.dp))
-
-            Text("Date of Birth", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(8.dp))
-            VField(dob, { dob = it }, "DD / MM / YYYY", keyboardType = KeyboardType.Number)
-
-            Spacer(Modifier.height(20.dp))
-
-            Text("Gender", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(10.dp))
-            ChipRow(listOf("Male", "Female", "Other"), gender, { gender = it })
-
-            Spacer(Modifier.height(20.dp))
-        }
-
-        // Bottom
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-            VButton("Continue", onClick = onContinue)
         }
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 2: BODY METRICS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@Composable
+private fun SetupImage(@DrawableRes image: Int, modifier: Modifier, description: String? = null) {
+    Image(painterResource(image), description, modifier)
+}
 
 @Composable
-fun SetupBodyScreen(
-    onContinue: () -> Unit,
-    onSkip: () -> Unit,
-    onBack: () -> Unit,
+private fun Intro(title: String, subtitle: String, gap: Int = 18) {
+    Text(title, style = Heading)
+    Spacer(Modifier.height(gap.dp))
+    Text(subtitle, style = Body, color = V.Gray)
+}
+
+@Composable
+private fun FieldLabel(label: String) {
+    Text(label, style = Caption)
+    Spacer(Modifier.height(8.dp))
+}
+
+@Composable
+private fun SetupInput(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    textStyle: TextStyle = Body,
+    placeholderColor: Color = V.Gray,
+    suffix: String? = null,
 ) {
-    var height by remember { mutableStateOf("") }
-    var weight by remember { mutableStateOf("") }
-    var targetWeight by remember { mutableStateOf("") }
-    var heightUnit by remember { mutableIntStateOf(0) }
-    var weightUnit by remember { mutableIntStateOf(0) }
-    var activityLevel by remember { mutableIntStateOf(2) }
-
-    data class ActivityOption(
-        val label: String,
-        val icon: androidx.compose.ui.graphics.vector.ImageVector,
-        val iconColor: Color,
+    BasicTextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = modifier.fillMaxWidth().semantics { contentDescription = label },
+        textStyle = textStyle,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        cursorBrush = SolidColor(V.Teal),
+        decorationBox = { input ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) Text(placeholder, style = textStyle, color = placeholderColor)
+                    input()
+                }
+                if (suffix != null) Text(suffix, Modifier.padding(start = 12.dp, end = 18.dp), style = Caption)
+            }
+        },
     )
+}
 
-    val activities = listOf(
-        ActivityOption("Sedentary", Icons.Rounded.SelfImprovement, V.Teal),
-        ActivityOption("Light", Icons.Rounded.DirectionsWalk, V.Green),
-        ActivityOption("Moderate", Icons.Rounded.DirectionsRun, V.Amber),
-        ActivityOption("Intense", Icons.Rounded.LocalFireDepartment, V.Red),
-    )
+private fun Modifier.fieldSurface() =
+    fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(16.dp)).background(Raised)
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(V.Black)
-            .statusBarsPadding()
-            .navigationBarsPadding()
+@Composable
+private fun PickerField(
+    label: String,
+    value: String,
+    placeholder: String,
+    @DrawableRes icon: Int,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier.fieldSurface().clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label }.padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        SetupHeader(step = 2, onBack = onBack, onSkip = onSkip)
+        Text(value.ifEmpty { placeholder }, Modifier.weight(1f), style = Body,
+            color = if (value.isEmpty()) V.Gray else V.White)
+        SetupImage(icon, Modifier.size(24.dp))
+    }
+}
 
-        Column(
-            Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(top = 24.dp),
-        ) {
-            Text(
-                "Your body metrics",
-                style = MaterialTheme.typography.headlineMedium,
-                color = V.White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Used for accurate calorie and recovery calculations",
-                style = MaterialTheme.typography.bodyMedium,
-                color = V.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+@Composable
+fun SetupBasicScreen(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var birthDate by rememberSaveable { mutableStateOf("") }
+    var gender by rememberSaveable { mutableIntStateOf(-1) }
+    var country by rememberSaveable { mutableStateOf("") }
+    var showBirthDate by rememberSaveable { mutableStateOf(false) }
+    var showCountries by rememberSaveable { mutableStateOf(false) }
 
-            Spacer(Modifier.height(32.dp))
-
-            // Height
-            Text("Height", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                VField(height, { height = it }, "175", Modifier.weight(1f), KeyboardType.Number)
-                ChipRow(listOf("cm", "ft"), heightUnit, { heightUnit = it }, Modifier.weight(0.6f))
+    SetupLayout(1, "Continue", onContinue, onBack, onSkip) {
+        Intro("Let’s get to\nknow you", "This helps us personalize\nyour experience.")
+        Spacer(Modifier.height(32.dp))
+        FieldLabel("Name")
+        SetupInput("Name", name, { name = it }, "Alex Morgan",
+            Modifier.fieldSurface().padding(horizontal = 16.dp, vertical = 16.dp))
+        Spacer(Modifier.height(20.dp))
+        FieldLabel("Date of birth")
+        PickerField("Date of birth", birthDate, "DD / MM / YYYY", R.drawable.profile_setup_calendar) {
+            showBirthDate = true
+        }
+        Spacer(Modifier.height(20.dp))
+        FieldLabel("Gender")
+        Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf("Male", "Female", "Other").forEachIndexed { index, label ->
+                val chosen = gender == index
+                Box(
+                    Modifier.weight(1f).height(48.dp).clip(CircleShape)
+                        .background(if (chosen) V.Teal else Raised)
+                        .selectable(chosen, role = Role.RadioButton, onClick = { gender = index }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(label, style = Body, color = if (chosen) V.Black else V.White)
+                }
             }
+        }
+        Spacer(Modifier.height(20.dp))
+        FieldLabel("Country")
+        PickerField("Country", country, "Select country", R.drawable.profile_setup_chevron) { showCountries = true }
+    }
 
-            Spacer(Modifier.height(20.dp))
+    if (showBirthDate) BirthDatePicker(birthDate, onDismiss = { showBirthDate = false }, onSelect = {
+        birthDate = it
+        showBirthDate = false
+    })
+    if (showCountries) CountryPicker(onDismiss = { showCountries = false }, onSelect = {
+        country = it
+        showCountries = false
+    })
+}
 
-            // Weight
-            Text("Weight", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(8.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                VField(weight, { weight = it }, "70", Modifier.weight(1f), KeyboardType.Decimal)
-                ChipRow(listOf("kg", "lbs"), weightUnit, { weightUnit = it }, Modifier.weight(0.6f))
-            }
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BirthDatePicker(value: String, onDismiss: () -> Unit, onSelect: (String) -> Unit) {
+    val today = LocalDate.now()
+    val todayMillis = today.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    val currentDate = value.takeIf { it.isNotEmpty() }?.let { LocalDate.parse(it, BirthDateFormat) }
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = currentDate?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
+        initialDisplayedMonthMillis = (currentDate ?: today.minusYears(18))
+            .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        yearRange = 1900..today.year,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= todayMillis
+        },
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(enabled = state.selectedDateMillis != null, onClick = {
+                state.selectedDateMillis?.let { millis ->
+                    onSelect(Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toLocalDate().format(BirthDateFormat))
+                }
+            }) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    ) {
+        DatePicker(state, Modifier.verticalScroll(rememberScrollState()))
+    }
+}
 
-            Spacer(Modifier.height(20.dp))
-
-            // Target weight
-            Text("Target Weight", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(8.dp))
-            VField(targetWeight, { targetWeight = it }, "65", keyboardType = KeyboardType.Decimal)
-            Text(
-                "Optional \u2014 helps set nutrition goals",
-                style = MaterialTheme.typography.labelSmall,
-                color = V.GrayDark,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // Activity level — compact icon chips
-            Text("Activity Level", style = MaterialTheme.typography.labelMedium, color = V.Gray)
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                activities.forEachIndexed { i, option ->
-                    val sel = i == activityLevel
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (sel) V.Teal.copy(alpha = 0.1f) else V.Surface)
-                            .then(
-                                if (sel) Modifier.border(1.5.dp, V.Teal, RoundedCornerShape(16.dp))
-                                else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                            )
-                            .clickable { activityLevel = i }
-                            .padding(vertical = 14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Box(
-                            Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(option.iconColor.copy(alpha = if (sel) 0.2f else 0.1f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(option.icon, null, tint = option.iconColor, modifier = Modifier.size(20.dp))
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            option.label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (sel) V.White else V.Gray,
-                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
-                        )
+@Composable
+private fun CountryPicker(onDismiss: () -> Unit, onSelect: (String) -> Unit) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val countries = remember {
+        Locale.getISOCountries().map { Locale.Builder().setRegion(it).build().displayCountry }.sorted()
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select country") },
+        text = {
+            Column {
+                OutlinedTextField(query, { query = it }, singleLine = true, label = { Text("Search countries") })
+                LazyColumn(Modifier.height(300.dp).fillMaxWidth()) {
+                    items(countries.filter { it.contains(query.trim(), ignoreCase = true) }) { country ->
+                        Text(country, Modifier.fillMaxWidth().clickable { onSelect(country) }
+                            .padding(vertical = 12.dp), style = Body)
                     }
                 }
             }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
 
-            Spacer(Modifier.height(24.dp))
-        }
-
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 20.dp)) {
-            VButton("Continue", onClick = onContinue)
+@Composable
+private fun MetricCard(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    placeholder: String,
+    units: List<String>,
+    unit: Int,
+    onUnit: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier.clip(RoundedCornerShape(16.dp)).background(Raised).padding(12.dp)) {
+        Text(label, Modifier.padding(horizontal = 4.dp), style = Caption)
+        Spacer(Modifier.height(7.dp))
+        SetupInput(label, value, onChange, placeholder, Modifier.padding(horizontal = 4.dp),
+            KeyboardType.Decimal, Heading, V.White)
+        Spacer(Modifier.height(18.dp))
+        Row(Modifier.fillMaxWidth().clip(CircleShape).background(V.Black).padding(3.dp).selectableGroup()) {
+            units.forEachIndexed { index, text ->
+                val chosen = index == unit
+                Box(
+                    Modifier.weight(1f).height(28.dp).clip(CircleShape)
+                        .background(if (chosen) V.Teal else V.Black)
+                        .selectable(chosen, role = Role.RadioButton, onClick = { onUnit(index) }),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(text, style = Caption, color = if (chosen) V.Black else V.Gray)
+                }
+            }
         }
     }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 3: GOALS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+private data class ActivityOption(val label: String, @DrawableRes val icon: Int, @DrawableRes val badge: Int)
 
-private data class GoalItem(
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val color: Color,
+private val activities = listOf(
+    ActivityOption("Sedentary", R.drawable.profile_setup_sedentary, R.drawable.profile_setup_sedentary_badge),
+    ActivityOption("Light", R.drawable.profile_setup_light, R.drawable.profile_setup_light_badge),
+    ActivityOption("Moderate", R.drawable.profile_setup_moderate, R.drawable.profile_setup_moderate_badge),
+    ActivityOption("Intense", R.drawable.profile_setup_intense, R.drawable.profile_setup_intense_badge),
 )
+
+private fun convertMetric(value: String, factor: String, toMetric: Boolean): String {
+    val number = value.replace(',', '.').toBigDecimalOrNull() ?: return value
+    val ratio = factor.toBigDecimal()
+    val converted = if (toMetric) number.multiply(ratio) else number.divide(ratio, 2, RoundingMode.HALF_UP)
+    return converted.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()
+}
+
+@Composable
+fun SetupBodyScreen(onContinue: () -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+    var height by rememberSaveable { mutableStateOf("") }
+    var weight by rememberSaveable { mutableStateOf("") }
+    var target by rememberSaveable { mutableStateOf("") }
+    var heightUnit by rememberSaveable { mutableIntStateOf(0) }
+    var weightUnit by rememberSaveable { mutableIntStateOf(0) }
+    var activity by rememberSaveable { mutableIntStateOf(2) }
+    val weightUnits = listOf("kg", "lbs")
+
+    SetupLayout(2, "Continue", onContinue, onBack, onSkip) {
+        Intro("Your body metrics", "Used for accurate calorie and\nrecovery calculations.", gap = 14)
+        Spacer(Modifier.height(23.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            MetricCard("Height", height, { height = it }, if (heightUnit == 0) "175" else "5.74",
+                listOf("cm", "ft"), heightUnit, { unit ->
+                    if (unit != heightUnit) {
+                        height = convertMetric(height, "30.48", unit == 0)
+                        heightUnit = unit
+                    }
+                }, Modifier.weight(1f))
+            MetricCard("Weight", weight, { weight = it }, if (weightUnit == 0) "70" else "154",
+                weightUnits, weightUnit, { unit ->
+                    if (unit != weightUnit) {
+                        weight = convertMetric(weight, "0.45359237", unit == 0)
+                        target = convertMetric(target, "0.45359237", unit == 0)
+                        weightUnit = unit
+                    }
+                }, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Target weight", style = Caption)
+            Text("Optional", style = Caption)
+        }
+        Spacer(Modifier.height(8.dp))
+        SetupInput("Target weight", target, { target = it }, if (weightUnit == 0) "65" else "143",
+            Modifier.fieldSurface().padding(horizontal = 16.dp, vertical = 16.dp),
+            KeyboardType.Decimal, placeholderColor = V.White, suffix = weightUnits[weightUnit])
+        Spacer(Modifier.height(14.dp))
+        Text("Activity level", style = Action)
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            activities.forEachIndexed { index, option ->
+                val chosen = activity == index
+                val shape = RoundedCornerShape(14.dp)
+                Column(
+                    Modifier.weight(1f).heightIn(min = 84.dp).clip(shape)
+                        .background(if (chosen) V.Black else Raised)
+                        .then(if (chosen) Modifier.border(1.2.dp, V.Teal, shape) else Modifier)
+                        .selectable(chosen, role = Role.RadioButton, onClick = { activity = index })
+                        .padding(top = 12.dp, bottom = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        SetupImage(option.badge, Modifier.size(36.dp))
+                        SetupImage(option.icon, Modifier.size(20.dp))
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(option.label, style = Caption, color = if (chosen) V.White else V.Gray, textAlign = TextAlign.Center)
+                }
+            }
+        }
+    }
+}
+
+private data class Goal(val label: String, @DrawableRes val icon: Int)
 
 private val goals = listOf(
-    GoalItem("Lose Weight", Icons.Rounded.MonitorWeight, V.Red),
-    GoalItem("Build Muscle", Icons.Rounded.FitnessCenter, V.Teal),
-    GoalItem("Get Fitter", Icons.Rounded.Favorite, V.Green),
-    GoalItem("Eat Better", Icons.Rounded.Restaurant, V.Amber),
-    GoalItem("Sleep Better", Icons.Rounded.Bedtime, V.Blue),
-    GoalItem("Less Stress", Icons.Rounded.SelfImprovement, V.Gray),
+    Goal("Lose Weight", R.drawable.profile_setup_lose),
+    Goal("Build Muscle", R.drawable.profile_setup_muscle),
+    Goal("Get Fitter", R.drawable.profile_setup_fitter),
+    Goal("Eat Better", R.drawable.profile_setup_eat),
+    Goal("Sleep Better", R.drawable.profile_setup_sleep),
+    Goal("Reduce Stress", R.drawable.profile_setup_stress),
 )
 
 @Composable
-fun SetupGoalsScreen(
-    onComplete: () -> Unit,
-    onBack: () -> Unit,
-) {
-    var selected by remember { mutableStateOf(setOf(1, 2)) } // Build Muscle + Get Fitter
-    var reminders by remember { mutableStateOf(true) }
+fun SetupGoalsScreen(onComplete: () -> Unit, onBack: () -> Unit) {
+    var selected by rememberSaveable { mutableIntStateOf((1 shl 1) or (1 shl 2)) }
+    var reminders by rememberSaveable { mutableStateOf(true) }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(V.Black)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-    ) {
-        SetupHeader(step = 3, onBack = onBack)
-
-        Column(
-            Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp)
-                .padding(top = 32.dp),
-        ) {
-            Text(
-                "What are your goals?",
-                style = MaterialTheme.typography.headlineMedium,
-                color = V.White,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Select all that apply",
-                style = MaterialTheme.typography.bodyMedium,
-                color = V.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            Spacer(Modifier.height(24.dp))
-
-            // 3-column visual grid
-            val rows = goals.chunked(3)
-            rows.forEach { row ->
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    row.forEach { goal ->
-                        val idx = goals.indexOf(goal)
-                        val sel = idx in selected
-                        Box(
-                            Modifier
-                                .weight(1f)
-                                .height(120.dp)
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(if (sel) goal.color.copy(alpha = 0.08f) else V.Surface)
-                                .then(
-                                    if (sel) Modifier.border(2.dp, goal.color, RoundedCornerShape(18.dp))
-                                    else Modifier.border(1.dp, V.SurfaceBright.copy(alpha = 0.3f), RoundedCornerShape(18.dp))
-                                )
-                                .clickable {
-                                    selected = if (sel) selected - idx else selected + idx
-                                },
-                        ) {
-                            Column(
-                                Modifier
-                                    .fillMaxSize()
-                                    .padding(12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center,
-                            ) {
-                                // Icon with double-ring glow effect
-                                Box(contentAlignment = Alignment.Center) {
-                                    // Outer glow ring
-                                    if (sel) {
-                                        Box(
-                                            Modifier
-                                                .size(56.dp)
-                                                .clip(CircleShape)
-                                                .background(goal.color.copy(alpha = 0.08f))
-                                        )
-                                    }
-                                    // Icon circle
-                                    Box(
-                                        Modifier
-                                            .size(46.dp)
-                                            .clip(CircleShape)
-                                            .background(goal.color.copy(alpha = if (sel) 0.2f else 0.1f)),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        Icon(
-                                            goal.icon, null,
-                                            tint = if (sel) goal.color else goal.color.copy(alpha = 0.7f),
-                                            modifier = Modifier.size(24.dp),
-                                        )
-                                    }
-                                }
-                                Spacer(Modifier.height(10.dp))
-                                Text(
-                                    goal.label,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (sel) V.White else V.Gray,
-                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 2,
-                                )
-                            }
-                            // Checkmark badge
-                            if (sel) {
-                                Box(
-                                    Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(6.dp)
-                                        .size(18.dp)
-                                        .clip(CircleShape)
-                                        .background(goal.color),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Icon(Icons.Rounded.Check, null, tint = V.White, modifier = Modifier.size(12.dp))
-                                }
-                            }
-                        }
+    SetupLayout(3, "Get Started", onComplete, onBack, enabled = selected != 0) {
+        Intro("What are your\ngoals?", "Select all that apply.")
+        Spacer(Modifier.height(28.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            goals.withIndex().chunked(2).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    row.forEach { (index, goal) ->
+                        val bit = 1 shl index
+                        GoalCard(goal, selected and bit != 0, { selected = selected xor bit }, Modifier.weight(1f))
                     }
                 }
-                Spacer(Modifier.height(10.dp))
             }
-
-            Spacer(Modifier.height(24.dp))
-
-            // Daily reminders toggle
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(V.Surface)
-            )
-            Spacer(Modifier.height(16.dp))
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { reminders = !reminders }
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text("Daily reminders", style = MaterialTheme.typography.titleLarge, color = V.White)
-                    Text(
-                        "Get nudges to log meals, workouts, and check-ins",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = V.GrayDark,
-                    )
-                }
-                // Simple toggle visual
-                Box(
-                    Modifier
-                        .size(width = 48.dp, height = 28.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(if (reminders) V.Teal else V.SurfaceBright),
-                    contentAlignment = if (reminders) Alignment.CenterEnd else Alignment.CenterStart,
-                ) {
-                    Box(
-                        Modifier
-                            .padding(2.dp)
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(V.White)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
         }
+        Spacer(Modifier.height(28.dp))
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 84.dp).clip(RoundedCornerShape(16.dp))
+                .background(Raised).toggleable(reminders, role = Role.Switch, onValueChange = { reminders = it })
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                Text("Daily reminders", style = Body)
+                Spacer(Modifier.height(4.dp))
+                Text("Get nudges to log meals,\nworkouts, and check-ins.", style = Caption)
+            }
+            if (reminders) {
+                SetupImage(R.drawable.profile_setup_switch_on, Modifier.padding(top = 4.dp).size(48.dp, 28.dp))
+            } else {
+                Box(
+                    Modifier.padding(top = 4.dp).size(48.dp, 28.dp).clip(CircleShape)
+                        .background(V.SurfaceBright).padding(3.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    Box(Modifier.size(22.dp).clip(CircleShape).background(V.White))
+                }
+            }
+        }
+    }
+}
 
-        Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
-            VButton("Get Started", onClick = onComplete, enabled = selected.isNotEmpty())
+@Composable
+private fun GoalCard(goal: Goal, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    val shape = RoundedCornerShape(18.dp)
+    Box(
+        modifier.heightIn(min = 92.dp).clip(shape).background(if (selected) V.Black else Raised)
+            .then(if (selected) Modifier.border(1.5.dp, V.Teal, shape) else Modifier)
+            .toggleable(selected, role = Role.Checkbox, onValueChange = { onClick() })
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+    ) {
+        Column {
+            Box(Modifier.size(34.dp).clip(CircleShape).background(V.Black), contentAlignment = Alignment.Center) {
+                SetupImage(goal.icon, Modifier.size(24.dp))
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(goal.label, style = Body)
+        }
+        if (selected) {
+            Box(Modifier.align(Alignment.TopEnd).padding(top = 2.dp), contentAlignment = Alignment.Center) {
+                SetupImage(R.drawable.profile_setup_selected, Modifier.size(18.dp))
+                SetupImage(R.drawable.profile_setup_check, Modifier.size(14.dp))
+            }
         }
     }
 }

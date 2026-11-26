@@ -29,7 +29,6 @@ import androidx.navigation.NavController
 import com.veyra.VeyraApp
 import com.veyra.data.local.entity.WorkoutSetEntity
 import com.veyra.data.model.ExerciseLib
-import com.veyra.ui.components.VButton
 import com.veyra.ui.components.VCard
 import com.veyra.ui.theme.V
 import kotlinx.coroutines.Dispatchers
@@ -62,7 +61,7 @@ fun ExerciseDetailScreen(nav: NavController, exerciseId: String) {
         ) {
             tabs.forEachIndexed { i, title ->
                 Tab(selected = tab == i, onClick = { tab = i }, text = {
-                    Text(title, color = if (tab == i) V.Teal else V.GrayDark, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Normal)
+                    Text(title, color = if (tab == i) V.Teal else V.Gray, fontWeight = if (tab == i) FontWeight.Bold else FontWeight.Normal)
                 })
             }
         }
@@ -115,7 +114,7 @@ private fun HistoryTab(exerciseId: String) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("No history yet", style = MaterialTheme.typography.titleMedium, color = V.Gray)
-                Text("Complete sets to see progress", style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                Text("Complete sets to see progress", style = MaterialTheme.typography.bodySmall, color = V.Gray)
             }
         }
     } else {
@@ -158,7 +157,7 @@ private fun HistoryTab(exerciseId: String) {
             // Recent sets
             history.take(15).forEach { set ->
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.Surface).padding(14.dp),
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.SurfaceRaised).padding(14.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text("Set ${set.setNumber}", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
@@ -176,7 +175,7 @@ private fun HowToTab(ex: com.veyra.data.model.Exercise) {
             Text("Instructions", style = MaterialTheme.typography.titleLarge, color = V.White)
             ex.instructions.forEachIndexed { i, inst ->
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.Surface).padding(14.dp),
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.SurfaceRaised).padding(14.dp),
                 ) {
                     Box(
                         Modifier.size(28.dp).clip(CircleShape).background(V.Teal.copy(alpha = 0.15f)),

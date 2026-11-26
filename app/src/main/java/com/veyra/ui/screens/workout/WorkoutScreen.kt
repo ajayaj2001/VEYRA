@@ -2,6 +2,7 @@ package com.veyra.ui.screens.workout
 
 import android.app.Application
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,8 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,12 +47,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.veyra.ui.components.AuraTextField
 import com.veyra.VeyraApp
 import com.veyra.data.local.entity.RoutineEntity
 import com.veyra.data.local.entity.WorkoutEntity
 import com.veyra.navigation.Routes
-import com.veyra.ui.components.VButton
+import com.veyra.ui.components.AuraPrimaryButton
 import com.veyra.ui.components.VCard
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -113,7 +113,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
         // Header
         item {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 20.dp),
+                Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset).padding(top = 20.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -127,7 +127,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
         if (active != null) {
             item {
                 VCard(
-                    Modifier.padding(horizontal = 16.dp),
+                    Modifier.padding(horizontal = AuraScreenInset),
                     color = V.Teal.copy(alpha = 0.12f),
                     onClick = { nav.navigate("workout/active") },
                 ) {
@@ -146,13 +146,13 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
 
         // Start empty workout
         item {
-            VButton(
+            AuraPrimaryButton(
                 "Start Empty Workout",
                 onClick = {
                     vm.startEmptyWorkout()
                     nav.navigate("workout/active")
                 },
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = AuraScreenInset),
             )
         }
 
@@ -164,7 +164,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
             ) {
                 Text("My Routines", style = MaterialTheme.typography.titleLarge, color = V.White, modifier = Modifier.weight(1f))
                 Box(
-                    Modifier.size(32.dp).clip(CircleShape).background(V.SurfaceElevated).clickable { showNewDialog = true },
+                    Modifier.size(32.dp).clip(CircleShape).background(V.SurfaceRaised).clickable { showNewDialog = true },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Rounded.Add, "New", tint = V.Gray, modifier = Modifier.size(18.dp))
@@ -174,12 +174,12 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
 
         if (routines.isEmpty()) {
             item {
-                VCard(Modifier.padding(horizontal = 16.dp)) {
+                VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Rounded.FitnessCenter, null, tint = V.GrayDark, modifier = Modifier.size(40.dp))
+                        Icon(Icons.Rounded.FitnessCenter, null, tint = V.Gray, modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(8.dp))
                         Text("No routines yet", style = MaterialTheme.typography.titleMedium, color = V.Gray)
-                        Text("Create a routine to get started", style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                        Text("Create a routine to get started", style = MaterialTheme.typography.bodySmall, color = V.Gray)
                     }
                 }
             }
@@ -187,14 +187,14 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
 
         items(routines) { routine ->
             VCard(
-                Modifier.padding(horizontal = 16.dp),
+                Modifier.padding(horizontal = AuraScreenInset),
                 onClick = { nav.navigate("workout/active?routineId=${routine.id}") },
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(routine.name, style = MaterialTheme.typography.titleLarge, color = V.White, fontWeight = FontWeight.SemiBold)
                         if (routine.description.isNotEmpty()) {
-                            Text(routine.description, style = MaterialTheme.typography.bodySmall, color = V.GrayDark, maxLines = 1)
+                            Text(routine.description, style = MaterialTheme.typography.bodySmall, color = V.Gray, maxLines = 1)
                         }
                     }
                     Spacer(Modifier.width(8.dp))
@@ -214,19 +214,19 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
                 Text("Recent", style = MaterialTheme.typography.titleSmall, color = V.Gray, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
             }
             items(history) { w ->
-                VCard(Modifier.padding(horizontal = 16.dp)) {
+                VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.History, null, tint = V.GrayDark, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.History, null, tint = V.Gray, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(w.name, style = MaterialTheme.typography.titleMedium, color = V.White)
                             Text(SimpleDateFormat("MMM d, h:mm a", Locale.getDefault()).format(Date(w.startTime)),
-                                style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                                style = MaterialTheme.typography.bodySmall, color = V.Gray)
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             val m = w.durationSeconds / 60
                             Text("${m}m", style = MaterialTheme.typography.labelMedium, color = V.Teal)
-                            Text("%.0f kg".format(w.totalVolume), style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                            Text("%.0f kg".format(w.totalVolume), style = MaterialTheme.typography.bodySmall, color = V.Gray)
                         }
                     }
                 }
@@ -241,18 +241,11 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
         var name by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showNewDialog = false },
-            containerColor = V.SurfaceElevated,
+            containerColor = V.Black,
+            modifier = Modifier.border(1.dp, V.SurfaceBright, RoundedCornerShape(28.dp)),
             title = { Text("New Routine", color = V.White) },
             text = {
-                TextField(
-                    value = name, onValueChange = { name = it },
-                    placeholder = { Text("Routine name") }, singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = V.Surface, unfocusedContainerColor = V.Surface,
-                        focusedTextColor = V.White, unfocusedTextColor = V.White,
-                        cursorColor = V.Teal, focusedIndicatorColor = V.Teal,
-                    ),
-                )
+                AuraTextField(name, { name = it }, "Routine name")
             },
             confirmButton = {
                 TextButton(onClick = {

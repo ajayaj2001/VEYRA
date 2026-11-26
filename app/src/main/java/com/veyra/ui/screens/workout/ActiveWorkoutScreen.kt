@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -21,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -34,8 +36,9 @@ import com.veyra.data.local.entity.WorkoutEntity
 import com.veyra.data.local.entity.WorkoutSetEntity
 import com.veyra.data.model.Exercise
 import com.veyra.data.model.ExerciseLib
-import com.veyra.ui.components.VButton
+import com.veyra.ui.components.AuraPrimaryButton
 import com.veyra.ui.components.VCard
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -206,12 +209,12 @@ fun ActiveWorkoutScreen(nav: NavController, routineId: Long?, vm: ActiveWorkoutV
                 ExerciseBlock(group, vm)
             }
             item {
-                VButton("+ Add Exercise", onClick = { nav.navigate("exercise/search") },
-                    modifier = Modifier.padding(horizontal = 16.dp))
+                AuraPrimaryButton("+ Add Exercise", onClick = { nav.navigate("exercise/search") },
+                    modifier = Modifier.padding(horizontal = AuraScreenInset))
             }
             item {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(9999.dp)).background(V.Surface)
+                Row(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Box(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(9999.dp)).background(V.SurfaceRaised)
                         .clickable { showDiscard = true }, contentAlignment = Alignment.Center) {
                         Text("Discard", style = MaterialTheme.typography.labelLarge, color = V.Red)
                     }
@@ -224,7 +227,7 @@ fun ActiveWorkoutScreen(nav: NavController, routineId: Long?, vm: ActiveWorkoutV
     // Dialogs
     if (showFinish) {
         AlertDialog(
-            onDismissRequest = { showFinish = false }, containerColor = V.SurfaceElevated,
+            onDismissRequest = { showFinish = false }, containerColor = V.SurfaceRaised,
             title = { Text("Finish Workout?", color = V.White) },
             text = { Text("Your workout will be saved.", color = V.Gray) },
             confirmButton = { TextButton(onClick = { showFinish = false; vm.finish() }) { Text("Finish", color = V.Teal) } },
@@ -233,7 +236,7 @@ fun ActiveWorkoutScreen(nav: NavController, routineId: Long?, vm: ActiveWorkoutV
     }
     if (showDiscard) {
         AlertDialog(
-            onDismissRequest = { showDiscard = false }, containerColor = V.SurfaceElevated,
+            onDismissRequest = { showDiscard = false }, containerColor = V.SurfaceRaised,
             title = { Text("Discard Workout?", color = V.White) },
             text = { Text("All progress will be lost.", color = V.Gray) },
             confirmButton = { TextButton(onClick = { showDiscard = false; vm.discard(); nav.popBackStack() }) { Text("Discard", color = V.Red) } },
@@ -252,25 +255,25 @@ private fun StatChip(label: String, value: String, color: androidx.compose.ui.gr
 
 @Composable
 private fun ExerciseBlock(group: ActiveWorkoutVM.ExGroup, vm: ActiveWorkoutVM) {
-    VCard(Modifier.padding(horizontal = 16.dp)) {
+    VCard(Modifier.padding(horizontal = AuraScreenInset)) {
         Column {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(group.exercise.name, style = MaterialTheme.typography.titleLarge, color = V.Teal, modifier = Modifier.weight(1f))
                 IconButton(onClick = { vm.removeExercise(group.exercise.id) }, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Rounded.Delete, "Remove", tint = V.GrayDark, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Rounded.Delete, "Remove", tint = V.Gray, modifier = Modifier.size(16.dp))
                 }
             }
             if (group.prevBest != null) {
-                Text("PR: ${group.prevBest.weight}kg × ${group.prevBest.reps}", style = MaterialTheme.typography.bodySmall, color = V.GrayDark)
+                Text("PR: ${group.prevBest.weight}kg × ${group.prevBest.reps}", style = MaterialTheme.typography.bodySmall, color = V.Gray)
             }
             Spacer(Modifier.height(8.dp))
 
             // Headers
             Row(Modifier.fillMaxWidth()) {
-                Text("SET", Modifier.width(40.dp), style = MaterialTheme.typography.labelSmall, color = V.GrayDark, textAlign = TextAlign.Center)
-                Text("PREV", Modifier.width(68.dp), style = MaterialTheme.typography.labelSmall, color = V.GrayDark, textAlign = TextAlign.Center)
-                Text("KG", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = V.GrayDark, textAlign = TextAlign.Center)
-                Text("REPS", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = V.GrayDark, textAlign = TextAlign.Center)
+                Text("SET", Modifier.width(40.dp), style = MaterialTheme.typography.labelSmall, color = V.Gray, textAlign = TextAlign.Center)
+                Text("PREV", Modifier.width(68.dp), style = MaterialTheme.typography.labelSmall, color = V.Gray, textAlign = TextAlign.Center)
+                Text("KG", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = V.Gray, textAlign = TextAlign.Center)
+                Text("REPS", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, color = V.Gray, textAlign = TextAlign.Center)
                 Spacer(Modifier.width(36.dp))
             }
             Spacer(Modifier.height(4.dp))
@@ -279,7 +282,7 @@ private fun ExerciseBlock(group: ActiveWorkoutVM.ExGroup, vm: ActiveWorkoutVM) {
 
             Spacer(Modifier.height(8.dp))
             Box(
-                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.SurfaceElevated)
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(V.SurfaceRaised)
                     .clickable { vm.addSet(group.exercise.id) }.padding(vertical = 10.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -293,39 +296,46 @@ private fun ExerciseBlock(group: ActiveWorkoutVM.ExGroup, vm: ActiveWorkoutVM) {
 private fun SetRow(set: WorkoutSetEntity, vm: ActiveWorkoutVM) {
     var wt by remember(set.id) { mutableStateOf(if (set.weight > 0) set.weight.toString() else "") }
     var rp by remember(set.id) { mutableStateOf(if (set.reps > 0) set.reps.toString() else "") }
-    val bg = if (set.isCompleted) V.Teal.copy(alpha = 0.06f) else V.Surface.copy(alpha = 0.3f)
+    val bg = if (set.isCompleted) V.Teal.copy(alpha = 0.06f) else V.SurfaceRaised.copy(alpha = 0.3f)
 
     Row(
         Modifier.fillMaxWidth().padding(vertical = 2.dp).clip(RoundedCornerShape(8.dp)).background(bg).padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(set.setNumber.toString(), Modifier.width(40.dp), style = MaterialTheme.typography.labelLarge, color = V.Gray, textAlign = TextAlign.Center)
-        Text("-", Modifier.width(68.dp), style = MaterialTheme.typography.bodySmall, color = V.GrayDark, textAlign = TextAlign.Center)
+        Text("-", Modifier.width(68.dp), style = MaterialTheme.typography.bodySmall, color = V.Gray, textAlign = TextAlign.Center)
         MiniInput(wt, { wt = it; vm.updateSet(set.copy(weight = it.toDoubleOrNull() ?: 0.0)) }, Modifier.weight(1f))
         MiniInput(rp, { rp = it; vm.updateSet(set.copy(reps = it.toIntOrNull() ?: 0)) }, Modifier.weight(1f), KeyboardType.Number)
         Box(
             Modifier.size(32.dp).clip(CircleShape)
-                .background(if (set.isCompleted) V.Teal else V.SurfaceElevated)
+                .background(if (set.isCompleted) V.Teal else V.SurfaceRaised)
                 .then(if (!set.isCompleted) Modifier.border(1.dp, V.SurfaceBright, CircleShape) else Modifier)
                 .clickable { if (!set.isCompleted) vm.completeSet(set.copy(weight = wt.toDoubleOrNull() ?: 0.0, reps = rp.toIntOrNull() ?: 0)) },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Rounded.Check, null, tint = if (set.isCompleted) V.Black else V.GrayDark, modifier = Modifier.size(16.dp))
+            Icon(Icons.Rounded.Check, null, tint = if (set.isCompleted) V.Black else V.Gray, modifier = Modifier.size(16.dp))
         }
     }
 }
 
 @Composable
 private fun MiniInput(value: String, onChange: (String) -> Unit, modifier: Modifier, kt: KeyboardType = KeyboardType.Decimal) {
-    TextField(
-        value, onChange, modifier.height(40.dp).padding(horizontal = 4.dp),
-        textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Center, color = V.White),
-        placeholder = { Text("0", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodySmall, color = V.GrayDark, textAlign = TextAlign.Center) },
-        singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = kt),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = V.Surface.copy(alpha = 0.4f), unfocusedContainerColor = V.Surface.copy(alpha = 0.2f),
-            focusedIndicatorColor = V.Teal, unfocusedIndicatorColor = V.Divider, cursorColor = V.Teal,
-        ),
+    val style = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.Center)
+    BasicTextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = modifier.padding(horizontal = 4.dp).height(40.dp)
+            .clip(RoundedCornerShape(8.dp)).background(V.Black),
+        textStyle = style.copy(color = V.White),
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = kt),
+        cursorBrush = SolidColor(V.Teal),
+        decorationBox = { input ->
+            Box(Modifier.fillMaxWidth().padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
+                if (value.isEmpty()) Text("0", style = style, color = V.Gray)
+                input()
+            }
+        },
     )
 }
 

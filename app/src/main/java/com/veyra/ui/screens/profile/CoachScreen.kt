@@ -14,11 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.veyra.ui.components.AuraTextField
 import com.veyra.ui.components.VCard
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 
 data class ChatMsg(val text: String, val isUser: Boolean, val time: String = "")
@@ -38,13 +39,13 @@ fun CoachScreen(nav: NavController) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Rounded.ArrowBack, "Back", tint = V.White) }
             Text("Coach", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = V.White, modifier = Modifier.weight(1f))
-            IconButton(onClick = {}) { Icon(Icons.Rounded.Settings, "Settings", tint = V.GrayDark) }
+            IconButton(onClick = {}) { Icon(Icons.Rounded.Settings, "Settings", tint = V.Gray) }
         }
 
         // Chat
-        LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = false) {
+        LazyColumn(Modifier.weight(1f).padding(horizontal = AuraScreenInset), verticalArrangement = Arrangement.spacedBy(8.dp), reverseLayout = false) {
             item {
-                Text("TODAY", style = MaterialTheme.typography.labelSmall, color = V.GrayDark,
+                Text("TODAY", style = MaterialTheme.typography.labelSmall, color = V.Gray,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
 
@@ -62,13 +63,13 @@ fun CoachScreen(nav: NavController) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
                         Box(
                             Modifier.widthIn(max = 300.dp).clip(RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp))
-                                .background(V.Surface).padding(14.dp)
+                                .background(V.SurfaceRaised).padding(14.dp)
                         ) {
                             Column {
                                 Text(msg.text, style = MaterialTheme.typography.bodyMedium, color = V.White)
                                 if (msg.time.isNotEmpty()) {
                                     Spacer(Modifier.height(4.dp))
-                                    Text(msg.time, style = MaterialTheme.typography.labelSmall, color = V.GrayDark)
+                                    Text(msg.time, style = MaterialTheme.typography.labelSmall, color = V.Gray)
                                 }
                             }
                         }
@@ -82,7 +83,7 @@ fun CoachScreen(nav: NavController) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         suggestions.take(2).forEach { s ->
                             Box(
-                                Modifier.clip(RoundedCornerShape(9999.dp)).background(V.Surface)
+                                Modifier.clip(RoundedCornerShape(9999.dp)).background(V.SurfaceRaised)
                                     .padding(horizontal = 14.dp, vertical = 10.dp)
                                     .let { m -> m.clickable { input = s } },
                             ) { Text(s, style = MaterialTheme.typography.labelMedium, color = V.White) }
@@ -99,18 +100,8 @@ fun CoachScreen(nav: NavController) {
             Modifier.fillMaxWidth().background(V.Black).padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = {}) { Icon(Icons.Rounded.AddPhotoAlternate, "Photo", tint = V.GrayDark) }
-            TextField(
-                value = input, onValueChange = { input = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Ask your coach...", color = V.GrayDark) },
-                singleLine = true, shape = RoundedCornerShape(9999.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = V.Surface, unfocusedContainerColor = V.Surface,
-                    focusedTextColor = V.White, unfocusedTextColor = V.White,
-                    cursorColor = V.Teal, focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
-                ),
-            )
+            IconButton(onClick = {}) { Icon(Icons.Rounded.AddPhotoAlternate, "Photo", tint = V.Gray) }
+            AuraTextField(input, { input = it }, "Ask your coach…", Modifier.weight(1f))
             Spacer(Modifier.width(8.dp))
             Box(
                 Modifier.size(40.dp).clip(CircleShape).background(V.Teal)

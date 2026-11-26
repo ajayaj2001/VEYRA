@@ -28,6 +28,7 @@ import com.veyra.ui.screens.nutrition.NutritionScreen
 import com.veyra.ui.screens.profile.CoachScreen
 import com.veyra.ui.screens.profile.MedicalScreen
 import com.veyra.data.model.ExerciseLib
+import com.veyra.ui.theme.AuraContentTheme
 
 private const val ANIM = 300
 
@@ -67,10 +68,7 @@ fun VeyraNavGraph(
         composable(Routes.LOGIN) {
             LoginScreen(
                 onGoogleSignIn = {
-                    nav.navigate(Routes.SETUP_BASIC) { popUpTo(Routes.LOGIN) { inclusive = true } }
-                },
-                onExistingUser = {
-                    nav.navigate(Routes.HOME) { popUpTo(Routes.LOGIN) { inclusive = true } }
+                    nav.navigate(Routes.SETUP_BASIC)
                 },
             )
         }
@@ -91,16 +89,16 @@ fun VeyraNavGraph(
         composable(Routes.SETUP_GOALS) {
             SetupGoalsScreen(
                 onComplete = {
-                    nav.navigate(Routes.HOME) { popUpTo(Routes.SETUP_BASIC) { inclusive = true } }
+                    nav.navigate(Routes.HOME) { popUpTo(Routes.LOGIN) { inclusive = true } }
                 },
                 onBack = { nav.popBackStack() },
             )
         }
         composable(Routes.HOME) {
-            HomeScreen(nav = nav)
+            AuraContentTheme { HomeScreen(nav = nav) }
         }
         composable(Routes.WORKOUT) {
-            WorkoutScreen(nav = nav)
+            AuraContentTheme { WorkoutScreen(nav = nav) }
         }
         composable(
             route = "workout/active?routineId={routineId}",
@@ -116,26 +114,26 @@ fun VeyraNavGraph(
                     entry.savedStateHandle?.remove<String>("selectedExerciseId")
                 }
             }
-            ActiveWorkoutScreen(nav = nav, routineId = routineId, vm = vm)
+            AuraContentTheme { ActiveWorkoutScreen(nav = nav, routineId = routineId, vm = vm) }
         }
         composable("exercise/search") {
-            ExerciseSearchScreen(nav = nav)
+            AuraContentTheme { ExerciseSearchScreen(nav = nav) }
         }
         composable("exercise/{exerciseId}") { entry ->
             val id = entry.arguments?.getString("exerciseId") ?: return@composable
-            ExerciseDetailScreen(nav = nav, exerciseId = id)
+            AuraContentTheme { ExerciseDetailScreen(nav = nav, exerciseId = id) }
         }
         composable(Routes.NUTRITION) {
-            NutritionScreen(nav = nav)
+            AuraContentTheme { NutritionScreen(nav = nav) }
         }
         composable(Routes.PROFILE) {
-            ProfileScreen(nav = nav)
+            AuraContentTheme { ProfileScreen(nav = nav) }
         }
         composable(Routes.COACH) {
-            CoachScreen(nav = nav)
+            AuraContentTheme { CoachScreen(nav = nav) }
         }
         composable(Routes.MEDICAL) {
-            MedicalScreen(nav = nav)
+            AuraContentTheme { MedicalScreen(nav = nav) }
         }
     }
 }

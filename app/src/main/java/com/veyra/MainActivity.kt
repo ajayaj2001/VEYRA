@@ -11,7 +11,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,28 +25,30 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.veyra.navigation.Routes
 import com.veyra.navigation.Tab
 import com.veyra.navigation.VeyraNavGraph
+import com.veyra.ui.theme.AuraCaption
+import com.veyra.ui.theme.AuraScreenInset
 import com.veyra.ui.theme.V
 import com.veyra.ui.theme.VeyraTheme
 
@@ -117,7 +118,7 @@ private fun BottomBar(
             .fillMaxWidth()
             .background(V.Black)
             .padding(bottom = navPadding.calculateBottomPadding())
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = AuraScreenInset, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Nav pill container
@@ -125,8 +126,9 @@ private fun BottomBar(
             Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(9999.dp))
-                .background(V.Surface)
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .background(V.SurfaceRaised)
+                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .selectableGroup(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -137,10 +139,7 @@ private fun BottomBar(
                     Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(9999.dp))
-                        .clickable(
-                            remember { MutableInteractionSource() }, null,
-                            onClick = { onTab(tab) },
-                        )
+                        .selectable(selected, role = Role.Tab, onClick = { onTab(tab) })
                         .padding(vertical = 8.dp),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -160,17 +159,15 @@ private fun BottomBar(
                                 )
                             }
                             Icon(
-                                tab.icon, tab.label,
-                                tint = if (selected) V.Teal else V.GrayDark,
+                                tab.icon, contentDescription = null,
+                                tint = if (selected) V.Teal else V.Gray,
                                 modifier = Modifier.size(22.dp),
                             )
                         }
                         Text(
                             tab.label,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            ),
-                            color = if (selected) V.Teal else V.GrayDark,
+                            style = AuraCaption,
+                            color = if (selected) V.Teal else V.Gray,
                         )
                     }
                 }

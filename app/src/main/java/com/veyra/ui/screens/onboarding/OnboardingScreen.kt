@@ -131,12 +131,11 @@ private fun OnboardingPageContent(page: OnboardingPage) {
             .padding(horizontal = 24.dp),
     ) {
         val screenHeight = maxHeight
-        val screenWidth = maxWidth
 
         // Responsive sizes based on screen height
         val illustrationSize = (screenHeight * 0.35f).coerceAtMost(320.dp)
         val titleTopPadding = screenHeight * 0.08f
-        val illustrationOffset = -(screenHeight * 0.10f)
+        val illustrationTopPadding = screenHeight * 0.40f - illustrationSize / 2
         val textOffset = illustrationSize * 0.45f
 
         // Title pinned to top
@@ -151,12 +150,11 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                 .align(Alignment.TopCenter),
         )
 
-        // Illustration centered — responsive offset
         Box(
             Modifier
-                .size(illustrationSize)
-                .align(Alignment.Center)
-                .offset(y = illustrationOffset),
+                .align(Alignment.TopCenter)
+                .padding(top = illustrationTopPadding)
+                .size(illustrationSize),
             contentAlignment = Alignment.Center,
         ) {
             AnimatedSvgView(assetPath = page.htmlAsset)
@@ -183,9 +181,9 @@ private fun AnimatedSvgView(assetPath: String) {
         factory = { context ->
             WebView(context).apply {
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                settings.javaScriptEnabled = false
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
+                // The bundled illustration script fits the artwork to the viewport.
+                settings.javaScriptEnabled = true
+                settings.blockNetworkLoads = true
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
                 webViewClient = WebViewClient()

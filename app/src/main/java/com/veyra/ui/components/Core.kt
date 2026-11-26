@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -33,8 +34,8 @@ import com.veyra.ui.theme.V
 @Composable
 fun VCard(
     modifier: Modifier = Modifier,
-    color: Color = V.Surface,
-    radius: Dp = 24.dp,
+    color: Color = V.SurfaceRaised,
+    radius: Dp = 16.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
@@ -52,7 +53,7 @@ fun VCard(
                 if (onClick != null) Modifier.clickable(interaction, null, onClick = onClick)
                 else Modifier
             )
-            .padding(20.dp),
+            .padding(16.dp),
         content = content,
     )
 }
@@ -65,6 +66,8 @@ fun VButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     color: Color = V.Teal,
+    contentColor: Color = V.White,
+    labelStyle: TextStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
@@ -83,8 +86,8 @@ fun VButton(
     ) {
         Text(
             text,
-            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-            color = V.White.copy(alpha = alpha),
+            style = labelStyle,
+            color = contentColor.copy(alpha = alpha),
         )
     }
 }
@@ -125,10 +128,11 @@ fun StepProgress(
     current: Int,
     total: Int = 3,
     modifier: Modifier = Modifier,
+    spacing: Dp = 8.dp,
 ) {
     Row(
         modifier.fillMaxWidth().padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing),
     ) {
         repeat(total) { i ->
             Box(
