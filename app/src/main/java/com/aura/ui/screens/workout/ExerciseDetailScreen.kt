@@ -10,10 +10,15 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.aura.AuraApp
+import com.aura.data.exercise.ExerciseStore
+import java.io.File
 import com.aura.data.local.entity.WorkoutSetEntity
 import com.aura.data.model.Exercise
 import com.aura.data.model.ExerciseLib
@@ -78,13 +83,32 @@ fun ExerciseDetailScreen(nav: NavController, exerciseId: String, onAdd: (() -> U
 private fun ExerciseOverview(exercise: Exercise, history: List<ExerciseSession>?) {
     VCard {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ExerciseGlyph(52.dp)
+            // Demonstrations are GIFs, which the app's image loader animates.
+            if (exercise.imageUrl == null) ExerciseGlyph(52.dp) else AsyncImage(
+                exercise.imageUrl, "${exercise.name} demonstration",
+                Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(V.White),
+            )
             Text(exercise.name, style = MaterialTheme.typography.headlineMedium, color = V.White)
             Text("${exercise.category} · ${exercise.equipment}", style = MaterialTheme.typography.bodyMedium, color = V.Gray)
+            exercise.overview?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = V.Gray) }
             HorizontalDivider(color = V.SurfaceBright)
             Text("Primary  ·  ${exercise.primaryMuscles.joinToString()}", color = V.White)
             if (exercise.secondaryMuscles.isNotEmpty()) {
                 Text("Secondary  ·  ${exercise.secondaryMuscles.joinToString()}", color = V.Gray)
+            }
+        }
+    }
+
+    val muscles by produceState<File?>(null, exercise.id) { value = ExerciseStore.muscleImage(exercise) }
+    muscles?.let { image ->
+        VCard {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Muscles worked", style = MaterialTheme.typography.titleLarge, color = V.White)
+                // The diagram comes on a white background, so it sits on a white panel.
+                AsyncImage(
+                    image, "Body diagram highlighting ${exercise.primaryMuscles.joinToString()}",
+                    Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(V.White),
+                )
             }
         }
     }

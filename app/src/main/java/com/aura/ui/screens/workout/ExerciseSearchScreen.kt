@@ -15,9 +15,17 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.decode.BitmapFactoryDecoder
+import coil.request.ImageRequest
+import com.aura.data.exercise.ExerciseStore
 import com.aura.data.model.ExerciseLib
+import java.io.IOException
 import com.aura.ui.components.AuraTextField
 import com.aura.ui.theme.AuraScreenInset
 import com.aura.ui.theme.V
@@ -27,12 +35,34 @@ fun ExerciseSearchScreen(nav: NavController, picker: Boolean) {
     var query by rememberSaveable { mutableStateOf("") }
     var muscle by rememberSaveable { mutableStateOf<String?>(null) }
     var equipment by rememberSaveable { mutableStateOf<String?>(null) }
-    val results = remember(query, muscle, equipment) {
-        ExerciseLib.all.filter { exercise ->
-            val text = query.trim()
-            (exercise.name.contains(text, ignoreCase = true) ||
-                exercise.primaryMuscles.any { it.contains(text, ignoreCase = true) }) &&
-                (muscle == null || muscle in exercise.primaryMuscles || muscle in exercise.secondaryMuscles) &&
+    var catalog by remember { mutableStateOf(ExerciseStore.cached()) }
+    var loading by remember { mutableStateOf(true) }
+    var offline by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        try {
+            // The first download arrives a page at a time, so the list fills in as it goes.
+            catalog = ExerciseStore.loadCatalog { catalog = it }
+        } catch (_: IOException) {
+            offline = true
+        } finally {
+            loading = false
+        }
+    }
+    // The built-in list keeps the library usable when the online one has never loaded.
+    val exercises = catalog.ifEmpty { ExerciseLib.all }
+    val equipmentOptions = remember(exercises) { exercises.map { it.equipment }.distinct().sorted() }
+    val muscleOptions = remember(exercises) {
+        exercises.flatMap { it.bodyParts.ifEmpty { it.primaryMuscles } }.distinct().sorted()
+    }
+    val results = remember(exercises, query, muscle, equipment) {
+        // Every typed word must appear somewhere, so "incline chest press" finds incline presses for the chest.
+        val words = query.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        exercises.filter { exercise ->
+            val searchable = (listOf(exercise.name, exercise.equipment) + exercise.bodyParts +
+                exercise.primaryMuscles + exercise.secondaryMuscles).joinToString(" ")
+            words.all { searchable.contains(it, ignoreCase = true) } &&
+                (muscle == null || muscle in exercise.bodyParts || muscle in exercise.primaryMuscles ||
+                    muscle in exercise.secondaryMuscles) &&
                 (equipment == null || exercise.equipment == equipment)
         }
     }
@@ -45,13 +75,18 @@ fun ExerciseSearchScreen(nav: NavController, picker: Boolean) {
                 Icon(Icons.Rounded.Search, null, tint = V.Gray)
             })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ExerciseFilter("Equipment", equipment, ExerciseLib.equipmentList, { equipment = it }, Modifier.weight(1f))
-                ExerciseFilter("Muscles", muscle, ExerciseLib.muscleGroups, { muscle = it }, Modifier.weight(1f))
+                ExerciseFilter("Equipment", equipment, equipmentOptions, { equipment = it }, Modifier.weight(1f))
+                ExerciseFilter("Muscles", muscle, muscleOptions, { muscle = it }, Modifier.weight(1f))
             }
         }
 
         Text(
-            "${results.size} exercises",
+            when {
+                loading && catalog.isEmpty() -> "Loading exercise library…"
+                loading -> "${results.size} exercises · still downloading the library…"
+                offline -> "${results.size} built-in exercises · online library unavailable"
+                else -> "${results.size} exercises"
+            },
             Modifier.padding(horizontal = AuraScreenInset, vertical = 8.dp),
             style = MaterialTheme.typography.labelMedium,
             color = V.Gray,
@@ -80,7 +115,14 @@ fun ExerciseSearchScreen(nav: NavController, picker: Boolean) {
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            ExerciseGlyph()
+                            if (exercise.imageUrl == null) ExerciseGlyph() else AsyncImage(
+                                // A still first frame: animating every row's GIF would make scrolling heavy.
+                                ImageRequest.Builder(LocalContext.current).data(exercise.imageUrl)
+                                    .decoderFactory(BitmapFactoryDecoder.Factory()).build(),
+                                null,
+                                Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(V.White),
+                                contentScale = ContentScale.Crop,
+                            )
                             Column {
                                 Text(exercise.name, style = MaterialTheme.typography.titleMedium, color = V.White)
                                 Text(

@@ -1,5 +1,7 @@
 package com.aura.data.model
 
+import com.aura.data.exercise.ExerciseStore
+
 data class Exercise(
     val id: String,
     val name: String,
@@ -9,6 +11,10 @@ data class Exercise(
     val equipment: String,
     val instructions: List<String> = emptyList(),
     val tips: List<String> = emptyList(),
+    val bodyParts: List<String> = emptyList(),
+    val imageUrl: String? = null,
+    val overview: String? = null,
+    val remote: Boolean = false,
 )
 
 object ExerciseLib {
@@ -59,7 +65,7 @@ object ExerciseLib {
             listOf("Set cables to shoulder height", "Bring hands together in front", "Return with arms wide")),
     )
 
-    fun getById(id: String) = all.find { it.id == id }
+    fun getById(id: String) = all.find { it.id == id } ?: ExerciseStore.get(id)
 
     fun search(query: String): List<Exercise> {
         val q = query.lowercase()

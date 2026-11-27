@@ -86,7 +86,6 @@ private fun SetupLayout(
     action: String,
     onAction: () -> Unit,
     onBack: () -> Unit,
-    onSkip: (() -> Unit)? = null,
     enabled: Boolean = true,
     error: String? = null,
     content: @Composable ColumnScope.() -> Unit,
@@ -121,17 +120,7 @@ private fun SetupLayout(
             if (error != null) Text(error, color = V.Error, style = Caption)
             VButton(action, onAction, Modifier.height(58.dp), enabled = enabled,
                 contentColor = V.Black, labelStyle = Action)
-            if (onSkip != null) {
-                Text(
-                    "Skip for now",
-                    Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onSkip)
-                        .padding(vertical = 12.dp),
-                    style = Caption,
-                    textAlign = TextAlign.Center,
-                )
-            } else {
-                Text("You can update these anytime.", Modifier.padding(vertical = 12.dp), style = Caption)
-            }
+            Text("You can update these anytime.", Modifier.padding(vertical = 12.dp), style = Caption)
         }
     }
 }
@@ -209,7 +198,7 @@ private fun PickerField(
 }
 
 @Composable
-fun SetupBasicScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+fun SetupBasicScreen(onContinue: (Bundle) -> Unit, onBack: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
     var birthDate by rememberSaveable { mutableStateOf("") }
     var gender by rememberSaveable { mutableIntStateOf(-1) }
@@ -217,7 +206,7 @@ fun SetupBasicScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: (
 
     SetupLayout(1, "Continue", {
         onContinue(bundleOf("name" to name.trim(), "birthDate" to birthDate, "gender" to gender))
-    }, onBack, onSkip) {
+    }, onBack, enabled = name.isNotBlank() && birthDate.isNotEmpty() && gender != -1) {
         Intro("Let’s get to\nknow you", "This helps us personalize\nyour experience.")
         Spacer(Modifier.height(32.dp))
         FieldLabel("Name")
@@ -331,7 +320,7 @@ private fun convertMetric(value: String, factor: String, toMetric: Boolean): Str
 }
 
 @Composable
-fun SetupBodyScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: () -> Unit) {
+fun SetupBodyScreen(onContinue: (Bundle) -> Unit, onBack: () -> Unit) {
     var height by rememberSaveable { mutableStateOf("") }
     var weight by rememberSaveable { mutableStateOf("") }
     var target by rememberSaveable { mutableStateOf("") }
@@ -339,6 +328,7 @@ fun SetupBodyScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: ()
     var weightUnit by rememberSaveable { mutableIntStateOf(0) }
     var activity by rememberSaveable { mutableIntStateOf(2) }
     val weightUnits = listOf("kg", "lbs")
+    fun String.isMeasurement() = replace(',', '.').toBigDecimalOrNull()?.let { it.signum() > 0 } == true
 
     SetupLayout(2, "Continue", {
         onContinue(bundleOf(
@@ -346,7 +336,7 @@ fun SetupBodyScreen(onContinue: (Bundle) -> Unit, onSkip: () -> Unit, onBack: ()
             "heightUnit" to if (heightUnit == 0) "cm" else "ft",
             "weightUnit" to weightUnits[weightUnit], "activity" to activities[activity].label,
         ))
-    }, onBack, onSkip) {
+    }, onBack, enabled = height.isMeasurement() && weight.isMeasurement()) {
         Intro("Your body metrics", "Used for accurate calorie and\nrecovery calculations.", gap = 14)
         Spacer(Modifier.height(23.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

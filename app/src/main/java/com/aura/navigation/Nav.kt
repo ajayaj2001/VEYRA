@@ -20,6 +20,7 @@ object Routes {
     const val PROFILE = "profile"
     const val COACH = "coach"
     const val MEDICAL = "medical"
+    const val AI_SETTINGS = "settings/ai"
     const val HEALTH_CONNECT = "health_connect"
 }
 

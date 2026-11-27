@@ -14,6 +14,7 @@ html, body {
   height: 292.897px;
   overflow: hidden;
   transform-origin: top left;
+  visibility: hidden;
 }
 
 @property --scale-transform {

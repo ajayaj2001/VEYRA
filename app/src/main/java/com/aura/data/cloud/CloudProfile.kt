@@ -14,6 +14,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 
 internal object CloudProfile {
     suspend fun signIn(context: Context): String {
@@ -30,13 +31,16 @@ internal object CloudProfile {
 
     suspend fun signOut(context: Context) {
         FirebaseAuth.getInstance().signOut()
-        CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest())
+        // Forgetting the chosen Google account is best effort; a slow provider must not hold up sign-out.
+        withTimeoutOrNull(5_000) {
+            CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest())
+        }
     }
 
     suspend fun loadName(uid: String): String? {
         val profile = document(uid).get().await()
-        if (!profile.exists()) return null
-        return profile.getString("basic.name").orEmpty()
+        // A profile saved before setup became mandatory may have no name; treat it as incomplete.
+        return profile.getString("basic.name")?.takeIf { it.isNotBlank() }
     }
 
     suspend fun save(basic: Bundle, body: Bundle, goals: Bundle) {

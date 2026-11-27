@@ -41,6 +41,7 @@ import com.aura.ui.screens.workout.RoutineDetailScreen
 import com.aura.ui.screens.nutrition.NutritionScreen
 import com.aura.ui.screens.nutrition.NutritionEntryScreen
 import com.aura.ui.screens.nutrition.NutritionVM
+import com.aura.ui.screens.profile.AiSettingsScreen
 import com.aura.ui.screens.profile.CoachScreen
 import com.aura.ui.screens.profile.MedicalScreen
 import com.aura.ui.theme.AuraContentTheme
@@ -128,14 +129,12 @@ fun AuraNavGraph(
         composable(Routes.SETUP_BASIC) {
             SetupBasicScreen(
                 onContinue = { basic = it; nav.navigate(Routes.SETUP_BODY) },
-                onSkip = { basic = Bundle(); nav.navigate(Routes.SETUP_BODY) },
                 onBack = { nav.popBackStack() },
             )
         }
         composable(Routes.SETUP_BODY) {
             SetupBodyScreen(
                 onContinue = { body = it; nav.navigate(Routes.SETUP_GOALS) },
-                onSkip = { body = Bundle(); nav.navigate(Routes.SETUP_GOALS) },
                 onBack = { nav.popBackStack() },
             )
         }
@@ -255,6 +254,9 @@ fun AuraNavGraph(
         }
         composable(Routes.MEDICAL) {
             AuraContentTheme { MedicalScreen(nav = nav) }
+        }
+        composable(Routes.AI_SETTINGS) {
+            AuraContentTheme { AiSettingsScreen(nav = nav) }
         }
     }
 }

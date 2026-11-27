@@ -32,12 +32,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil.compose.AsyncImage
+import com.aura.data.food.FoodAi
+import com.aura.data.food.FoodAiException
 import com.aura.data.local.entity.FoodItemEntity
+import com.aura.ui.components.AuraTextField
 import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
@@ -46,6 +51,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDate
+import java.util.Locale
 
 internal data class FoodDraft(
     val name: String = "",
@@ -86,10 +92,12 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
     var selectedFavorite by rememberSaveable { mutableLongStateOf(0L) }
     var favorite by rememberSaveable { mutableStateOf(false) }
     var photo by rememberSaveable { mutableStateOf<String?>(null) }
+    var description by rememberSaveable { mutableStateOf("") }
     var meal by rememberSaveable { mutableStateOf(mealTypes.first().first) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     BackHandler(enabled = busy || review) { if (!busy) review = false }
     Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding().imePadding()) {
@@ -142,7 +150,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
             )
         } else {
             TabRow(selectedTabIndex = mode, containerColor = V.Black, contentColor = V.Teal) {
-                listOf("Manual", "Photo", "Favorites").forEachIndexed { index, name ->
+                listOf("Manual", "AI estimate", "Favorites").forEachIndexed { index, name ->
                     Tab(
                         selected = mode == index, onClick = { mode = index },
                         selectedContentColor = V.Teal, unselectedContentColor = V.Gray,
@@ -168,7 +176,42 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                         enabled = draft.name.isNotBlank() && validFoodNumbers(draft),
                     )
                 }
-                1 -> PhotoMode(photo, { photo = it }, { mode = 0 })
+                1 -> PhotoMode(
+                    photo, { photo = it }, description, { description = it },
+                    estimating = busy,
+                    onEstimate = {
+                        if (!busy) {
+                            busy = true
+                            scope.launch {
+                                try {
+                                    val estimate = FoodAi.estimate(context, photo, description)
+                                    val items = estimate.items.map { item ->
+                                        FoodDraft(
+                                            item.name, item.grams?.let(::estimateNumber).orEmpty(),
+                                            estimateNumber(item.calories), estimateNumber(item.protein),
+                                            estimateNumber(item.carbs), estimateNumber(item.fat),
+                                        )
+                                    }
+                                    selectedFavorite = 0L
+                                    favorite = false
+                                    // A single food is the meal itself; several become its ingredients.
+                                    draft = items.singleOrNull()?.copy(name = estimate.name) ?: FoodDraft(name = estimate.name)
+                                    ingredients = if (items.size == 1) emptyList() else items
+                                    review = true
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: FoodAiException) {
+                                    message = e.message
+                                } catch (_: Exception) {
+                                    message = "Couldn’t estimate this meal. Try again."
+                                } finally {
+                                    busy = false
+                                }
+                            }
+                        }
+                    },
+                    onManual = { mode = 0 },
+                )
                 2 -> FavoriteFoods(
                     favorites,
                     onSelect = { item ->
@@ -244,9 +287,21 @@ private fun FavoriteFoods(
     }
 }
 
+private fun estimateNumber(value: Double): String =
+    String.format(Locale.US, "%.1f", value).removeSuffix(".0")
+
 @Composable
-private fun PhotoMode(photo: String?, onPhoto: (String?) -> Unit, onManual: () -> Unit) {
+private fun PhotoMode(
+    photo: String?,
+    onPhoto: (String?) -> Unit,
+    description: String,
+    onDescription: (String) -> Unit,
+    estimating: Boolean,
+    onEstimate: () -> Unit,
+    onManual: () -> Unit,
+) {
     val context = LocalContext.current
+    val hasKey = remember { FoodAi.apiKey(context) != null }
     val lifecycle = LocalLifecycleOwner.current
     var showCamera by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -268,7 +323,7 @@ private fun PhotoMode(photo: String?, onPhoto: (String?) -> Unit, onManual: () -
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(AuraScreenInset),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text("Meal photo", style = MaterialTheme.typography.headlineMedium, color = V.White)
+        Text("Photo or description", style = MaterialTheme.typography.headlineMedium, color = V.White)
         Box(
             Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(20.dp))
                 .background(V.SurfaceRaised),
@@ -313,7 +368,11 @@ private fun PhotoMode(photo: String?, onPhoto: (String?) -> Unit, onManual: () -
                 Icon(Icons.Rounded.PhotoCamera, null, Modifier.size(52.dp), tint = V.Amber)
             }
         }
-        Text("Use a photo as a reference while entering nutrition values.", color = V.Gray)
+        Text(
+            if (hasKey) "Add a photo, a description, or both. Aura estimates the calories and macros for you to review."
+            else "Add your Gemini API key in Profile → AI food estimation to estimate calories and macros automatically.",
+            color = V.Gray,
+        )
         message?.let { Text(it, color = V.Error) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
@@ -366,7 +425,17 @@ private fun PhotoMode(photo: String?, onPhoto: (String?) -> Unit, onManual: () -
                 })
             }
         }
-        AuraPrimaryButton("Enter food details", onManual)
+        AuraTextField(
+            description, onDescription, "Describe the meal, e.g. 2 rotis with dal",
+            modifier = Modifier.semantics { contentDescription = "Meal description" },
+        )
+        AuraPrimaryButton(
+            if (estimating) "Estimating…" else "Estimate nutrition", onEstimate,
+            enabled = hasKey && !estimating && !capturing && (photo != null || description.isNotBlank()),
+        )
+        TextButton(onClick = onManual, enabled = !estimating, modifier = Modifier.fillMaxWidth()) {
+            Text("Enter food details manually", color = V.Gray)
+        }
     }
 }
 

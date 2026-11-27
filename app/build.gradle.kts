@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +8,9 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
 val personalBuild = providers.gradleProperty("auraPersonalBuild").map(String::toBoolean).orElse(false)
 
 android {
@@ -20,6 +25,9 @@ android {
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Empty when the key is absent (CI); the exercise library then falls back to the built-in list.
+        buildConfigField("String", "RAPIDAPI_KEY", "\"${localProperties.getProperty("rapidapi.key", "")}\"")
     }
 
     buildTypes {
@@ -53,6 +61,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -96,6 +105,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.play.services)
 
     implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)

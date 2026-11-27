@@ -54,6 +54,7 @@ private val menuItems = listOf(
     MenuItem("Units & Preferences", "Measurement units, rest timer, defaults", V.Green),
     MenuItem("Goals", "Weight, calorie, macro, and fitness targets", V.Amber),
     MenuItem("Medical Records", "Encrypted health documents", V.Blue, Routes.MEDICAL),
+    MenuItem("AI food estimation", "Gemini API key for photo and text meal logging", V.Amber, Routes.AI_SETTINGS),
     MenuItem("Notifications", "Reminders and alerts", V.Gray),
     MenuItem("Appearance", "Dark theme", V.Gray),
     MenuItem("About ${AppConfig.APP_NAME}", "Version ${AppConfig.APP_VERSION}", V.Gray),

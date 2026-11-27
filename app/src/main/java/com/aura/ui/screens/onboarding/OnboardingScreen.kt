@@ -1,5 +1,7 @@
 package com.aura.ui.screens.onboarding
 
+import android.content.Context
+import android.view.MotionEvent
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.aura.AppConfig
@@ -22,12 +24,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -78,16 +81,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(V.Black)
-            .statusBarsPadding()
-            .navigationBarsPadding()
+    Column(
+        Modifier.fillMaxSize().background(V.Black)
+            .statusBarsPadding().navigationBarsPadding(),
     ) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxWidth().weight(1f),
         ) { page ->
             OnboardingPageContent(pages[page])
         }
@@ -95,7 +95,6 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         // Bottom controls
         Column(
             Modifier
-                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
@@ -104,7 +103,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             PageIndicator(
                 count = pages.size,
                 current = pagerState.currentPage,
-                modifier = Modifier.padding(bottom = 32.dp),
+                modifier = Modifier.padding(bottom = 24.dp),
             )
 
             VButton(
@@ -126,72 +125,77 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 @Composable
 private fun OnboardingPageContent(page: OnboardingPage) {
     BoxWithConstraints(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp),
+        contentAlignment = Alignment.TopCenter,
     ) {
         val screenHeight = maxHeight
-
-        // Responsive sizes based on screen height
-        val illustrationSize = (screenHeight * 0.35f).coerceAtMost(320.dp)
-        val titleTopPadding = screenHeight * 0.08f
-        val illustrationTopPadding = screenHeight * 0.40f - illustrationSize / 2
-        val textOffset = illustrationSize * 0.45f
-
-        // Title pinned to top
-        Text(
-            text = page.title,
-            style = MaterialTheme.typography.displaySmall,
-            color = V.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = titleTopPadding)
-                .align(Alignment.TopCenter),
-        )
-
-        Box(
-            Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = illustrationTopPadding)
-                .size(illustrationSize),
-            contentAlignment = Alignment.Center,
+        val illustrationSize = minOf(maxWidth, screenHeight * 0.44f, 320.dp)
+        Column(
+            Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+                .padding(top = (screenHeight * 0.09f).coerceAtMost(64.dp), bottom = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            AnimatedSvgView(assetPath = page.htmlAsset)
+            Text(
+                text = page.title,
+                style = MaterialTheme.typography.displaySmall,
+                color = V.White,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height((screenHeight * 0.12f).coerceAtMost(80.dp)))
+            Box(Modifier.size(illustrationSize)) {
+                AnimatedSvgView(assetPath = page.htmlAsset)
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
+                text = page.body,
+                style = MaterialTheme.typography.bodyMedium,
+                color = V.Gray,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
         }
-
-        // Body text below illustration
-        Text(
-            text = page.body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = V.Gray,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center)
-                .offset(y = textOffset)
-                .padding(horizontal = 16.dp),
-        )
     }
 }
 
 @Composable
 private fun AnimatedSvgView(assetPath: String) {
     AndroidView(
-        factory = { context ->
-            WebView(context).apply {
-                setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                // The bundled illustration script fits the artwork to the viewport.
-                settings.javaScriptEnabled = true
-                settings.blockNetworkLoads = true
-                isVerticalScrollBarEnabled = false
-                isHorizontalScrollBarEnabled = false
-                webViewClient = WebViewClient()
-                loadUrl("file:///android_asset/$assetPath")
-            }
-        },
+        factory = { context -> IllustrationWebView(context, assetPath) },
         modifier = Modifier.fillMaxSize(),
+        onRelease = { it.destroy() },
     )
+}
+
+private class IllustrationWebView(context: Context, assetPath: String) : WebView(context) {
+    init {
+        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        settings.javaScriptEnabled = true
+        settings.blockNetworkLoads = true
+        settings.useWideViewPort = true
+        settings.setSupportZoom(false)
+        isVerticalScrollBarEnabled = false
+        isHorizontalScrollBarEnabled = false
+        webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                updateIllustrationViewport()
+            }
+        }
+        loadUrl("file:///android_asset/$assetPath")
+    }
+
+    override fun onSizeChanged(width: Int, height: Int, oldWidth: Int, oldHeight: Int) {
+        super.onSizeChanged(width, height, oldWidth, oldHeight)
+        updateIllustrationViewport()
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean = false
+
+    private fun updateIllustrationViewport() {
+        if (width > 0 && height > 0) {
+            // Some WebViews report a layout viewport larger than the visible Android view.
+            evaluateJavascript("if (window.setIllustrationViewport) window.setIllustrationViewport($width, $height)", null)
+        }
+    }
 }
 
 @Composable
