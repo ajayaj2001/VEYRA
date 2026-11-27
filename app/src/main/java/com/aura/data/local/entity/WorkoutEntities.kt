@@ -12,6 +12,9 @@ data class RoutineEntity(
     val description: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+    val cloudOwnerUid: String? = null,
+    val cloudId: String? = null,
+    val cloudSyncedRevision: Long? = null,
 )
 
 @Entity(
@@ -39,6 +42,9 @@ data class WorkoutEntity(
     val totalVolume: Double = 0.0,
     val notes: String = "",
     val isActive: Boolean = true,
+    val cloudOwnerUid: String? = null,
+    val cloudId: String? = null,
+    val cloudSyncedRevision: Long? = null,
 )
 
 @Entity(

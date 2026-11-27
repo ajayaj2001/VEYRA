@@ -1,6 +1,10 @@
 package com.aura.ui.screens.workout
 
+import android.Manifest
 import android.app.Application
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.room.withTransaction
 import android.os.Build
@@ -42,6 +46,7 @@ import com.aura.data.local.entity.WorkoutEntity
 import com.aura.data.local.entity.WorkoutSetEntity
 import com.aura.data.model.Exercise
 import com.aura.data.model.ExerciseLib
+import com.aura.navigation.Routes
 import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
@@ -55,10 +60,28 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+internal enum class WorkoutWeightUnit(val symbol: String) {
+    KG("kg"), LB("lbs");
+
+    fun fromKilograms(kg: Double) = if (this == KG) kg else kg / KILOGRAMS_PER_POUND
+    fun toKilograms(value: Double) = if (this == KG) value else value * KILOGRAMS_PER_POUND
+
+    companion object {
+        private const val KILOGRAMS_PER_POUND = 0.45359237
+    }
+}
+
+private enum class SetColumn(val title: String, val description: String) {
+    Previous("Previous", "Weight and reps for this set in your last comparable workout with this exercise. For routines, this uses the same routine."),
+    Weight("Weight", "Enter the weight you lifted. Leave it empty for a bodyweight set. The unit applies to this workout."),
+    Reps("Reps", "Enter how many repetitions you completed. Enter a number greater than zero to mark the set complete."),
+}
+
 // ━━━ ViewModel ━━━
 class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
     private val database = (app as AuraApp).db
     private val dao = database.workoutDao()
+    private val units = app.getSharedPreferences("workout_display_units", Context.MODE_PRIVATE)
 
     data class ExGroup(val exercise: Exercise, val sets: List<WorkoutSetEntity>)
     data class State(
@@ -69,7 +92,10 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         val resting: Boolean = false,
         val saving: Boolean = false,
         val closed: Boolean = false,
+        /** Set when the workout was finished rather than discarded, so its summary can be shown. */
+        val finishedId: Long? = null,
         val error: String? = null,
+        val usePounds: Boolean = false,
     )
 
     private val _state = MutableStateFlow(State())
@@ -77,19 +103,34 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
     private val writes = Mutex()
     private var timerJob: Job? = null
     private var restJob: Job? = null
+    private var setObserver: Job? = null
 
     fun initialize(routineId: Long?) = changeWorkout("Couldn’t open the workout. Go back and try again.") {
         if (_state.value.workout != null) return@changeWorkout
         val workout = database.withTransaction {
             dao.getActiveWorkout() ?: createWorkout(routineId)
         }
+        _state.value = _state.value.copy(usePounds = units.getLong("pounds_workout", -1L) == workout.id)
         refreshSets(workout)
+        setObserver = viewModelScope.launch {
+            dao.getWorkoutSets(workout.id).collect {
+                writes.withLock {
+                    if (!_state.value.closed) refreshSets(workout)
+                }
+            }
+        }
         startTimer()
     }
 
     private suspend fun createWorkout(routineId: Long?): WorkoutEntity {
         val routine = routineId?.let { dao.getRoutineById(it) }
-        val workout = WorkoutEntity(name = routine?.name ?: "Quick Workout", routineId = routine?.id)
+        val uid = getApplication<AuraApp>().workoutCloud.ownerUid
+        val workout = WorkoutEntity(
+            name = routine?.name ?: "Quick Workout",
+            routineId = routine?.id,
+            cloudOwnerUid = uid,
+            cloudId = uid?.let { java.util.UUID.randomUUID().toString() },
+        )
         val created = workout.copy(id = dao.insertWorkout(workout))
         routine?.let {
             dao.getRoutineExercises(it.id).forEach { planned ->
@@ -119,10 +160,22 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addExercise(exercise: Exercise) = editWorkout { workout ->
-        if (_state.value.groups.none { it.exercise.id == exercise.id }) {
-            database.withTransaction { insertExercise(workout.id, exercise, setCount = 3) }
+    fun addExercises(exercises: List<Exercise>) = editWorkout { workout ->
+        val existing = _state.value.groups.map { it.exercise.id }.toSet()
+        database.withTransaction {
+            exercises.distinctBy { it.id }.filterNot { it.id in existing }.forEach { exercise ->
+                insertExercise(workout.id, exercise, setCount = 3)
+            }
         }
+    }
+
+    fun setPounds(usePounds: Boolean) = changeWorkout("Couldn’t change the weight unit.") {
+        val workoutId = _state.value.workout?.id ?: return@changeWorkout
+        units.edit().apply {
+            if (usePounds) putLong("pounds_workout", workoutId) else remove("pounds_workout")
+        }.apply()
+        _state.value = _state.value.copy(usePounds = usePounds)
+        getApplication<AuraApp>().workoutNotification.refresh()
     }
 
     fun addSet(exerciseId: String) = editWorkout { workout ->
@@ -135,23 +188,19 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         ))
     }
 
-    fun updateSet(id: Long, weight: Double, reps: Int) = editWorkout {
-        val set = findSet(id) ?: return@editWorkout
-        if (!set.isCompleted) dao.updateSet(set.copy(weight = weight, reps = reps))
+    fun updateSet(id: Long, weight: Double? = null, reps: Int? = null) = editWorkout { workout ->
+        dao.editIncompleteSet(workout.id, id, weight, reps)
     }
 
-    fun toggleCompleted(id: Long) = editWorkout {
-        val set = findSet(id) ?: return@editWorkout
-        if (set.isCompleted) {
-            dao.updateSet(set.copy(isCompleted = false))
-        } else if (set.reps > 0 && set.weight.isFinite() && set.weight >= 0) {
-            dao.updateSet(set.copy(isCompleted = true, timestamp = System.currentTimeMillis()))
-            haptic()
+    fun toggleCompleted(id: Long): Job {
+        val set = _state.value.groups.firstNotNullOfOrNull { group -> group.sets.firstOrNull { it.id == id } }
+        return editWorkout { workout ->
+            if (set == null) return@editWorkout
+            val completed = !set.isCompleted
+            val changed = dao.setCompletion(workout.id, id, completed, System.currentTimeMillis())
+            if (changed > 0 && completed) haptic()
         }
     }
-
-    private fun findSet(id: Long): WorkoutSetEntity? =
-        _state.value.groups.firstNotNullOfOrNull { group -> group.sets.firstOrNull { it.id == id } }
 
     fun removeExercise(exerciseId: String) = editWorkout { workout ->
         dao.deleteSetsForExercise(workout.id, exerciseId)
@@ -205,8 +254,11 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
             ))
             true
         }
-        if (saved) closeWorkout()
-        else _state.value = _state.value.copy(saving = false, error = "Complete at least one set before finishing.")
+        if (saved) {
+            getApplication<AuraApp>().workoutCloud.sync()
+            _state.value = _state.value.copy(finishedId = workout.id)
+            closeWorkout()
+        } else _state.value = _state.value.copy(saving = false, error = "Complete at least one set before finishing.")
     }
 
     fun discard() = changeWorkout("Couldn’t discard the workout. Try again.") {
@@ -217,8 +269,10 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
     }
 
     private fun closeWorkout() {
+        units.edit().remove("pounds_workout").apply()
         timerJob?.cancel()
         restJob?.cancel()
+        setObserver?.cancel()
         _state.value = _state.value.copy(saving = false, closed = true)
     }
 
@@ -254,22 +308,38 @@ fun ActiveWorkoutScreen(
     nav: NavController,
     routineId: Long?,
     vm: ActiveWorkoutVM = viewModel(),
-    selectedExerciseId: String? = null,
+    selectedExerciseIds: List<String> = emptyList(),
     onExerciseHandled: () -> Unit = {},
 ) {
     val s by vm.state.collectAsState()
+    val notification = (LocalContext.current.applicationContext as AuraApp).workoutNotification
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { notification.refresh() }
+    LaunchedEffect(s.workout?.id) {
+        if (s.workout != null && notification.shouldRequestPermission()) {
+            notification.markPermissionRequested()
+            permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
     var showFinish by remember { mutableStateOf(false) }
     var showDiscard by remember { mutableStateOf(false) }
     var showRest by remember { mutableStateOf(false) }
+    var explanation by remember { mutableStateOf<SetColumn?>(null) }
+    val unit = if (s.usePounds) WorkoutWeightUnit.LB else WorkoutWeightUnit.KG
 
-    LaunchedEffect(routineId, selectedExerciseId) {
+    LaunchedEffect(routineId, selectedExerciseIds) {
         vm.initialize(routineId).join()
-        selectedExerciseId?.let { id ->
-            ExerciseLib.getById(id)?.let { vm.addExercise(it).join() }
+        if (selectedExerciseIds.isNotEmpty()) {
+            vm.addExercises(selectedExerciseIds.mapNotNull(ExerciseLib::getById)).join()
             onExerciseHandled()
         }
     }
-    LaunchedEffect(s.closed) { if (s.closed) nav.popBackStack() }
+    LaunchedEffect(s.closed) {
+        if (s.closed) {
+            val finished = s.finishedId
+            if (finished == null) nav.popBackStack()
+            else nav.navigate("workout/summary/$finished?celebrate=true") { popUpTo(Routes.WORKOUT) }
+        }
+    }
     BackHandler(enabled = s.saving) {}
 
     Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding().imePadding()) {
@@ -294,7 +364,7 @@ fun ActiveWorkoutScreen(
         ) {
             Row(Modifier.padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 StatChip("Duration", formatTime(s.elapsed), V.Teal)
-                StatChip("Volume", "${workoutNumber(completed.sumOf { it.weight * it.reps })} kg", V.White)
+                StatChip("Volume", "${workoutNumber(unit.fromKilograms(completed.sumOf { it.weight * it.reps }))} ${unit.symbol}", V.White)
                 StatChip("Sets", completed.size.toString(), V.White)
             }
         }
@@ -310,25 +380,45 @@ fun ActiveWorkoutScreen(
         }
 
         LazyColumn(
-            Modifier.weight(1f),
-            contentPadding = PaddingValues(horizontal = AuraScreenInset, vertical = 8.dp),
+            Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = AuraScreenInset, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (s.groups.isEmpty()) item {
-                Text("Add your first exercise to start logging sets.", color = V.Gray)
-            }
-            items(s.groups, key = { it.exercise.id }) { group ->
-                ExerciseBlock(group, s.workout, vm, onDetails = { nav.navigate("exercise/${group.exercise.id}") })
-            }
-            item {
-                AuraPrimaryButton("Add exercise", { nav.navigate("exercise/search") }, enabled = s.workout != null)
-            }
-            item {
-                TextButton(onClick = { showDiscard = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Discard workout", color = V.Red)
+                VCard {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        ExerciseGlyph(56.dp)
+                        Text("Get started", style = MaterialTheme.typography.headlineMedium, color = V.White)
+                        Text("Add an exercise to start your workout.", style = MaterialTheme.typography.bodyMedium,
+                            color = V.Gray, textAlign = TextAlign.Center)
+                    }
                 }
             }
+            items(s.groups, key = { it.exercise.id }) { group ->
+                ExerciseBlock(group, s.workout, vm, unit, { explanation = it },
+                    onDetails = { nav.navigate("exercise/${group.exercise.id}") })
+            }
         }
+        HorizontalDivider(color = V.SurfaceRaised)
+        Column(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            AuraPrimaryButton(
+                "Add exercise",
+                { openExercisePicker(nav, s.groups.map { it.exercise.id }) },
+                enabled = s.workout != null && !s.saving,
+            )
+            TextButton(onClick = { showDiscard = true }, enabled = !s.saving && s.workout != null,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Discard workout", color = V.Red)
+            }
+        }
+    }
+
+    explanation?.let { column ->
+        SetColumnSheet(column, unit, onUnit = { vm.setPounds(it == WorkoutWeightUnit.LB) },
+            onClose = { explanation = null })
     }
 
     s.error?.let { error ->
@@ -391,6 +481,8 @@ private fun ExerciseBlock(
     group: ActiveWorkoutVM.ExGroup,
     workout: WorkoutEntity?,
     vm: ActiveWorkoutVM,
+    unit: WorkoutWeightUnit,
+    onExplain: (SetColumn) -> Unit,
     onDetails: () -> Unit,
 ) {
     val dao = (LocalContext.current.applicationContext as AuraApp).db.workoutDao()
@@ -398,9 +490,7 @@ private fun ExerciseBlock(
         mutableStateOf<Map<Int, WorkoutSetEntity>>(emptyMap())
     }
     LaunchedEffect(group.exercise.id, workout?.id) {
-        val priorSets = dao.getRecentSetsForExercise(group.exercise.id).filter { it.workoutId != workout?.id }
-        val lastWorkout = priorSets.firstOrNull()?.workoutId
-        previous = priorSets.filter { it.workoutId == lastWorkout }.associateBy { it.setNumber }
+        previous = if (workout == null) emptyMap() else dao.previousExerciseSets(workout, group.exercise.id)
     }
 
     VCard {
@@ -411,7 +501,7 @@ private fun ExerciseBlock(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ExerciseGlyph()
+                    ExerciseThumbnail(group.exercise.imageUrl)
                     Column {
                         Text(group.exercise.name, style = MaterialTheme.typography.titleMedium, color = V.White)
                         Text(group.exercise.equipment, style = MaterialTheme.typography.labelSmall, color = V.Gray)
@@ -431,29 +521,85 @@ private fun ExerciseBlock(
             }
             HorizontalDivider(color = V.SurfaceBright)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                SetHeading("#", Modifier.width(28.dp))
-                SetHeading("Previous", Modifier.weight(1.2f))
-                SetHeading("kg", Modifier.weight(1f))
-                SetHeading("Reps", Modifier.weight(1f))
-                Spacer(Modifier.width(44.dp))
+                Box(Modifier.width(36.dp).height(48.dp), contentAlignment = Alignment.Center) {
+                    Text("#", color = V.Gray, style = MaterialTheme.typography.labelMedium)
+                }
+                SetHeading("Previous", Modifier.weight(1.35f)) { onExplain(SetColumn.Previous) }
+                SetHeading(unit.symbol, Modifier.weight(1f)) { onExplain(SetColumn.Weight) }
+                SetHeading("Reps", Modifier.weight(1f)) { onExplain(SetColumn.Reps) }
+                Spacer(Modifier.width(48.dp))
             }
 
             group.sets.forEach { set ->
-                key(set.id) { SetRow(set, previous[set.setNumber], group.exercise.name, vm) }
+                key(set.id) {
+                    val prior = previous[set.setNumber]
+                    SetRow(set, prior, group.exercise.name, vm, unit, onPrevious = { onExplain(SetColumn.Previous) })
+                }
             }
-            WorkoutAction("Add set", Icons.Rounded.Add, { vm.addSet(group.exercise.id) }, Modifier.fillMaxWidth())
+            OutlinedButton(
+                onClick = { vm.addSet(group.exercise.id) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, V.SurfaceBright),
+            ) {
+                Icon(Icons.Rounded.Add, null, Modifier.size(20.dp), tint = V.Teal)
+                Spacer(Modifier.width(8.dp))
+                Text("Add set", color = V.Teal, style = MaterialTheme.typography.bodyMedium)
+            }
         }
     }
 }
 
 @Composable
-private fun SetHeading(text: String, modifier: Modifier) {
-    Text(text, modifier, style = MaterialTheme.typography.labelSmall, color = V.Gray, textAlign = TextAlign.Center)
+private fun SetHeading(text: String, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier.heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = MaterialTheme.typography.labelMedium, color = V.Teal, textAlign = TextAlign.Center)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SetColumnSheet(
+    column: SetColumn,
+    unit: WorkoutWeightUnit,
+    onUnit: (WorkoutWeightUnit) -> Unit,
+    onClose: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onClose, containerColor = V.SurfaceRaised, contentColor = V.White) {
+        Column(Modifier.fillMaxWidth().padding(start = AuraScreenInset, end = AuraScreenInset, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(column.title, style = MaterialTheme.typography.headlineMedium, color = V.White)
+            Text(column.description, style = MaterialTheme.typography.bodyMedium, color = V.Gray)
+            if (column == SetColumn.Weight) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    WorkoutWeightUnit.entries.forEach { option ->
+                        WorkoutMetricFilter(option.symbol, option == unit) { onUnit(option) }
+                    }
+                }
+            }
+            TextButton(onClick = onClose) { Text("Done") }
+        }
+    }
 }
 
 @Composable
-private fun SetRow(set: WorkoutSetEntity, prior: WorkoutSetEntity?, exerciseName: String, vm: ActiveWorkoutVM) {
-    var wt by rememberSaveable(set.id) { mutableStateOf(if (set.weight > 0) set.weight.toString() else "") }
+private fun SetRow(
+    set: WorkoutSetEntity,
+    prior: WorkoutSetEntity?,
+    exerciseName: String,
+    vm: ActiveWorkoutVM,
+    unit: WorkoutWeightUnit,
+    onPrevious: () -> Unit,
+) {
+    var wt by rememberSaveable(set.id, unit) {
+        val displayed = unit.fromKilograms(set.weight)
+        mutableStateOf(if (set.weight > 0) java.math.BigDecimal.valueOf(displayed)
+            .setScale(2, java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString() else "")
+    }
     var rp by rememberSaveable(set.id) { mutableStateOf(if (set.reps > 0) set.reps.toString() else "") }
     val weight = parseWeight(wt)
     val reps = rp.toIntOrNull()?.takeIf { it > 0 }
@@ -464,30 +610,50 @@ private fun SetRow(set: WorkoutSetEntity, prior: WorkoutSetEntity?, exerciseName
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(set.setNumber.toString(), Modifier.width(28.dp), color = V.White, textAlign = TextAlign.Center)
-        Text(
-            prior?.let { "${workoutNumber(it.weight)} × ${it.reps}" } ?: "—",
-            Modifier.weight(1.2f),
-            style = MaterialTheme.typography.labelSmall,
-            color = V.Gray,
-            textAlign = TextAlign.Center,
-        )
+        Row(
+            Modifier.width(36.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterHorizontally),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(set.setNumber.toString(), color = V.White, style = MaterialTheme.typography.labelMedium)
+            weightGain(set, prior)?.let { gain ->
+                val increase = workoutNumber(unit.fromKilograms(gain.increaseKg))
+                Icon(
+                    Icons.Rounded.EmojiEvents,
+                    "Set ${set.setNumber} · +$increase ${unit.symbol}",
+                    Modifier.size(14.dp),
+                    tint = V.Amber,
+                )
+            }
+        }
+        Box(
+            Modifier.weight(1.35f).heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))
+                .clickable(onClickLabel = "Explain previous set", role = Role.Button, onClick = onPrevious),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                prior?.let { "${workoutNumber(unit.fromKilograms(it.weight))} × ${it.reps}" } ?: "—",
+                style = MaterialTheme.typography.labelMedium,
+                color = V.Gray,
+                textAlign = TextAlign.Center,
+            )
+        }
         MiniInput(wt, { text ->
             val parsed = parseWeight(text)
             if (parsed != null || text == "." || text == ",") {
                 wt = text
-                vm.updateSet(set.id, parsed ?: 0.0, rp.toIntOrNull() ?: 0)
+                vm.updateSet(set.id, weight = unit.toKilograms(parsed ?: 0.0))
             }
-        }, Modifier.weight(1f), "Set ${set.setNumber} weight", enabled = !set.isCompleted)
+        }, Modifier.weight(1f), "Set ${set.setNumber} weight (${unit.symbol})", enabled = !set.isCompleted)
         MiniInput(rp, { text ->
             val parsed = text.toIntOrNull()
             if (text.isEmpty() || (parsed != null && parsed >= 0 && text.all(Char::isDigit))) {
                 rp = text
-                vm.updateSet(set.id, parseWeight(wt) ?: 0.0, parsed ?: 0)
+                vm.updateSet(set.id, reps = parsed ?: 0)
             }
         }, Modifier.weight(1f), "Set ${set.setNumber} reps", KeyboardType.Number, enabled = !set.isCompleted)
         Box(
-            Modifier.size(44.dp).clip(RoundedCornerShape(10.dp))
+            Modifier.size(48.dp).clip(RoundedCornerShape(10.dp))
                 .background(if (set.isCompleted) V.Teal else V.SurfaceBright)
                 .clickable(enabled = set.isCompleted || (weight != null && reps != null), role = Role.Button) {
                     vm.toggleCompleted(set.id)
@@ -519,7 +685,7 @@ private fun MiniInput(
         value = value,
         onValueChange = onChange,
         enabled = enabled,
-        modifier = modifier.height(42.dp)
+        modifier = modifier.height(50.dp)
             .clip(RoundedCornerShape(10.dp)).background(V.Black)
             .border(1.dp, V.SurfaceBright, RoundedCornerShape(10.dp))
             .semantics { contentDescription = label },

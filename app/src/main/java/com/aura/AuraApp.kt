@@ -1,21 +1,21 @@
 package com.aura
 
 import android.app.Application
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.decode.ImageDecoderDecoder
-import com.aura.data.exercise.ExerciseStore
+import com.aura.data.cloud.WorkoutCloudSync
 import com.aura.data.local.AppDatabase
+import com.aura.data.model.ExerciseLib
+import com.aura.workout.WorkoutNotification
 
-class AuraApp : Application(), ImageLoaderFactory {
+class AuraApp : Application() {
     val db: AppDatabase by lazy { AppDatabase.getInstance(this) }
 
-    // Exercise demonstrations are animated GIFs.
-    override fun newImageLoader() =
-        ImageLoader.Builder(this).components { add(ImageDecoderDecoder.Factory()) }.build()
+    internal val workoutCloud by lazy { WorkoutCloudSync { db } }
+
+    internal val workoutNotification by lazy { WorkoutNotification(this) }
 
     override fun onCreate() {
         super.onCreate()
-        ExerciseStore.init(this)
+        ExerciseLib.init(this)
+        workoutCloud.sync()
     }
 }

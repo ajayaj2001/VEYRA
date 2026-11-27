@@ -1394,6 +1394,7 @@ private fun AddExerciseScreen(
                             if (query.isBlank()) Text("Search exercises", color = Muted, fontSize = 15.sp)
                             inner()
                         }
+                        if (query.isNotEmpty()) com.aura.ui.components.AuraClearSearchButton { query = "" }
                     }
                 },
             )

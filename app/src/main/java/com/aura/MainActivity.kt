@@ -1,5 +1,6 @@
 package com.aura
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,32 +11,31 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
@@ -44,29 +44,67 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aura.data.local.dao.WorkoutDao
 import com.aura.navigation.Routes
 import com.aura.navigation.Tab
 import com.aura.navigation.AuraNavGraph
 import com.aura.ui.theme.AuraCaption
-import com.aura.ui.theme.AuraScreenInset
 import com.aura.ui.theme.V
 import com.aura.ui.theme.AuraTheme
+import com.aura.workout.WorkoutNotification
 
 class MainActivity : ComponentActivity() {
+    private var openWorkout by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        openWorkout = savedInstanceState?.getBoolean("openWorkout")
+            ?: (intent.action == WorkoutNotification.OPEN_WORKOUT)
         enableEdgeToEdge()
         setContent {
-            AuraTheme { AuraRoot() }
+            AuraTheme {
+                AuraRoot(openWorkout, (application as AuraApp).db.workoutDao()) { openWorkout = false }
+            }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == WorkoutNotification.OPEN_WORKOUT) openWorkout = true
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("openWorkout", openWorkout)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        (application as AuraApp).workoutNotification.refresh()
     }
 }
 
 @Composable
-private fun AuraRoot() {
+private fun AuraRoot(
+    openWorkout: Boolean,
+    workoutDao: WorkoutDao,
+    onWorkoutOpened: () -> Unit,
+) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
+
+    LaunchedEffect(openWorkout, route) {
+        if (!openWorkout || route == null) return@LaunchedEffect
+        // Wait for the usual sign-in and profile routing before showing workout data.
+        if (runCatching { nav.getBackStackEntry(Routes.HOME) }.isFailure) return@LaunchedEffect
+        val workout = workoutDao.getActiveWorkout()
+        val activeRoute = "workout/active?routineId={routineId}"
+        if (workout != null && route != activeRoute && !nav.popBackStack(activeRoute, inclusive = false)) {
+            nav.navigate("workout/active") { launchSingleTop = true }
+        }
+        onWorkoutOpened()
+    }
 
     val tabRoutes = Tab.entries.map { it.route }
     val showNav = route in tabRoutes
@@ -90,7 +128,6 @@ private fun AuraRoot() {
                             }
                         }
                     },
-                    onFab = { /* Quick Add */ },
                 )
             }
         },
@@ -109,7 +146,6 @@ private fun AuraRoot() {
 private fun BottomBar(
     currentRoute: String?,
     onTab: (Tab) -> Unit,
-    onFab: () -> Unit,
 ) {
     val navPadding = WindowInsets.navigationBars.asPaddingValues()
 
@@ -118,16 +154,16 @@ private fun BottomBar(
             .fillMaxWidth()
             .background(V.Black)
             .padding(bottom = navPadding.calculateBottomPadding())
-            .padding(horizontal = AuraScreenInset, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Nav pill container
         Row(
             Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(9999.dp))
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(28.dp))
                 .background(V.SurfaceRaised)
-                .padding(horizontal = 8.dp, vertical = 6.dp)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
                 .selectableGroup(),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically,
@@ -140,29 +176,20 @@ private fun BottomBar(
                         .weight(1f)
                         .clip(RoundedCornerShape(9999.dp))
                         .selectable(selected, role = Role.Tab, onClick = { onTab(tab) })
-                        .padding(vertical = 8.dp),
+                        .heightIn(min = 64.dp)
+                        .padding(vertical = 6.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
-                        // Icon with glow behind it when selected
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
                             if (selected) {
-                                // Teal glow circle behind icon
-                                Box(
-                                    Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(V.Teal.copy(alpha = 0.15f))
-                                )
+                                Box(Modifier.matchParentSize().clip(CircleShape).background(V.Teal.copy(alpha = 0.15f)))
                             }
-                            Icon(
-                                tab.icon, contentDescription = null,
-                                tint = if (selected) V.Teal else V.Gray,
-                                modifier = Modifier.size(22.dp),
-                            )
+                            Icon(tab.icon, contentDescription = null, tint = if (selected) V.Teal else V.Gray,
+                                modifier = Modifier.size(24.dp))
                         }
                         Text(
                             tab.label,
@@ -174,18 +201,5 @@ private fun BottomBar(
             }
         }
 
-        Spacer(Modifier.width(8.dp))
-
-        // FAB
-        Box(
-            Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(V.Teal)
-                .clickable(onClick = onFab),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Rounded.Add, "Quick Add", tint = V.Black, modifier = Modifier.size(24.dp))
-        }
     }
 }

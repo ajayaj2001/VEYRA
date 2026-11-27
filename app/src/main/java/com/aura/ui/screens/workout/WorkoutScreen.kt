@@ -3,6 +3,7 @@ package com.aura.ui.screens.workout
 import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,7 +24,8 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.FitnessCenter
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,9 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,7 +52,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.aura.ui.components.AuraTextField
 import com.aura.AuraApp
+import com.aura.data.local.dao.RoutineWithExercises
 import com.aura.data.local.entity.RoutineEntity
+import com.aura.data.model.ExerciseLib
 import com.aura.data.local.entity.WorkoutEntity
 import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
@@ -61,8 +71,8 @@ import java.util.Locale
 class WorkoutVM(app: Application) : AndroidViewModel(app) {
     private val dao = (app as AuraApp).db.workoutDao()
 
-    private val _routines = MutableStateFlow<List<RoutineEntity>>(emptyList())
-    val routines: StateFlow<List<RoutineEntity>> = _routines
+    private val _routines = MutableStateFlow<List<RoutineWithExercises>>(emptyList())
+    val routines: StateFlow<List<RoutineWithExercises>> = _routines
 
     private val _history = MutableStateFlow<List<WorkoutEntity>>(emptyList())
     val history: StateFlow<List<WorkoutEntity>> = _history
@@ -74,7 +84,7 @@ class WorkoutVM(app: Application) : AndroidViewModel(app) {
     val totalCount: StateFlow<Int> = _totalCount
 
     init {
-        viewModelScope.launch { dao.getAllRoutines().collect { _routines.value = it } }
+        viewModelScope.launch { dao.observeRoutinesWithExercises().collect { _routines.value = it } }
         viewModelScope.launch {
             dao.getWorkoutHistory().collect {
                 _history.value = it.take(5)
@@ -85,7 +95,14 @@ class WorkoutVM(app: Application) : AndroidViewModel(app) {
     }
 
     fun createRoutine(name: String) = viewModelScope.launch {
-        dao.insertRoutine(RoutineEntity(name = name))
+        val cloud = getApplication<AuraApp>().workoutCloud
+        val uid = cloud.ownerUid
+        dao.insertRoutine(RoutineEntity(
+            name = name,
+            cloudOwnerUid = uid,
+            cloudId = uid?.let { java.util.UUID.randomUUID().toString() },
+        ))
+        cloud.sync()
     }
 
 }
@@ -97,6 +114,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
     val active by vm.activeWorkout.collectAsState()
     val total by vm.totalCount.collectAsState()
     var showNewDialog by remember { mutableStateOf(false) }
+    var routinesExpanded by rememberSaveable { mutableStateOf(true) }
 
     LazyColumn(
         Modifier
@@ -133,15 +151,28 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
             ) {
                 Text("Routines", style = MaterialTheme.typography.headlineMedium, color = V.White)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    WorkoutAction("New routine", Icons.Rounded.Add, { showNewDialog = true }, Modifier.weight(1f))
+                    WorkoutAction("New routine", Icons.Rounded.Add, { showNewDialog = true }, Modifier.weight(1f), prominent = true)
                     WorkoutAction("Exercise library", Icons.Rounded.Search,
-                        { nav.navigate("exercise/search?picker=false") }, Modifier.weight(1f))
+                        { nav.navigate("exercise/search?picker=false") }, Modifier.weight(1f), prominent = true)
                 }
-                Text("My routines · ${routines.size}", style = MaterialTheme.typography.labelMedium, color = V.Gray)
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(12.dp))
+                        .clickable(role = Role.Button) { routinesExpanded = !routinesExpanded }
+                        .semantics { stateDescription = if (routinesExpanded) "Expanded" else "Collapsed" },
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        if (routinesExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                        contentDescription = null,
+                        tint = V.Teal,
+                    )
+                    Text("My routines (${routines.size})", style = MaterialTheme.typography.titleMedium, color = V.White)
+                }
             }
         }
 
-        if (routines.isEmpty()) {
+        if (routinesExpanded && routines.isEmpty()) {
             item {
                 VCard(Modifier.padding(horizontal = AuraScreenInset)) {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -154,22 +185,22 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
             }
         }
 
-        items(routines, key = { it.id }) { routine ->
-            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(routine.name, style = MaterialTheme.typography.titleLarge, color = V.White, fontWeight = FontWeight.SemiBold)
-                    if (routine.description.isNotBlank()) {
-                        Text(routine.description, style = MaterialTheme.typography.bodySmall, color = V.Gray)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WorkoutAction("View routine", Icons.Rounded.FitnessCenter,
-                            { nav.navigate("workout/routine/${routine.id}") }, Modifier.weight(1f))
-                        if (active == null) {
-                            WorkoutAction("Start", Icons.Rounded.PlayArrow,
-                                { nav.navigate("workout/active?routineId=${routine.id}") }, Modifier.weight(1f))
-                        }
-                    }
+        if (routinesExpanded) {
+            items(routines, key = { "routine-${it.routine.id}" }) { entry ->
+                val routine = entry.routine
+                val action = when {
+                    active == null -> "Start routine"
+                    active?.routineId == routine.id -> "Resume workout"
+                    else -> null
                 }
+                RoutineCard(
+                    entry = entry,
+                    action = action,
+                    onDetails = { nav.navigate("workout/routine/${routine.id}") },
+                    onStart = {
+                        nav.navigate(if (active == null) "workout/active?routineId=${routine.id}" else "workout/active")
+                    },
+                )
             }
         }
 
@@ -179,7 +210,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
                 Text("Recent", style = MaterialTheme.typography.titleSmall, color = V.Gray, modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
             }
             items(history) { w ->
-                VCard(Modifier.padding(horizontal = AuraScreenInset)) {
+                VCard(Modifier.padding(horizontal = AuraScreenInset), onClick = { nav.navigate("workout/summary/${w.id}") }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.History, null, tint = V.Gray, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(10.dp))
@@ -221,5 +252,44 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
                 TextButton(onClick = { showNewDialog = false }) { Text("Cancel", color = V.Gray) }
             },
         )
+    }
+}
+
+@Composable
+private fun RoutineCard(
+    entry: RoutineWithExercises,
+    action: String?,
+    onDetails: () -> Unit,
+    onStart: () -> Unit,
+) {
+    val preview = remember(entry.exercises, entry.routine.description) {
+        entry.exercises.sortedBy { it.sortOrder }
+            .map { ExerciseLib.getById(it.exerciseId)?.name ?: "Exercise unavailable" }
+            .joinToString(", ")
+            .ifBlank { entry.routine.description.ifBlank { "No exercises added" } }
+    }
+
+    VCard(Modifier.padding(horizontal = AuraScreenInset)) {
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))
+                    .clickable(role = Role.Button, onClickLabel = "View routine details", onClick = onDetails),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(entry.routine.name, style = MaterialTheme.typography.titleLarge, color = V.White)
+                    Text(
+                        preview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = V.Gray,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                WorkoutDetailChevron()
+            }
+            if (action != null) AuraPrimaryButton(action, onClick = onStart)
+        }
     }
 }

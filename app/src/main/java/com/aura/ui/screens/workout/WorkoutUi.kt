@@ -13,6 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import androidx.navigation.NavController
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -22,6 +27,11 @@ import com.aura.ui.theme.V
 import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
+
+internal fun openExercisePicker(nav: NavController, existingIds: List<String>) {
+    nav.currentBackStackEntry?.savedStateHandle?.set("existingExerciseIds", ArrayList(existingIds))
+    nav.navigate("exercise/search")
+}
 
 @Composable
 internal fun WorkoutHeader(
@@ -49,10 +59,11 @@ internal fun WorkoutAction(
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    prominent: Boolean = false,
 ) {
     FilledTonalButton(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 48.dp),
+        modifier = modifier.heightIn(min = if (prominent) 56.dp else 48.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = V.SurfaceRaised, contentColor = V.White,
@@ -61,7 +72,8 @@ internal fun WorkoutAction(
     ) {
         Icon(icon, null, Modifier.size(18.dp), tint = V.Teal)
         Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium)
+        Text(label, style = if (prominent) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.labelMedium,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
@@ -73,6 +85,23 @@ internal fun ExerciseGlyph(size: Dp = 44.dp) {
     ) {
         Icon(Icons.Rounded.FitnessCenter, null, Modifier.size(size * 0.48f), tint = V.Teal)
     }
+}
+
+@Composable
+internal fun ExerciseThumbnail(imageUrl: String?, size: Dp = 52.dp) {
+    if (imageUrl.isNullOrBlank()) {
+        ExerciseGlyph(size)
+        return
+    }
+    val fallback = rememberVectorPainter(Icons.Rounded.FitnessCenter)
+    AsyncImage(
+        model = imageUrl,
+        contentDescription = null,
+        modifier = Modifier.size(size).clip(RoundedCornerShape(14.dp)).background(V.White),
+        contentScale = ContentScale.Crop,
+        placeholder = fallback,
+        error = fallback,
+    )
 }
 
 @Composable
@@ -93,14 +122,21 @@ internal fun WorkoutMetricFilter(label: String, selected: Boolean, onClick: () -
 }
 
 @Composable
-internal fun ProgressChart(points: List<Pair<Long, Double>>, unit: String, emptyMessage: String) {
+internal fun ProgressChart(
+    points: List<Pair<Long, Double>>,
+    unit: String,
+    emptyMessage: String,
+    showLatestValue: Boolean = true,
+) {
     if (points.isEmpty()) {
         Text(emptyMessage, style = MaterialTheme.typography.bodyMedium, color = V.Gray)
         return
     }
 
     val max = points.maxOf { it.second }.coerceAtLeast(1.0)
-    Text("${workoutNumber(points.last().second)} $unit", style = MaterialTheme.typography.headlineMedium, color = V.White)
+    if (showLatestValue) {
+        Text("${workoutNumber(points.last().second)} $unit", style = MaterialTheme.typography.headlineMedium, color = V.White)
+    }
     Canvas(Modifier.fillMaxWidth().height(112.dp).padding(top = 12.dp, bottom = 8.dp)) {
         repeat(3) { index ->
             val y = size.height * index / 2

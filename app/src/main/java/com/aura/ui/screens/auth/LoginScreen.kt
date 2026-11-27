@@ -23,6 +23,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +53,13 @@ private val SignInCaption = TextStyle(
 )
 
 @Composable
-fun LoginScreen(onGoogleSignIn: () -> Unit, signingIn: Boolean, error: String?) {
+fun LoginScreen(
+    onGoogleSignIn: () -> Unit,
+    signingIn: Boolean,
+    error: String?,
+    onDebugPreview: (() -> Unit)? = null,
+) {
+    var wordmarkTaps by remember { mutableIntStateOf(0) }
     BoxWithConstraints(
         Modifier.fillMaxSize().background(V.Black)
             .statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp),
@@ -62,12 +72,26 @@ fun LoginScreen(onGoogleSignIn: () -> Unit, signingIn: Boolean, error: String?) 
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Spacer(Modifier.weight(88f))
-            AuraBrandLockup()
+            val wordmarkModifier = if (onDebugPreview != null && !signingIn) {
+                Modifier.clickable(role = Role.Button) {
+                    wordmarkTaps++
+                    if (wordmarkTaps == 10) {
+                        wordmarkTaps = 0
+                        onDebugPreview()
+                    }
+                }
+            } else {
+                Modifier
+            }
+            AuraBrandLockup(wordmarkModifier)
             Spacer(Modifier.weight(62f))
             AuraOrbit(loading = false, diameter = diameter)
             Spacer(Modifier.weight(122f))
             if (error != null) Text(error, color = V.Error, style = SignInCaption, textAlign = TextAlign.Center)
-            GoogleButton(onGoogleSignIn, signingIn)
+            GoogleButton({
+                wordmarkTaps = 0
+                onGoogleSignIn()
+            }, signingIn)
             Spacer(Modifier.height(20.dp))
             Text(
                 "By continuing, you agree to our",

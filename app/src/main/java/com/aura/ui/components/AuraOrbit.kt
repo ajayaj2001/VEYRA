@@ -40,10 +40,11 @@ private val Sora = FontFamily(Font(R.font.sora_semibold, FontWeight.SemiBold))
 private val HaloEasing = CubicBezierEasing(0.45f, 0f, 0.55f, 1f)
 
 @Composable
-internal fun AuraBrandLockup() {
+internal fun AuraBrandLockup(wordmarkModifier: Modifier = Modifier) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             AppConfig.APP_NAME,
+            modifier = wordmarkModifier,
             color = V.White,
             style = TextStyle(
                 fontFamily = Sora,

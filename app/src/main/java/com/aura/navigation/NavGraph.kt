@@ -15,8 +15,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.aura.BuildConfig
 import com.aura.data.cloud.CloudProfile
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.ui.Modifier
@@ -38,6 +41,7 @@ import com.aura.ui.screens.workout.ExerciseDetailScreen
 import com.aura.ui.screens.workout.ExerciseSearchScreen
 import com.aura.ui.screens.workout.WorkoutScreen
 import com.aura.ui.screens.workout.RoutineDetailScreen
+import com.aura.ui.screens.workout.WorkoutSummaryScreen
 import com.aura.ui.screens.nutrition.NutritionScreen
 import com.aura.ui.screens.nutrition.NutritionEntryScreen
 import com.aura.ui.screens.nutrition.NutritionVM
@@ -77,8 +81,33 @@ fun AuraNavGraph(
         popExitTransition = { fadeOut(tween(ANIM)) },
     ) {
         composable(Routes.SPLASH) {
+            val scope = rememberCoroutineScope()
+            // Firebase keeps a signed-in user signed in across launches, so they skip onboarding and
+            // login. Their profile is looked up while the splash plays.
+            val destination = remember {
+                scope.async {
+                    val user = FirebaseAuth.getInstance().currentUser ?: return@async Routes.ONBOARDING
+                    val name = try {
+                        withTimeoutOrNull(5_000) { ProfileLookup(CloudProfile.loadName(user.uid)) }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        null
+                    }
+                    when {
+                        // Offline or slow: still let them in, under their Google account name.
+                        name == null -> profileName = user.displayName.orEmpty()
+                        // Signed in but never finished setup; login sends them on to it.
+                        name.value == null -> return@async Routes.LOGIN
+                        else -> profileName = name.value
+                    }
+                    Routes.HOME
+                }
+            }
             SplashScreen(onFinished = {
-                nav.navigate(Routes.ONBOARDING) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                scope.launch {
+                    nav.navigate(destination.await()) { popUpTo(Routes.SPLASH) { inclusive = true } }
+                }
             })
         }
         composable(Routes.ONBOARDING) {
@@ -94,6 +123,15 @@ fun AuraNavGraph(
             LoginScreen(
                 signingIn = busy,
                 error = error,
+                onDebugPreview = if (BuildConfig.DEBUG && !busy) {
+                    {
+                        FirebaseAuth.getInstance().signOut()
+                        basic = Bundle()
+                        body = Bundle()
+                        profileName = "ajayaj7397@gmail.com"
+                        nav.navigate(Routes.HOME) { popUpTo(Routes.LOGIN) { inclusive = true } }
+                    }
+                } else null,
                 onGoogleSignIn = {
                     if (!busy) {
                         busy = true
@@ -188,11 +226,11 @@ fun AuraNavGraph(
         ) { entry ->
             val routineId = entry.arguments?.getLong("routineId")?.takeIf { it != -1L }
             // Listen for exercise added from search
-            val selectedId by entry.savedStateHandle.getStateFlow<String?>("selectedExerciseId", null).collectAsState()
+            val selectedIds by entry.savedStateHandle.getStateFlow("selectedExerciseIds", arrayListOf<String>()).collectAsState()
             val vm: com.aura.ui.screens.workout.ActiveWorkoutVM = androidx.lifecycle.viewmodel.compose.viewModel()
             AuraContentTheme {
-                ActiveWorkoutScreen(nav = nav, routineId = routineId, vm = vm, selectedExerciseId = selectedId,
-                    onExerciseHandled = { entry.savedStateHandle["selectedExerciseId"] = null })
+                ActiveWorkoutScreen(nav = nav, routineId = routineId, vm = vm, selectedExerciseIds = selectedIds,
+                    onExerciseHandled = { entry.savedStateHandle["selectedExerciseIds"] = arrayListOf<String>() })
             }
         }
         composable(
@@ -200,27 +238,66 @@ fun AuraNavGraph(
             arguments = listOf(navArgument("routineId") { type = NavType.LongType }),
         ) { entry ->
             val routineId = entry.arguments?.getLong("routineId") ?: return@composable
-            AuraContentTheme { RoutineDetailScreen(nav, routineId) }
+            // Listen for an exercise picked from search
+            val selectedIds by entry.savedStateHandle.getStateFlow("selectedExerciseIds", arrayListOf<String>()).collectAsState()
+            AuraContentTheme {
+                RoutineDetailScreen(nav, routineId, selectedExerciseIds = selectedIds,
+                    onExerciseHandled = { entry.savedStateHandle["selectedExerciseIds"] = arrayListOf<String>() })
+            }
+        }
+        composable(
+            "workout/summary/{workoutId}?celebrate={celebrate}",
+            arguments = listOf(
+                navArgument("workoutId") { type = NavType.LongType },
+                navArgument("celebrate") { type = NavType.BoolType; defaultValue = false },
+            ),
+        ) { entry ->
+            val workoutId = entry.arguments?.getLong("workoutId") ?: return@composable
+            AuraContentTheme {
+                WorkoutSummaryScreen(nav, workoutId, celebrate = entry.arguments?.getBoolean("celebrate") == true)
+            }
         }
         composable(
             "exercise/search?picker={picker}",
             arguments = listOf(navArgument("picker") { type = NavType.BoolType; defaultValue = true }),
         ) { entry ->
-            AuraContentTheme { ExerciseSearchScreen(nav, picker = entry.arguments?.getBoolean("picker") == true) }
+            val picking = entry.arguments?.getBoolean("picker") == true
+            val draft by entry.savedStateHandle.getStateFlow("exercisePickerDraft", arrayListOf<String>()).collectAsState()
+            val parent = remember(entry) { nav.previousBackStackEntry?.savedStateHandle }
+            val existing = parent?.get<ArrayList<String>>("existingExerciseIds").orEmpty()
+            AuraContentTheme {
+                ExerciseSearchScreen(
+                    nav, picking, draft, existing,
+                    onToggle = { id ->
+                        val current = entry.savedStateHandle.get<ArrayList<String>>("exercisePickerDraft").orEmpty()
+                        entry.savedStateHandle["exercisePickerDraft"] = ArrayList(
+                            if (id in current) current - id else current + id,
+                        )
+                    },
+                    onConfirm = {
+                        parent?.set("selectedExerciseIds", ArrayList(draft))
+                        nav.popBackStack()
+                    },
+                )
+            }
         }
         composable(
             "exercise/{exerciseId}?picker={picker}",
             arguments = listOf(navArgument("picker") { type = NavType.BoolType; defaultValue = false }),
         ) { entry ->
             val id = entry.arguments?.getString("exerciseId") ?: return@composable
-            val add: (() -> Unit)? = if (entry.arguments?.getBoolean("picker") == true) {
+            val picking = entry.arguments?.getBoolean("picker") == true
+            val picker = remember(entry) { nav.previousBackStackEntry?.savedStateHandle }
+            val draft = picker?.get<ArrayList<String>>("exercisePickerDraft").orEmpty()
+            val toggle: (() -> Unit)? = if (picking && picker != null) {
                 {
-                    nav.popBackStack()
-                    nav.previousBackStackEntry?.savedStateHandle?.set("selectedExerciseId", id)
+                    picker["exercisePickerDraft"] = ArrayList(if (id in draft) draft - id else draft + id)
                     nav.popBackStack()
                 }
             } else null
-            AuraContentTheme { ExerciseDetailScreen(nav, exerciseId = id, onAdd = add) }
+            AuraContentTheme {
+                ExerciseDetailScreen(nav, exerciseId = id, onAdd = toggle, isSelected = id in draft)
+            }
         }
         composable(Routes.NUTRITION) {
             AuraContentTheme { NutritionScreen(nav = nav) }

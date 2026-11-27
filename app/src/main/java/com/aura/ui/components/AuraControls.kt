@@ -4,6 +4,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -40,6 +45,7 @@ internal fun AuraTextField(
     modifier: Modifier = Modifier,
     leadingIcon: (@Composable () -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
+    trailingIcon: (@Composable () -> Unit)? = null,
 ) {
     TextField(
         value = value,
@@ -47,6 +53,7 @@ internal fun AuraTextField(
         modifier = modifier.fillMaxWidth(),
         placeholder = { Text(placeholder, style = AuraBody, color = V.Gray) },
         leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         shape = RoundedCornerShape(AuraFieldRadius),
@@ -61,4 +68,23 @@ internal fun AuraTextField(
             unfocusedIndicatorColor = Color.Transparent,
         ),
     )
+}
+
+
+@Composable
+internal fun AuraSearchField(query: String, onQueryChange: (String) -> Unit, placeholder: String) {
+    AuraTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = placeholder,
+        leadingIcon = { Icon(Icons.Rounded.Search, null, tint = V.Gray) },
+        trailingIcon = if (query.isNotEmpty()) {
+            { AuraClearSearchButton { onQueryChange("") } }
+        } else null,
+    )
+}
+
+@Composable
+internal fun AuraClearSearchButton(onClear: () -> Unit) {
+    IconButton(onClick = onClear) { Icon(Icons.Rounded.Close, "Clear search", tint = V.Gray) }
 }
