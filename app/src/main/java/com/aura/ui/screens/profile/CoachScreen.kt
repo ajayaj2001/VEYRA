@@ -34,7 +34,7 @@ fun CoachScreen(nav: NavController) {
     }
     val suggestions = listOf("How's my recovery?", "Suggest a workout", "Am I eating enough protein?", "Sleep tips")
 
-    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding().imePadding()) {
         // Header
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Rounded.ArrowBack, "Back", tint = V.White) }

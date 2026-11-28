@@ -2,6 +2,8 @@ package com.aura.ui.theme
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -10,7 +12,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aura.R
 
-internal val AuraScreenInset = 24.dp
+internal val AuraScreenInset
+    @Composable get() = when {
+        LocalConfiguration.current.screenWidthDp < 360 -> 16.dp
+        LocalConfiguration.current.screenWidthDp >= 480 -> 32.dp
+        else -> 24.dp
+    }
+
+internal val AuraStackedControls: Boolean
+    @Composable get() = LocalConfiguration.current.screenWidthDp < 350 || LocalDensity.current.fontScale >= 1.3f
 internal val AuraFieldRadius = 16.dp
 
 internal val AuraWordmark = TextStyle(

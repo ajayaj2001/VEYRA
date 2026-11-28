@@ -4,17 +4,23 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,6 +36,7 @@ import com.aura.ui.components.AuraTextField
 import com.aura.ui.components.VCard
 import com.aura.ui.screens.nutrition.foodQuantity
 import com.aura.ui.screens.workout.WorkoutHeader
+import com.aura.ui.theme.AuraPalette
 import com.aura.ui.theme.AuraScreenInset
 import com.aura.ui.theme.V
 import kotlinx.coroutines.CancellationException
@@ -39,6 +46,7 @@ import java.math.BigDecimal
 @Composable
 internal fun SettingsScreen(nav: NavController, onSignOut: () -> Unit) {
     val context = LocalContext.current
+    val appearance = remember(context) { context.getSharedPreferences("aura_appearance", android.content.Context.MODE_PRIVATE) }
     var error by remember { mutableStateOf<String?>(null) }
 
     fun openSystemSettings(intent: Intent, unavailable: String) {
@@ -57,6 +65,27 @@ internal fun SettingsScreen(nav: NavController, onSignOut: () -> Unit) {
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(AuraScreenInset),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            VCard {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Appearance", style = MaterialTheme.typography.titleLarge, color = V.White)
+                        Text("Choose your Aura color", color = V.Gray, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        AuraPalette.entries.forEach { palette ->
+                            AppearanceChoice(
+                                palette = palette,
+                                selected = V.palette == palette,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    appearance.edit().putString("palette", palette.name).apply()
+                                    V.selectPalette(palette)
+                                },
+                            )
+                        }
+                    }
+                }
+            }
             VCard {
                 Column(Modifier.fillMaxWidth()) {
                     SettingsRow("Nutrition goals", "Daily calories, protein, carbs, and fat") { nav.navigate(Routes.NUTRITION_GOALS) }
@@ -78,7 +107,7 @@ internal fun SettingsScreen(nav: NavController, onSignOut: () -> Unit) {
             VCard {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Aura", style = MaterialTheme.typography.titleLarge, color = V.White)
-                    Text("Version ${AppConfig.APP_VERSION} · Mineral", color = V.Gray, style = MaterialTheme.typography.bodySmall)
+                    Text("Version ${AppConfig.APP_VERSION} · ${V.palette.label}", color = V.Gray, style = MaterialTheme.typography.bodySmall)
                 }
             }
             TextButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -94,6 +123,44 @@ internal fun SettingsScreen(nav: NavController, onSignOut: () -> Unit) {
             text = { Text(message) },
             confirmButton = { TextButton(onClick = { error = null }) { Text("OK") } },
         )
+    }
+}
+
+@Composable
+private fun AppearanceChoice(
+    palette: AuraPalette,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier
+            .clip(shape)
+            .background(palette.colors.surface)
+            .border(if (selected) 2.dp else 1.dp, if (selected) palette.colors.accent else V.Divider, shape)
+            .clickable(role = Role.RadioButton, onClick = onClick)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp),
+    ) {
+        Box(
+            Modifier.fillMaxWidth().height(48.dp).clip(RoundedCornerShape(10.dp))
+                .background(Brush.linearGradient(listOf(palette.colors.accentDim, palette.colors.accent))),
+        ) {
+            Box(Modifier.fillMaxSize().padding(start = 9.dp, top = 8.dp, end = 9.dp, bottom = 8.dp)) {
+                Box(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(8.dp)).background(palette.colors.surface.copy(alpha = 0.78f)))
+                Box(Modifier.fillMaxWidth(0.62f).height(7.dp).clip(RoundedCornerShape(8.dp)).background(palette.colors.accent))
+            }
+            if (selected) {
+                Icon(
+                    Icons.Rounded.Check,
+                    contentDescription = "Selected",
+                    tint = Color.White,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(16.dp),
+                )
+            }
+        }
+        Text(palette.label, color = if (selected) palette.colors.white else V.Gray, style = MaterialTheme.typography.titleSmall)
     }
 }
 

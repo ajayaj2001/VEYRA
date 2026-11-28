@@ -10,26 +10,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-private val AuraScheme = darkColorScheme(
-    primary = V.Teal,
-    onPrimary = V.Black,
-    primaryContainer = V.Teal,
-    onPrimaryContainer = V.Black,
-    secondary = V.Gray,
-    onSecondary = V.Black,
-    background = V.Canvas,
-    onBackground = V.White,
-    surface = V.Surface,
-    onSurface = V.White,
-    surfaceVariant = V.SurfaceElevated,
-    onSurfaceVariant = V.Gray,
-    outline = V.SurfaceBright,
-    outlineVariant = V.Divider,
-    error = V.Error,
-    onError = V.Black,
-    scrim = V.Scrim,
-)
-
 @Composable
 fun AuraTheme(content: @Composable () -> Unit) {
     val view = LocalView.current
@@ -47,7 +27,25 @@ fun AuraTheme(content: @Composable () -> Unit) {
         }
     }
     MaterialTheme(
-        colorScheme = AuraScheme,
+        colorScheme = darkColorScheme(
+            primary = V.Teal,
+            onPrimary = V.Black,
+            primaryContainer = V.Teal,
+            onPrimaryContainer = V.Black,
+            secondary = V.Gray,
+            onSecondary = V.Black,
+            background = V.Canvas,
+            onBackground = V.White,
+            surface = V.Surface,
+            onSurface = V.White,
+            surfaceVariant = V.SurfaceElevated,
+            onSurfaceVariant = V.Gray,
+            outline = V.SurfaceBright,
+            outlineVariant = V.Divider,
+            error = V.Error,
+            onError = V.Black,
+            scrim = V.Scrim,
+        ),
         typography = AuraTypography,
         content = content,
     )

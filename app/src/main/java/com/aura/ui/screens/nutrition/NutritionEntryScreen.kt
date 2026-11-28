@@ -46,6 +46,7 @@ import com.aura.ui.components.AuraTextField
 import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
+import com.aura.ui.theme.AuraStackedControls
 import com.aura.ui.theme.V
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -158,7 +159,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                 },
             )
         } else {
-            TabRow(selectedTabIndex = entryMode.ordinal, containerColor = V.Canvas, contentColor = V.Teal) {
+            val tabs: @Composable () -> Unit = {
                 FoodEntryMode.entries.forEach { mode ->
                     Tab(
                         selected = entryMode == mode, onClick = { entryMode = mode }, enabled = !busy,
@@ -166,6 +167,11 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                         text = { Text(mode.label) },
                     )
                 }
+            }
+            if (AuraStackedControls) {
+                ScrollableTabRow(entryMode.ordinal, containerColor = V.Canvas, contentColor = V.Teal, edgePadding = 0.dp, tabs = tabs)
+            } else {
+                TabRow(entryMode.ordinal, containerColor = V.Canvas, contentColor = V.Teal, tabs = tabs)
             }
             when (entryMode) {
                 FoodEntryMode.Manual -> {
@@ -337,7 +343,7 @@ private fun PhotoMode(
     ) {
         Text("Photo or description", style = MaterialTheme.typography.headlineMedium, color = V.White)
         Box(
-            Modifier.fillMaxWidth().height(280.dp).clip(RoundedCornerShape(20.dp))
+            Modifier.fillMaxWidth().heightIn(max = 280.dp).aspectRatio(1.25f).clip(RoundedCornerShape(20.dp))
                 .background(V.SurfaceRaised),
             contentAlignment = Alignment.Center,
         ) {

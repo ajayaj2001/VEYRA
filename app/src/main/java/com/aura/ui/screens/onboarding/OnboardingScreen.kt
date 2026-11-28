@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.aura.ui.components.VButton
 import com.aura.ui.theme.V
+import com.aura.ui.theme.AuraScreenInset
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
@@ -96,14 +97,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp),
+                .padding(horizontal = AuraScreenInset)
+                .padding(bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             PageIndicator(
                 count = pages.size,
                 current = pagerState.currentPage,
-                modifier = Modifier.padding(bottom = 24.dp),
+                modifier = Modifier.padding(bottom = 16.dp),
             )
 
             VButton(
@@ -125,14 +126,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 @Composable
 private fun OnboardingPageContent(page: OnboardingPage) {
     BoxWithConstraints(
-        Modifier.fillMaxSize().padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = AuraScreenInset),
         contentAlignment = Alignment.TopCenter,
     ) {
         val screenHeight = maxHeight
         val illustrationSize = minOf(maxWidth, screenHeight * 0.44f, 320.dp)
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(top = (screenHeight * 0.09f).coerceAtMost(64.dp), bottom = 16.dp),
+                .padding(top = (screenHeight * 0.06f).coerceAtMost(48.dp), bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -141,7 +142,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                 color = V.White,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height((screenHeight * 0.12f).coerceAtMost(80.dp)))
+            Spacer(Modifier.height((screenHeight * 0.07f).coerceAtMost(48.dp)))
             Box(Modifier.size(illustrationSize)) {
                 AnimatedSvgView(assetPath = page.htmlAsset)
             }

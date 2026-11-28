@@ -63,7 +63,7 @@ fun ProfileScreen(nav: NavController, profileName: String, onSignOut: () -> Unit
             .background(V.Canvas)
             .verticalScroll(rememberScrollState())
             .statusBarsPadding()
-            .padding(bottom = 100.dp),
+            .padding(bottom = 16.dp),
     ) {
         // Header
         Row(
@@ -95,7 +95,7 @@ fun ProfileScreen(nav: NavController, profileName: String, onSignOut: () -> Unit
                     .size(80.dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.linearGradient(listOf(V.Teal, V.Blue))
+                        Brush.linearGradient(listOf(V.TealDim, V.Teal))
                     ),
                 contentAlignment = Alignment.Center,
             ) {

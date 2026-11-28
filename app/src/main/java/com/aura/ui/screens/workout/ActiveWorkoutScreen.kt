@@ -33,6 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -337,6 +339,8 @@ fun ActiveWorkoutScreen(
     var showFinish by remember { mutableStateOf(false) }
     var showDiscard by remember { mutableStateOf(false) }
     var showRest by remember { mutableStateOf(false) }
+    val shortWindow = LocalConfiguration.current.screenHeightDp < 480
+    val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     var explanation by remember { mutableStateOf<Pair<String, SetColumn>?>(null) }
 
     LaunchedEffect(routineId, selectedExerciseIds) {
@@ -355,6 +359,36 @@ fun ActiveWorkoutScreen(
     }
     BackHandler(enabled = s.saving) {}
 
+    val workoutStats: @Composable () -> Unit = {
+        val completed = s.groups.flatMap { it.sets }.filter { it.isCompleted && it.reps > 0 }
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = V.SurfaceRaised,
+        ) {
+            Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                StatChip("Duration", formatTime(s.elapsed), V.Teal)
+                StatChip("Volume", "${workoutNumber(completed.sumOf { it.weight * it.reps })} kg", V.White)
+                StatChip("Sets", completed.size.toString(), V.White)
+            }
+        }
+
+    }
+    val workoutActions: @Composable () -> Unit = {
+        Column(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            AuraPrimaryButton(
+                "Add exercise",
+                { openExercisePicker(nav, s.groups.map { it.exercise.id }) },
+                enabled = s.workout != null && !s.saving,
+            )
+            TextButton(onClick = { showDiscard = true }, enabled = !s.saving && s.workout != null,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text("Discard workout", color = V.Red)
+            }
+        }
+    }
+
     Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding().imePadding()) {
         WorkoutHeader("Log workout", { if (!s.saving) nav.popBackStack() }) {
             IconButton(onClick = { showRest = true }) {
@@ -369,19 +403,7 @@ fun ActiveWorkoutScreen(
             }
         }
 
-        val completed = s.groups.flatMap { it.sets }.filter { it.isCompleted && it.reps > 0 }
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 12.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = V.SurfaceRaised,
-        ) {
-            Row(Modifier.padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatChip("Duration", formatTime(s.elapsed), V.Teal)
-                StatChip("Volume", "${workoutNumber(completed.sumOf { it.weight * it.reps })} kg", V.White)
-                StatChip("Sets", completed.size.toString(), V.White)
-            }
-        }
-
+        if (!shortWindow && !keyboardOpen) workoutStats()
         if (s.resting) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset),
@@ -397,6 +419,7 @@ fun ActiveWorkoutScreen(
             contentPadding = PaddingValues(horizontal = AuraScreenInset, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (shortWindow && !keyboardOpen) item { workoutStats() }
             if (s.groups.isEmpty()) item {
                 VCard {
                     Column(Modifier.fillMaxWidth().padding(vertical = 16.dp),
@@ -415,19 +438,11 @@ fun ActiveWorkoutScreen(
                 ExerciseBlock(group, s.workout, vm, unit, { explanation = exerciseId to it },
                     onDetails = { nav.navigate("exercise/${group.exercise.id}") })
             }
+            if (shortWindow && !keyboardOpen) item { workoutActions() }
         }
-        HorizontalDivider(color = V.SurfaceRaised)
-        Column(Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            AuraPrimaryButton(
-                "Add exercise",
-                { openExercisePicker(nav, s.groups.map { it.exercise.id }) },
-                enabled = s.workout != null && !s.saving,
-            )
-            TextButton(onClick = { showDiscard = true }, enabled = !s.saving && s.workout != null,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Text("Discard workout", color = V.Red)
-            }
+        if (!shortWindow && !keyboardOpen) {
+            HorizontalDivider(color = V.SurfaceRaised)
+            workoutActions()
         }
     }
 

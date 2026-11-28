@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.aura.R
@@ -37,8 +38,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.aura.ui.theme.V
+import com.aura.ui.theme.AuraPalette
 
-/** Mineral card with an optional slate accent for featured content. */
+/** Aura card with an optional palette-aware accent for featured content. */
 @Composable
 fun VCard(
     modifier: Modifier = Modifier,
@@ -60,13 +62,19 @@ fun VCard(
             .clip(shape)
             .background(color)
             .then(
-                if (featured) Modifier.paint(
-                    painterResource(R.drawable.mineral_slate),
-                    sizeToIntrinsics = false,
-                    alignment = Alignment.TopEnd,
-                    contentScale = ContentScale.Crop,
-                    alpha = 0.6f,
-                ) else Modifier
+                when {
+                    !featured -> Modifier
+                    V.palette == AuraPalette.MINERAL -> Modifier.paint(
+                        painterResource(R.drawable.mineral_slate),
+                        sizeToIntrinsics = false,
+                        alignment = Alignment.TopEnd,
+                        contentScale = ContentScale.Crop,
+                        alpha = 0.6f,
+                    )
+                    else -> Modifier.background(
+                        Brush.linearGradient(listOf(V.TealDim.copy(alpha = 0.42f), V.SurfaceRaised, V.SurfaceDim)),
+                    )
+                }
             )
             .border(1.dp, V.Divider.copy(alpha = 0.75f), shape)
             .then(

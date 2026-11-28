@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -30,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
@@ -46,6 +43,7 @@ import com.aura.R
 import com.aura.ui.components.AuraBrandLockup
 import com.aura.ui.components.AuraOrbit
 import com.aura.ui.theme.V
+import com.aura.ui.theme.AuraScreenInset
 
 private val SignInCaption = TextStyle(
     fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,
@@ -62,16 +60,18 @@ fun LoginScreen(
     var wordmarkTaps by remember { mutableIntStateOf(0) }
     BoxWithConstraints(
         Modifier.fillMaxSize().background(V.Canvas)
-            .statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp),
+            .statusBarsPadding().navigationBarsPadding().padding(horizontal = AuraScreenInset),
         contentAlignment = Alignment.TopCenter,
     ) {
         val diameter = minOf(260.dp, maxWidth, maxHeight * 0.36f)
+        val spacing = if (maxHeight < 560.dp) 16.dp else 26.dp
         Column(
             Modifier.widthIn(max = 420.dp).fillMaxWidth()
-                .verticalScroll(rememberScrollState()).height(maxOf(maxHeight, 520.dp)),
+                .verticalScroll(rememberScrollState()).heightIn(min = maxHeight)
+                .padding(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(Modifier.weight(88f))
             val wordmarkModifier = if (onDebugPreview != null && !signingIn) {
                 Modifier.clickable(role = Role.Button) {
                     wordmarkTaps++
@@ -84,24 +84,15 @@ fun LoginScreen(
                 Modifier
             }
             AuraBrandLockup(wordmarkModifier)
-            Spacer(Modifier.weight(62f))
             AuraOrbit(loading = false, diameter = diameter)
-            Spacer(Modifier.weight(122f))
             if (error != null) Text(error, color = V.Error, style = SignInCaption, textAlign = TextAlign.Center)
             GoogleButton({
                 wordmarkTaps = 0
                 onGoogleSignIn()
             }, signingIn)
-            Spacer(Modifier.height(20.dp))
-            Text(
-                "By continuing, you agree to our",
-                style = SignInCaption,
-                color = V.Gray,
-                textAlign = TextAlign.Center,
-            )
-            Spacer(Modifier.height(2.dp))
             Text(
                 buildAnnotatedString {
+                    append("By continuing, you agree to our\n")
                     withStyle(SpanStyle(color = V.Teal)) { append("Terms of Service") }
                     append(" and ")
                     withStyle(SpanStyle(color = V.Teal)) { append("Privacy Policy") }
@@ -110,7 +101,6 @@ fun LoginScreen(
                 color = V.Gray,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.weight(34f))
         }
     }
 }
@@ -120,7 +110,7 @@ private fun GoogleButton(onClick: () -> Unit, signingIn: Boolean) {
     val shape = RoundedCornerShape(50)
     Row(
         Modifier.fillMaxWidth().heightIn(min = 58.dp).clip(shape)
-            .background(Color(0xFF1E2020)).border(1.dp, V.SurfaceBright, shape)
+            .background(V.SurfaceRaised).border(1.dp, V.SurfaceBright, shape)
             .clickable(enabled = !signingIn, role = Role.Button, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,

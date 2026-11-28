@@ -66,18 +66,20 @@ import com.aura.R
 import com.aura.ui.components.StepProgress
 import com.aura.ui.components.VButton
 import com.aura.ui.theme.V
+import com.aura.ui.theme.AuraScreenInset
+import com.aura.ui.theme.AuraStackedControls
 import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-private val Raised = Color(0xFF1E2020)
-private val Caption = TextStyle(color = V.Gray, fontFamily = FontFamily.Default,
+private val Raised get() = V.SurfaceRaised
+private val Caption: TextStyle @Composable get() = TextStyle(color = V.Gray, fontFamily = FontFamily.Default,
     fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 18.sp)
-private val Body = TextStyle(color = V.White, fontFamily = FontFamily.Default, fontSize = 16.sp, lineHeight = 24.sp)
-private val Heading = Body.copy(fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 41.sp)
-private val Action = Body.copy(fontWeight = FontWeight.Medium, fontSize = 18.sp)
+private val Body: TextStyle @Composable get() = TextStyle(color = V.White, fontFamily = FontFamily.Default, fontSize = 16.sp, lineHeight = 24.sp)
+private val Heading: TextStyle @Composable get() = Body.copy(fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 41.sp)
+private val Action: TextStyle @Composable get() = Body.copy(fontWeight = FontWeight.Medium, fontSize = 18.sp)
 private val BirthDateFormat = DateTimeFormatter.ofPattern("dd / MM / uuuu")
 
 @Composable
@@ -109,16 +111,16 @@ private fun SetupLayout(
 
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
-                .padding(start = 24.dp, end = 24.dp, top = 26.dp, bottom = 12.dp),
+                .padding(horizontal = AuraScreenInset).padding(top = 20.dp, bottom = 12.dp),
             content = content,
         )
 
         Column(
-            Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 8.dp, bottom = 6.dp),
+            Modifier.fillMaxWidth().padding(horizontal = AuraScreenInset).padding(top = 8.dp, bottom = 6.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (error != null) Text(error, color = V.Error, style = Caption)
-            VButton(action, onAction, Modifier.height(58.dp), enabled = enabled,
+            VButton(action, onAction, Modifier.heightIn(min = 58.dp), enabled = enabled,
                 contentColor = V.ButtonText, labelStyle = Action)
             Text("You can update these anytime.", Modifier.padding(vertical = 12.dp), style = Caption)
         }
@@ -415,7 +417,7 @@ fun SetupGoalsScreen(onComplete: (Bundle) -> Unit, onBack: () -> Unit, saving: B
         Intro("What are your\ngoals?", "Select all that apply.")
         Spacer(Modifier.height(28.dp))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            goals.withIndex().chunked(2).forEach { row ->
+            goals.withIndex().chunked(if (AuraStackedControls) 1 else 2).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     row.forEach { (index, goal) ->
                         val bit = 1 shl index

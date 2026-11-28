@@ -231,14 +231,14 @@ private fun NutritionDayStrip(date: LocalDate, onSelect: (LocalDate) -> Unit) {
     }
 }
 
-private val CalorieSurface = Color(0xFF10201B)
 private val NutritionAmber = Color(0xFFFAC580)
 
 @Composable
 private fun CalorieCard(state: NutritionVM.State) {
     val balance = state.goal.calories - state.calories
     val color = if (balance < 0) V.Red else NutritionAmber
-    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(CalorieSurface)) {
+    val calorieSurface = V.Surface
+    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(calorieSurface)) {
         Image(
             painterResource(R.drawable.nutrition_citrus),
             contentDescription = null,
@@ -247,10 +247,10 @@ private fun CalorieCard(state: NutritionVM.State) {
             alignment = Alignment.CenterEnd,
         )
         Box(Modifier.matchParentSize().background(Brush.horizontalGradient(
-            0f to CalorieSurface,
-            0.46f to CalorieSurface.copy(alpha = 0.97f),
-            0.78f to CalorieSurface.copy(alpha = 0.35f),
-            1f to CalorieSurface.copy(alpha = 0.12f),
+            0f to calorieSurface,
+            0.46f to calorieSurface.copy(alpha = 0.97f),
+            0.78f to calorieSurface.copy(alpha = 0.35f),
+            1f to calorieSurface.copy(alpha = 0.12f),
         )))
         Column(
             Modifier.fillMaxWidth().padding(20.dp),

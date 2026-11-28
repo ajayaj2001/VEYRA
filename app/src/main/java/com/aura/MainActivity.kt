@@ -18,6 +18,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,6 +55,7 @@ import com.aura.navigation.Routes
 import com.aura.navigation.Tab
 import com.aura.navigation.AuraNavGraph
 import com.aura.ui.theme.AuraCaption
+import com.aura.ui.theme.AuraPalette
 import com.aura.ui.theme.V
 import com.aura.ui.theme.AuraTheme
 import com.aura.workout.WorkoutNotification
@@ -61,6 +67,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         openWorkout = savedInstanceState?.getBoolean("openWorkout")
             ?: (intent.action == WorkoutNotification.OPEN_WORKOUT)
+        val appearance = getSharedPreferences("aura_appearance", MODE_PRIVATE)
+        V.selectPalette(V.paletteFor(appearance.getString("palette", AuraPalette.MINERAL.name)))
         enableEdgeToEdge()
         setContent {
             AuraTheme {
@@ -112,6 +120,7 @@ private fun AuraRoot(
 
     Scaffold(
         containerColor = V.Canvas,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             AnimatedVisibility(
                 visible = showNav,
@@ -138,7 +147,9 @@ private fun AuraRoot(
             startDestination = Routes.SPLASH,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .consumeWindowInsets(padding)
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
         )
     }
 }

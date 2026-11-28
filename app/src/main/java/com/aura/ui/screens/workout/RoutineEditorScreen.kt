@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
@@ -200,7 +201,7 @@ internal fun RoutineEditorScreen(
                 )
             }
         }
-        AuraPrimaryButton(
+        if (WindowInsets.ime.getBottom(LocalDensity.current) == 0) AuraPrimaryButton(
             "Add exercise",
             onClick = { openExercisePicker(nav, vm.exercises.map { it.id }) },
             modifier = Modifier.padding(horizontal = AuraScreenInset, vertical = 8.dp),

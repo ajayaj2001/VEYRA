@@ -22,6 +22,7 @@ import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.AuraTextField
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
+import com.aura.ui.theme.AuraStackedControls
 import com.aura.ui.theme.V
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -50,14 +51,21 @@ internal fun totalFood(main: FoodDraft, ingredients: List<FoodDraft>): FoodTotal
 internal fun FoodFields(draft: FoodDraft, onChange: (FoodDraft) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         FoodField("Food name", draft.name, { onChange(draft.copy(name = it)) }, example = "e.g. Oatmeal")
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FoodField("Amount (g, optional)", draft.amount, { onChange(draft.copy(amount = it)) }, Modifier.weight(1f), numeric = true)
-            FoodField("Calories (kcal)", draft.calories, { onChange(draft.copy(calories = it)) }, Modifier.weight(1f), numeric = true)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FoodField("Protein (g)", draft.protein, { onChange(draft.copy(protein = it)) }, Modifier.weight(1f), numeric = true)
-            FoodField("Carbs (g)", draft.carbs, { onChange(draft.copy(carbs = it)) }, Modifier.weight(1f), numeric = true)
-            FoodField("Fat (g)", draft.fat, { onChange(draft.copy(fat = it)) }, Modifier.weight(1f), numeric = true)
+        val fields = listOf(
+            Triple("Amount (g, optional)", draft.amount, { value: String -> onChange(draft.copy(amount = value)) }),
+            Triple("Calories (kcal)", draft.calories, { value: String -> onChange(draft.copy(calories = value)) }),
+            Triple("Protein (g)", draft.protein, { value: String -> onChange(draft.copy(protein = value)) }),
+            Triple("Carbs (g)", draft.carbs, { value: String -> onChange(draft.copy(carbs = value)) }),
+            Triple("Fat (g)", draft.fat, { value: String -> onChange(draft.copy(fat = value)) }),
+        )
+        val rows = if (AuraStackedControls) fields.chunked(2) else listOf(fields.take(2), fields.drop(2))
+        rows.forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { (label, value, update) ->
+                    FoodField(label, value, update, Modifier.weight(1f), numeric = true)
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
         }
         if (!validFoodNumbers(draft)) Text("Use numbers of zero or more.", color = V.Error)
     }

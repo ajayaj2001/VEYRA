@@ -231,7 +231,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
             }
         }
 
-        item { Spacer(Modifier.height(100.dp)) }
+        item { Spacer(Modifier.height(12.dp)) }
     }
 
     // New routine dialog
