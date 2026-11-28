@@ -46,18 +46,13 @@ private data class MenuItem(
     val title: String,
     val subtitle: String,
     val color: Color,
-    val route: String? = null,
+    val route: String,
 )
 
 private val menuItems = listOf(
-    MenuItem("Health Connect", "Manage data permissions", V.Teal),
-    MenuItem("Units & Preferences", "Measurement units, rest timer, defaults", V.Green),
-    MenuItem("Goals", "Weight, calorie, macro, and fitness targets", V.Amber),
+    MenuItem("Settings", "Nutrition goals, notifications, and health permissions", V.Teal, Routes.SETTINGS),
     MenuItem("Medical Records", "Encrypted health documents", V.Blue, Routes.MEDICAL),
     MenuItem("AI food estimation", "Gemini API key for photo and text meal logging", V.Amber, Routes.AI_SETTINGS),
-    MenuItem("Notifications", "Reminders and alerts", V.Gray),
-    MenuItem("Appearance", "Dark theme", V.Gray),
-    MenuItem("About ${AppConfig.APP_NAME}", "Version ${AppConfig.APP_VERSION}", V.Gray),
 )
 
 @Composable
@@ -83,7 +78,7 @@ fun ProfileScreen(nav: NavController, profileName: String, onSignOut: () -> Unit
                 color = V.White,
                 modifier = Modifier.weight(1f),
             )
-            IconButton(onClick = { }) {
+            IconButton(onClick = { nav.navigate(Routes.SETTINGS) }) {
                 Icon(Icons.Rounded.Settings, "Settings", tint = V.Gray)
             }
         }
@@ -164,7 +159,7 @@ fun ProfileScreen(nav: NavController, profileName: String, onSignOut: () -> Unit
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clickable { item.route?.let { nav.navigate(it) } }
+                        .clickable { nav.navigate(item.route) }
                         .padding(vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

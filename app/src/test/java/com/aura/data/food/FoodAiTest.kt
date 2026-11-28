@@ -47,6 +47,23 @@ class FoodAiTest {
     }
 
     @Test
+    fun skipsThoughtPartsInGeminiResponses() {
+        val answer = com.google.gson.JsonParser.parseString(response(
+            """{"isFood": true, "name": "Rice", "items": [{"name": "Rice", "calories": 130}]}""",
+        )).asJsonObject
+        val parts = answer.getAsJsonArray("candidates")[0].asJsonObject
+            .getAsJsonObject("content").getAsJsonArray("parts")
+        val output = parts.remove(0)
+        parts.add(JsonObject().apply {
+            addProperty("thought", true)
+            addProperty("text", "Estimate portion size.")
+        })
+        parts.add(output)
+
+        assertEquals(130.0, FoodAi.parseEstimate(answer.toString()).items.single().calories, 0.0)
+    }
+
+    @Test
     fun rejectsAnswersWithoutFood() {
         val notFood = assertThrows(FoodAiException::class.java) {
             FoodAi.parseEstimate(response("""{"isFood": false, "name": "", "items": []}"""))

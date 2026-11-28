@@ -1,6 +1,16 @@
 package com.aura.navigation
 
 import android.os.Bundle
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
@@ -36,6 +46,9 @@ import com.aura.ui.screens.auth.SetupGoalsScreen
 import com.aura.ui.screens.home.HomeScreen
 import com.aura.ui.screens.onboarding.OnboardingScreen
 import com.aura.ui.screens.profile.ProfileScreen
+import com.aura.ui.screens.profile.SettingsScreen
+import com.aura.ui.screens.profile.NutritionGoalsScreen
+import com.aura.ui.theme.V
 import com.aura.ui.screens.workout.ActiveWorkoutScreen
 import com.aura.ui.screens.workout.ExerciseDetailScreen
 import com.aura.ui.screens.workout.ExerciseSearchScreen
@@ -63,6 +76,36 @@ fun AuraNavGraph(
     var basic by rememberSaveable { mutableStateOf(Bundle()) }
     var body by rememberSaveable { mutableStateOf(Bundle()) }
     var profileName by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
+    val signOutScope = rememberCoroutineScope()
+    var signingOut by remember { mutableStateOf(false) }
+    var signOutError by remember { mutableStateOf(false) }
+
+    fun signOut() {
+        if (signingOut) return
+        signingOut = true
+        signOutScope.launch {
+            try {
+                try {
+                    CloudProfile.signOut(context)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    if (FirebaseAuth.getInstance().currentUser != null) {
+                        signOutError = true
+                        return@launch
+                    }
+                }
+                profileName = ""
+                basic = Bundle()
+                body = Bundle()
+                nav.navigate(Routes.LOGIN) { popUpTo(nav.graph.id) { inclusive = true } }
+            } finally {
+                signingOut = false
+            }
+        }
+    }
+
 
     NavHost(
         navController = nav,
@@ -316,23 +359,13 @@ fun AuraNavGraph(
             AuraContentTheme { NutritionEntryScreen(vm, onClose = { nav.popBackStack() }) }
         }
         composable(Routes.PROFILE) {
-            val context = LocalContext.current
-            val scope = rememberCoroutineScope()
-            AuraContentTheme {
-                ProfileScreen(nav = nav, profileName = profileName, onSignOut = {
-                    scope.launch {
-                        try {
-                            CloudProfile.signOut(context)
-                        } catch (e: CancellationException) {
-                            throw e
-                        } catch (_: Exception) {
-                            // Firebase has signed out even if the credential provider fails to clear.
-                        }
-                        profileName = ""
-                        nav.navigate(Routes.LOGIN) { popUpTo(0) { inclusive = true } }
-                    }
-                })
-            }
+            AuraContentTheme { ProfileScreen(nav = nav, profileName = profileName, onSignOut = ::signOut) }
+        }
+        composable(Routes.SETTINGS) {
+            AuraContentTheme { SettingsScreen(nav, onSignOut = ::signOut) }
+        }
+        composable(Routes.NUTRITION_GOALS) {
+            AuraContentTheme { NutritionGoalsScreen(nav) }
         }
         composable(Routes.COACH) {
             AuraContentTheme { CoachScreen(nav = nav) }
@@ -344,4 +377,27 @@ fun AuraNavGraph(
             AuraContentTheme { AiSettingsScreen(nav = nav) }
         }
     }
+    if (signingOut) {
+        AlertDialog(
+            onDismissRequest = {},
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+            containerColor = V.SurfaceRaised,
+            text = {
+                Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(24.dp), color = V.Teal, strokeWidth = 2.dp)
+                    Text("Signing out…", color = V.White)
+                }
+            },
+            confirmButton = {},
+        )
+    }
+    if (signOutError) {
+        AlertDialog(
+            onDismissRequest = { signOutError = false },
+            title = { Text("Couldn’t sign out") },
+            text = { Text("Try again.") },
+            confirmButton = { TextButton(onClick = { signOutError = false }) { Text("OK") } },
+        )
+    }
+
 }

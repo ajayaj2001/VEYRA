@@ -116,7 +116,10 @@ internal object FoodAi {
             val text = JsonParser.parseString(response).asJsonObject
                 .getAsJsonArray("candidates")[0].asJsonObject
                 .getAsJsonObject("content").getAsJsonArray("parts")
-                .mapNotNull { it.asJsonObject.get("text")?.asString }.joinToString("")
+                .map { it.asJsonObject }
+                .filterNot { it.get("thought")?.asBoolean == true }
+                .mapNotNull { it.get("text")?.takeUnless { part -> part.isJsonNull }?.asString }
+                .joinToString("")
             JsonParser.parseString(text).asJsonObject
         } catch (_: RuntimeException) {
             throw unreadable

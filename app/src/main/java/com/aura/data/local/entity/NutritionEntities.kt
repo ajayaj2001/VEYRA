@@ -14,6 +14,7 @@ data class FoodItemEntity(
     val fat: Double = 0.0,
     val isFavorite: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
+    val nutrientsJson: String? = null,
 )
 
 @Entity(tableName = "food_logs")
@@ -29,6 +30,7 @@ data class FoodLogEntity(
     val fat: Double = 0.0,
     val date: String, // yyyy-MM-dd
     val timestamp: Long = System.currentTimeMillis(),
+    val nutrientsJson: String? = null,
 )
 
 @Entity(tableName = "nutrition_goals")

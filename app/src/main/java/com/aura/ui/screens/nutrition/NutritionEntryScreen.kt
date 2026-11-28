@@ -79,15 +79,22 @@ internal fun validFoodNumbers(draft: FoodDraft): Boolean =
     listOf(draft.amount, draft.calories, draft.protein, draft.carbs, draft.fat)
         .all { it.isBlank() || foodQuantity(it) != null }
 
+private enum class FoodEntryMode(val label: String) {
+    Estimate("AI estimate"),
+    Favorites("Favorites"),
+    Manual("Manual"),
+}
+
 @Composable
 internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
     val state by vm.state.collectAsState()
     val favorites by vm.favorites.collectAsState(initial = emptyList())
     val dateKey = rememberSaveable { state.date.toString() }
     val date = LocalDate.parse(dateKey)
-    var mode by rememberSaveable { mutableIntStateOf(0) }
+    var entryMode by rememberSaveable { mutableStateOf(FoodEntryMode.Estimate) }
     var review by rememberSaveable { mutableStateOf(false) }
     var draft by rememberSaveable(stateSaver = DraftSaver) { mutableStateOf(FoodDraft()) }
+    var nutrients by rememberSaveable { mutableStateOf(emptyNutrientInputs()) }
     var ingredients by rememberSaveable(stateSaver = IngredientsSaver) { mutableStateOf(emptyList<FoodDraft>()) }
     var selectedFavorite by rememberSaveable { mutableLongStateOf(0L) }
     var favorite by rememberSaveable { mutableStateOf(false) }
@@ -120,6 +127,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
         if (review) {
             FoodReview(
                 draft, ingredients, photo, meal, favorite,
+                nutrientsJson = encodeNutrients(nutrients),
                 busy = busy,
                 onMeal = { meal = it },
                 onFavorite = { favorite = it },
@@ -132,6 +140,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                         val food = (original ?: FoodItemEntity(name = draft.name.trim())).copy(
                             name = draft.name.trim(),
                             calories = values.calories, protein = values.protein, carbs = values.carbs, fat = values.fat,
+                            nutrientsJson = encodeNutrients(nutrients),
                         )
                         scope.launch {
                             try {
@@ -149,17 +158,17 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                 },
             )
         } else {
-            TabRow(selectedTabIndex = mode, containerColor = V.Canvas, contentColor = V.Teal) {
-                listOf("Manual", "AI estimate", "Favorites").forEachIndexed { index, name ->
+            TabRow(selectedTabIndex = entryMode.ordinal, containerColor = V.Canvas, contentColor = V.Teal) {
+                FoodEntryMode.entries.forEach { mode ->
                     Tab(
-                        selected = mode == index, onClick = { mode = index },
+                        selected = entryMode == mode, onClick = { entryMode = mode }, enabled = !busy,
                         selectedContentColor = V.Teal, unselectedContentColor = V.Gray,
-                        text = { Text(name) },
+                        text = { Text(mode.label) },
                     )
                 }
             }
-            when (mode) {
-                0 -> {
+            when (entryMode) {
+                FoodEntryMode.Manual -> {
                     Column(
                         Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(AuraScreenInset),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -169,14 +178,15 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                         }
                         Text("Food details", color = V.White, style = MaterialTheme.typography.headlineMedium)
                         FoodFields(draft, { draft = it })
+                        MoreNutrients(nutrients) { nutrients = it }
                     }
                     AuraPrimaryButton(
                         "Review meal", { review = true },
                         Modifier.padding(horizontal = AuraScreenInset, vertical = 8.dp),
-                        enabled = draft.name.isNotBlank() && validFoodNumbers(draft),
+                        enabled = draft.name.isNotBlank() && validFoodNumbers(draft) && validNutrients(nutrients),
                     )
                 }
-                1 -> PhotoMode(
+                FoodEntryMode.Estimate -> PhotoMode(
                     photo, { photo = it }, description, { description = it },
                     estimating = busy,
                     onEstimate = {
@@ -192,6 +202,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                                             estimateNumber(item.carbs), estimateNumber(item.fat),
                                         )
                                     }
+                                    nutrients = emptyNutrientInputs()
                                     selectedFavorite = 0L
                                     favorite = false
                                     // A single food is the meal itself; several become its ingredients.
@@ -210,11 +221,12 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                             }
                         }
                     },
-                    onManual = { mode = 0 },
+                    onManual = { entryMode = FoodEntryMode.Manual },
                 )
-                2 -> FavoriteFoods(
+                FoodEntryMode.Favorites -> FavoriteFoods(
                     favorites,
                     onSelect = { item ->
+                        nutrients = nutrientInputs(item.nutrientsJson)
                         selectedFavorite = item.id
                         favorite = true
                         draft = FoodDraft(

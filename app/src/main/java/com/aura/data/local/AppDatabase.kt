@@ -21,7 +21,7 @@ import com.aura.data.local.entity.*
         FoodLogEntity::class,
         NutritionGoalEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -54,13 +54,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val migration5To6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE food_items ADD COLUMN nutrientsJson TEXT")
+                db.execSQL("ALTER TABLE food_logs ADD COLUMN nutrientsJson TEXT")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "aura_db"
-                ).addMigrations(migration2To3, migration3To4, migration4To5).fallbackToDestructiveMigration().build().also { INSTANCE = it }
+                ).addMigrations(migration2To3, migration3To4, migration4To5, migration5To6).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
         }
     }

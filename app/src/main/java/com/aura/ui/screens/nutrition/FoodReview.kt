@@ -64,7 +64,7 @@ internal fun FoodFields(draft: FoodDraft, onChange: (FoodDraft) -> Unit) {
 }
 
 @Composable
-private fun FoodField(
+internal fun FoodField(
     label: String,
     value: String,
     onChange: (String) -> Unit,
@@ -89,6 +89,7 @@ internal fun ColumnScope.FoodReview(
     photo: String?,
     meal: String,
     favorite: Boolean,
+    nutrientsJson: String?,
     busy: Boolean,
     onMeal: (String) -> Unit,
     onFavorite: (Boolean) -> Unit,
@@ -114,6 +115,7 @@ internal fun ColumnScope.FoodReview(
         MealPicker(meal, onMeal, enabled = !busy)
         Text("Calories & macros", style = MaterialTheme.typography.titleLarge, color = V.White)
         NutritionTiles(total)
+        ExtraNutrientSummary(nutrientsJson)
         if (!validTotals) Text("The combined nutrition values are too large.", color = V.Error)
         Text("Ingredients", style = MaterialTheme.typography.titleLarge, color = V.White)
         if (ingredients.isEmpty()) {
@@ -288,6 +290,7 @@ internal fun LoggedFoodDetails(
             Text("$meal · ${nutritionDate(java.time.LocalDate.parse(log.date))}", color = V.Gray)
             Text("Calories & macros", style = MaterialTheme.typography.titleLarge)
             NutritionTiles(FoodTotals(null, log.calories, log.protein, log.carbs, log.fat))
+            ExtraNutrientSummary(log.nutrientsJson)
             error?.let { Text(it, color = V.Error) }
             TextButton(onClick = { confirmDelete = true }, enabled = !busy) { Text("Remove from food log", color = V.Red) }
         }
