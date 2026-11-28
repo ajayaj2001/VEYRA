@@ -67,7 +67,7 @@ fun HomeScreen(nav: NavController) {
     Column(
         Modifier
             .fillMaxSize()
-            .background(V.Black)
+            .background(V.Canvas)
             .verticalScroll(rememberScrollState())
             .statusBarsPadding()
             .padding(bottom = 16.dp),
@@ -82,7 +82,7 @@ fun HomeScreen(nav: NavController) {
 
         // Daily Activity card
         Appear(visible, 100) {
-            VCard(Modifier.padding(horizontal = AuraScreenInset)) {
+            VCard(Modifier.padding(horizontal = AuraScreenInset), featured = true) {
                 Column {
                     Text("Daily activity", style = MaterialTheme.typography.titleSmall, color = V.Gray)
                     Spacer(Modifier.height(16.dp))

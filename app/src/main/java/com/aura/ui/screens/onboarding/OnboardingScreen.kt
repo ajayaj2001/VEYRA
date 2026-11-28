@@ -82,7 +82,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val scope = rememberCoroutineScope()
 
     Column(
-        Modifier.fillMaxSize().background(V.Black)
+        Modifier.fillMaxSize().background(V.Canvas)
             .statusBarsPadding().navigationBarsPadding(),
     ) {
         HorizontalPager(

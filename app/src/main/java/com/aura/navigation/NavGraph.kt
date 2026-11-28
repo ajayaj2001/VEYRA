@@ -41,6 +41,7 @@ import com.aura.ui.screens.workout.ExerciseDetailScreen
 import com.aura.ui.screens.workout.ExerciseSearchScreen
 import com.aura.ui.screens.workout.WorkoutScreen
 import com.aura.ui.screens.workout.RoutineDetailScreen
+import com.aura.ui.screens.workout.RoutineEditorScreen
 import com.aura.ui.screens.workout.WorkoutSummaryScreen
 import com.aura.ui.screens.nutrition.NutritionScreen
 import com.aura.ui.screens.nutrition.NutritionEntryScreen
@@ -238,11 +239,18 @@ fun AuraNavGraph(
             arguments = listOf(navArgument("routineId") { type = NavType.LongType }),
         ) { entry ->
             val routineId = entry.arguments?.getLong("routineId") ?: return@composable
-            // Listen for an exercise picked from search
+            AuraContentTheme { RoutineDetailScreen(nav, routineId) }
+        }
+        composable(
+            "workout/routine/{routineId}/edit",
+            arguments = listOf(navArgument("routineId") { type = NavType.LongType }),
+        ) { entry ->
+            val routineId = entry.arguments?.getLong("routineId") ?: return@composable
             val selectedIds by entry.savedStateHandle.getStateFlow("selectedExerciseIds", arrayListOf<String>()).collectAsState()
             AuraContentTheme {
-                RoutineDetailScreen(nav, routineId, selectedExerciseIds = selectedIds,
-                    onExerciseHandled = { entry.savedStateHandle["selectedExerciseIds"] = arrayListOf<String>() })
+                RoutineEditorScreen(nav, routineId, selectedIds, onSelectionHandled = {
+                    entry.savedStateHandle["selectedExerciseIds"] = arrayListOf<String>()
+                })
             }
         }
         composable(

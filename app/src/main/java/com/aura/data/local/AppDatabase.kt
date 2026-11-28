@@ -13,6 +13,7 @@ import com.aura.data.local.entity.*
 @Database(
     entities = [
         RoutineEntity::class,
+        RoutineCloudDeletion::class,
         RoutineExerciseEntity::class,
         WorkoutEntity::class,
         WorkoutSetEntity::class,
@@ -20,7 +21,7 @@ import com.aura.data.local.entity.*
         FoodLogEntity::class,
         NutritionGoalEntity::class,
     ],
-    version = 3,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,13 +39,28 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val migration3To4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS routine_cloud_deletions (" +
+                        "ownerUid TEXT NOT NULL, cloudId TEXT NOT NULL, PRIMARY KEY(ownerUid, cloudId))",
+                )
+            }
+        }
+
+        private val migration4To5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE routine_exercises ADD COLUMN planJson TEXT")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext, AppDatabase::class.java, "aura_db"
-                ).addMigrations(migration2To3).fallbackToDestructiveMigration().build().also { INSTANCE = it }
+                ).addMigrations(migration2To3, migration3To4, migration4To5).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
         }
     }

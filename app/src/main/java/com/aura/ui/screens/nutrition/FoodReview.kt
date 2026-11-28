@@ -256,7 +256,7 @@ internal fun LoggedFoodDetails(
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    ModalBottomSheet(onDismissRequest = { if (!busy) onClose() }, containerColor = V.Black, contentColor = V.White) {
+    ModalBottomSheet(onDismissRequest = { if (!busy) onClose() }, containerColor = V.Canvas, contentColor = V.White) {
         Column(
             Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = AuraScreenInset, vertical = 16.dp)
                 .verticalScroll(rememberScrollState()),

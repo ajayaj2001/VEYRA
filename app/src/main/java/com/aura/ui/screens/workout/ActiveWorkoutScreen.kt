@@ -42,6 +42,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.aura.AuraApp
+import com.aura.data.local.entity.plan
 import com.aura.data.local.entity.WorkoutEntity
 import com.aura.data.local.entity.WorkoutSetEntity
 import com.aura.data.model.Exercise
@@ -51,6 +52,7 @@ import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
 import com.aura.ui.theme.V
+import com.aura.workout.WorkoutWeightPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Mutex
@@ -73,7 +75,7 @@ internal enum class WorkoutWeightUnit(val symbol: String) {
 
 private enum class SetColumn(val title: String, val description: String) {
     Previous("Previous", "Weight and reps for this set in your last comparable workout with this exercise. For routines, this uses the same routine."),
-    Weight("Weight", "Enter the weight you lifted. Leave it empty for a bodyweight set. The unit applies to this workout."),
+    Weight("Weight", "Enter the weight you lifted. Leave it empty for a bodyweight set. The unit applies to this exercise in the current workout."),
     Reps("Reps", "Enter how many repetitions you completed. Enter a number greater than zero to mark the set complete."),
 }
 
@@ -81,7 +83,7 @@ private enum class SetColumn(val title: String, val description: String) {
 class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
     private val database = (app as AuraApp).db
     private val dao = database.workoutDao()
-    private val units = app.getSharedPreferences("workout_display_units", Context.MODE_PRIVATE)
+    private val units = WorkoutWeightPreferences(app)
 
     data class ExGroup(val exercise: Exercise, val sets: List<WorkoutSetEntity>)
     data class State(
@@ -95,7 +97,7 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         /** Set when the workout was finished rather than discarded, so its summary can be shown. */
         val finishedId: Long? = null,
         val error: String? = null,
-        val usePounds: Boolean = false,
+        val poundExercises: Set<String> = emptySet(),
     )
 
     private val _state = MutableStateFlow(State())
@@ -110,7 +112,7 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         val workout = database.withTransaction {
             dao.getActiveWorkout() ?: createWorkout(routineId)
         }
-        _state.value = _state.value.copy(usePounds = units.getLong("pounds_workout", -1L) == workout.id)
+        _state.value = _state.value.copy(poundExercises = units.poundExercises(workout.id))
         refreshSets(workout)
         setObserver = viewModelScope.launch {
             dao.getWorkoutSets(workout.id).collect {
@@ -135,7 +137,18 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         routine?.let {
             dao.getRoutineExercises(it.id).forEach { planned ->
                 val exercise = ExerciseLib.getById(planned.exerciseId) ?: return@forEach
-                insertExercise(created.id, exercise, planned.targetSets, planned.targetReps)
+                val plan = planned.plan()
+                plan.sets.forEachIndexed { index, set ->
+                    dao.insertSet(WorkoutSetEntity(
+                        workoutId = created.id,
+                        exerciseId = exercise.id,
+                        exerciseName = exercise.name,
+                        setNumber = index + 1,
+                        weight = set.weightKg ?: 0.0,
+                        reps = set.reps,
+                        restSeconds = if (planned.planJson == null) 90 else plan.restSeconds,
+                    ))
+                }
             }
         }
         return created
@@ -169,12 +182,13 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setPounds(usePounds: Boolean) = changeWorkout("Couldn’t change the weight unit.") {
-        val workoutId = _state.value.workout?.id ?: return@changeWorkout
-        units.edit().apply {
-            if (usePounds) putLong("pounds_workout", workoutId) else remove("pounds_workout")
-        }.apply()
-        _state.value = _state.value.copy(usePounds = usePounds)
+    fun setPounds(exerciseId: String, usePounds: Boolean) = changeWorkout("Couldn’t change the weight unit.") {
+        val state = _state.value
+        val workoutId = state.workout?.id ?: return@changeWorkout
+        if (state.groups.none { it.exercise.id == exerciseId }) return@changeWorkout
+        val updated = if (usePounds) state.poundExercises + exerciseId else state.poundExercises - exerciseId
+        units.save(workoutId, updated)
+        _state.value = state.copy(poundExercises = updated)
         getApplication<AuraApp>().workoutNotification.refresh()
     }
 
@@ -269,7 +283,7 @@ class ActiveWorkoutVM(app: Application) : AndroidViewModel(app) {
     }
 
     private fun closeWorkout() {
-        units.edit().remove("pounds_workout").apply()
+        _state.value.workout?.let { units.save(it.id, emptySet()) }
         timerJob?.cancel()
         restJob?.cancel()
         setObserver?.cancel()
@@ -323,8 +337,7 @@ fun ActiveWorkoutScreen(
     var showFinish by remember { mutableStateOf(false) }
     var showDiscard by remember { mutableStateOf(false) }
     var showRest by remember { mutableStateOf(false) }
-    var explanation by remember { mutableStateOf<SetColumn?>(null) }
-    val unit = if (s.usePounds) WorkoutWeightUnit.LB else WorkoutWeightUnit.KG
+    var explanation by remember { mutableStateOf<Pair<String, SetColumn>?>(null) }
 
     LaunchedEffect(routineId, selectedExerciseIds) {
         vm.initialize(routineId).join()
@@ -342,7 +355,7 @@ fun ActiveWorkoutScreen(
     }
     BackHandler(enabled = s.saving) {}
 
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding().imePadding()) {
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding().imePadding()) {
         WorkoutHeader("Log workout", { if (!s.saving) nav.popBackStack() }) {
             IconButton(onClick = { showRest = true }) {
                 Icon(Icons.Rounded.Timer, "Rest timer", tint = V.Teal)
@@ -350,7 +363,7 @@ fun ActiveWorkoutScreen(
             Button(
                 onClick = { showFinish = true },
                 enabled = s.workout != null && !s.saving,
-                colors = ButtonDefaults.buttonColors(containerColor = V.Teal, contentColor = V.Black),
+                colors = ButtonDefaults.buttonColors(containerColor = V.TealDim, contentColor = V.ButtonText),
             ) {
                 Text("Finish")
             }
@@ -364,7 +377,7 @@ fun ActiveWorkoutScreen(
         ) {
             Row(Modifier.padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
                 StatChip("Duration", formatTime(s.elapsed), V.Teal)
-                StatChip("Volume", "${workoutNumber(unit.fromKilograms(completed.sumOf { it.weight * it.reps }))} ${unit.symbol}", V.White)
+                StatChip("Volume", "${workoutNumber(completed.sumOf { it.weight * it.reps })} kg", V.White)
                 StatChip("Sets", completed.size.toString(), V.White)
             }
         }
@@ -397,7 +410,9 @@ fun ActiveWorkoutScreen(
                 }
             }
             items(s.groups, key = { it.exercise.id }) { group ->
-                ExerciseBlock(group, s.workout, vm, unit, { explanation = it },
+                val exerciseId = group.exercise.id
+                val unit = if (exerciseId in s.poundExercises) WorkoutWeightUnit.LB else WorkoutWeightUnit.KG
+                ExerciseBlock(group, s.workout, vm, unit, { explanation = exerciseId to it },
                     onDetails = { nav.navigate("exercise/${group.exercise.id}") })
             }
         }
@@ -416,8 +431,9 @@ fun ActiveWorkoutScreen(
         }
     }
 
-    explanation?.let { column ->
-        SetColumnSheet(column, unit, onUnit = { vm.setPounds(it == WorkoutWeightUnit.LB) },
+    explanation?.let { (exerciseId, column) ->
+        val unit = if (exerciseId in s.poundExercises) WorkoutWeightUnit.LB else WorkoutWeightUnit.KG
+        SetColumnSheet(column, unit, s.groups.firstOrNull { it.exercise.id == exerciseId }?.exercise?.name, onUnit = { vm.setPounds(exerciseId, it == WorkoutWeightUnit.LB) },
             onClose = { explanation = null })
     }
 
@@ -566,6 +582,7 @@ private fun SetHeading(text: String, modifier: Modifier, onClick: () -> Unit) {
 private fun SetColumnSheet(
     column: SetColumn,
     unit: WorkoutWeightUnit,
+    exerciseName: String?,
     onUnit: (WorkoutWeightUnit) -> Unit,
     onClose: () -> Unit,
 ) {
@@ -575,6 +592,7 @@ private fun SetColumnSheet(
             Text(column.title, style = MaterialTheme.typography.headlineMedium, color = V.White)
             Text(column.description, style = MaterialTheme.typography.bodyMedium, color = V.Gray)
             if (column == SetColumn.Weight) {
+                exerciseName?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = V.White) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     WorkoutWeightUnit.entries.forEach { option ->
                         WorkoutMetricFilter(option.symbol, option == unit) { onUnit(option) }
@@ -686,7 +704,7 @@ private fun MiniInput(
         onValueChange = onChange,
         enabled = enabled,
         modifier = modifier.height(50.dp)
-            .clip(RoundedCornerShape(10.dp)).background(V.Black)
+            .clip(RoundedCornerShape(10.dp)).background(V.Canvas)
             .border(1.dp, V.SurfaceBright, RoundedCornerShape(10.dp))
             .semantics { contentDescription = label },
         textStyle = style.copy(color = V.White),

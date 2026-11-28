@@ -1,7 +1,7 @@
 package com.aura.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
@@ -30,9 +30,9 @@ internal fun AuraPrimaryButton(
     enabled: Boolean = true,
 ) {
     VButton(
-        text, onClick, modifier.height(58.dp),
+        text, onClick, modifier.heightIn(min = 58.dp),
         enabled = enabled,
-        contentColor = V.Black,
+        contentColor = V.ButtonText,
         labelStyle = AuraButtonLabel,
     )
 }

@@ -2,31 +2,26 @@ package com.aura.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Kinetic Obsidian — AURA Design System
- * Extracted from Stitch project. Pure OLED black + teal accent.
- */
+/** Mineral is Aura’s green-black palette with jade accents and warm neutrals. */
 object V {
-    // Canvas
     val Black = Color(0xFF000000)
+    val Canvas = Color(0xFF091412)
 
-    // Surfaces — neutral grays, no color tint
-    val SurfaceRaised = Color(0xFF1E2020)
-    val Surface = Color(0xFF1C1C1E)
-    val SurfaceDim = Color(0xFF131313)
-    val SurfaceElevated = Color(0xFF2C2C2E)
-    val SurfaceBright = Color(0xFF3A3A3C)
+    val SurfaceRaised = Color(0xFF142623)
+    val Surface = Color(0xFF10201D)
+    val SurfaceDim = Color(0xFF0D1A18)
+    val SurfaceElevated = Color(0xFF20342F)
+    val SurfaceBright = Color(0xFF344C44)
 
-    // Brand accent
-    val Teal = Color(0xFF2EC4A0)
-    val TealDim = Color(0xFF006B55)
-    val TealSoft = Color(0x262EC4A0)  // 15% alpha
+    val Teal = Color(0xFF71D9BB)
+    val TealDim = Color(0xFF007459)
+    val TealSoft = Color(0x2671D9BB)
 
-    // Text
-    val White = Color(0xFFFFFFFF)
-    val Gray = Color(0xFF8E8E93)
-    val GrayDark = Color(0xFF636366)
-    val GrayDarkest = Color(0xFF48484A)
+    val White = Color(0xFFF7F3E8)
+    val ButtonText = Color.White
+    val Gray = Color(0xFFA4B7AC)
+    val GrayDark = Color(0xFF81988D)
+    val GrayDarkest = Color(0xFF536E62)
 
     // Metric palette — color = data only
     val Red = Color(0xFFE07070)
@@ -40,6 +35,6 @@ object V {
 
     // Functional
     val Error = Color(0xFFFFB4AB)
-    val Divider = Color(0xFF1C1C1E)
+    val Divider = Color(0xFF263B34)
     val Scrim = Color(0xB3000000) // 70%
 }

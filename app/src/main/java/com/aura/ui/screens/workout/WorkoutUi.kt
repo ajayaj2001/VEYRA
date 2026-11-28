@@ -113,7 +113,7 @@ internal fun WorkoutMetricFilter(label: String, selected: Boolean, onClick: () -
         shape = CircleShape,
         border = null,
         colors = FilterChipDefaults.filterChipColors(
-            containerColor = V.Black,
+            containerColor = V.Canvas,
             labelColor = V.Gray,
             selectedContainerColor = V.Teal,
             selectedLabelColor = V.Black,

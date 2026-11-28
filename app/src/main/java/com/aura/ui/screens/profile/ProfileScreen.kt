@@ -65,7 +65,7 @@ fun ProfileScreen(nav: NavController, profileName: String, onSignOut: () -> Unit
     Column(
         Modifier
             .fillMaxSize()
-            .background(V.Black)
+            .background(V.Canvas)
             .verticalScroll(rememberScrollState())
             .statusBarsPadding()
             .padding(bottom = 100.dp),

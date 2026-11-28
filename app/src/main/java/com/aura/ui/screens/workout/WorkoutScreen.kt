@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -119,7 +120,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
     LazyColumn(
         Modifier
             .fillMaxSize()
-            .background(V.Black)
+            .background(V.Canvas)
             .statusBarsPadding(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -152,7 +153,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
                 Text("Routines", style = MaterialTheme.typography.headlineMedium, color = V.White)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     WorkoutAction("New routine", Icons.Rounded.Add, { showNewDialog = true }, Modifier.weight(1f), prominent = true)
-                    WorkoutAction("Exercise library", Icons.Rounded.Search,
+                    WorkoutAction("Library", Icons.Rounded.Search,
                         { nav.navigate("exercise/search?picker=false") }, Modifier.weight(1f), prominent = true)
                 }
                 Row(
@@ -186,7 +187,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
         }
 
         if (routinesExpanded) {
-            items(routines, key = { "routine-${it.routine.id}" }) { entry ->
+            itemsIndexed(routines, key = { _, entry -> "routine-${entry.routine.id}" }) { index, entry ->
                 val routine = entry.routine
                 val action = when {
                     active == null -> "Start routine"
@@ -195,6 +196,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
                 }
                 RoutineCard(
                     entry = entry,
+                    featured = index == 0,
                     action = action,
                     onDetails = { nav.navigate("workout/routine/${routine.id}") },
                     onStart = {
@@ -237,7 +239,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
         var name by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { showNewDialog = false },
-            containerColor = V.Black,
+            containerColor = V.Canvas,
             modifier = Modifier.border(1.dp, V.SurfaceBright, RoundedCornerShape(28.dp)),
             title = { Text("New Routine", color = V.White) },
             text = {
@@ -259,6 +261,7 @@ fun WorkoutScreen(nav: NavController, vm: WorkoutVM = viewModel()) {
 private fun RoutineCard(
     entry: RoutineWithExercises,
     action: String?,
+    featured: Boolean,
     onDetails: () -> Unit,
     onStart: () -> Unit,
 ) {
@@ -269,7 +272,7 @@ private fun RoutineCard(
             .ifBlank { entry.routine.description.ifBlank { "No exercises added" } }
     }
 
-    VCard(Modifier.padding(horizontal = AuraScreenInset)) {
+    VCard(Modifier.padding(horizontal = AuraScreenInset), featured = featured) {
         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(8.dp))

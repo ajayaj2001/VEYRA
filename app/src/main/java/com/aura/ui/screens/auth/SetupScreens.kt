@@ -91,7 +91,7 @@ private fun SetupLayout(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
-        Modifier.fillMaxSize().background(V.Black)
+        Modifier.fillMaxSize().background(V.Canvas)
             .statusBarsPadding().navigationBarsPadding().imePadding(),
     ) {
         Row(
@@ -119,7 +119,7 @@ private fun SetupLayout(
         ) {
             if (error != null) Text(error, color = V.Error, style = Caption)
             VButton(action, onAction, Modifier.height(58.dp), enabled = enabled,
-                contentColor = V.Black, labelStyle = Action)
+                contentColor = V.ButtonText, labelStyle = Action)
             Text("You can update these anytime.", Modifier.padding(vertical = 12.dp), style = Caption)
         }
     }
@@ -287,7 +287,7 @@ private fun MetricCard(
         SetupInput(label, value, onChange, placeholder, Modifier.padding(horizontal = 4.dp),
             KeyboardType.Decimal, Heading, V.White)
         Spacer(Modifier.height(18.dp))
-        Row(Modifier.fillMaxWidth().clip(CircleShape).background(V.Black).padding(3.dp).selectableGroup()) {
+        Row(Modifier.fillMaxWidth().clip(CircleShape).background(V.Canvas).padding(3.dp).selectableGroup()) {
             units.forEachIndexed { index, text ->
                 val chosen = index == unit
                 Box(
@@ -460,7 +460,7 @@ private fun GoalCard(goal: Goal, selected: Boolean, onClick: () -> Unit, modifie
             .padding(horizontal = 14.dp, vertical = 12.dp),
     ) {
         Column {
-            Box(Modifier.size(34.dp).clip(CircleShape).background(V.Black), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(34.dp).clip(CircleShape).background(V.Canvas), contentAlignment = Alignment.Center) {
                 SetupImage(goal.icon, Modifier.size(24.dp))
             }
             Spacer(Modifier.height(12.dp))

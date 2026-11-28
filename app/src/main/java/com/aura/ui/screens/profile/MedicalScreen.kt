@@ -23,7 +23,7 @@ import com.aura.ui.theme.V
 @Composable
 fun MedicalScreen(nav: NavController) {
     Column(
-        Modifier.fillMaxSize().background(V.Black).verticalScroll(rememberScrollState()).statusBarsPadding()
+        Modifier.fillMaxSize().background(V.Canvas).verticalScroll(rememberScrollState()).statusBarsPadding()
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { nav.popBackStack() }) { Icon(Icons.Rounded.ArrowBack, "Back", tint = V.White) }

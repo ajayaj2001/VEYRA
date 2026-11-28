@@ -69,13 +69,13 @@ fun ExerciseDetailScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding()) {
         WorkoutHeader(exercise?.name ?: "Exercise", { nav.popBackStack() })
         if (exercise == null) {
             Text("Exercise unavailable", Modifier.padding(AuraScreenInset), color = V.Gray)
             return@Column
         }
-        TabRow(selectedTabIndex = tab, containerColor = V.Black, contentColor = V.Teal) {
+        TabRow(selectedTabIndex = tab, containerColor = V.Canvas, contentColor = V.Teal) {
             listOf("Overview", "History", "Technique").forEachIndexed { index, title ->
                 Tab(
                     selected = tab == index,

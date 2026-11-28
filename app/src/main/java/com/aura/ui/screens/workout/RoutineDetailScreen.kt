@@ -7,8 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,32 +21,31 @@ import androidx.navigation.NavController
 import com.aura.AuraApp
 import androidx.room.withTransaction
 import com.aura.data.local.dao.WorkoutWithSets
-import com.aura.data.local.entity.RoutineEntity
-import com.aura.data.local.entity.RoutineExerciseEntity
+import com.aura.data.local.entity.RoutineCloudDeletion
+import com.aura.data.local.entity.plan
 import com.aura.data.model.ExerciseLib
 import com.aura.ui.components.AuraPrimaryButton
 import com.aura.ui.components.VCard
 import com.aura.ui.theme.AuraScreenInset
 import com.aura.ui.theme.V
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.UUID
 
 @Composable
 internal fun RoutineDetailScreen(
     nav: NavController,
     routineId: Long,
-    selectedExerciseIds: List<String> = emptyList(),
-    onExerciseHandled: () -> Unit = {},
 ) {
     val app = LocalContext.current.applicationContext as AuraApp
     val database = app.db
     val dao = database.workoutDao()
     val sessions by remember(dao, routineId) { dao.observeRoutineSessions(routineId) }.collectAsState(initial = emptyList())
     val active by remember(dao) { dao.observeActiveWorkout() }.collectAsState(initial = null)
-    var loaded by remember(routineId) { mutableStateOf(false) }
-    var routine by remember(routineId) { mutableStateOf<RoutineEntity?>(null) }
-    var exercises by remember(routineId) { mutableStateOf<List<RoutineExerciseEntity>>(emptyList()) }
-    var editing by rememberSaveable(routineId) { mutableStateOf(false) }
+    val routineData by remember(dao, routineId) { dao.observeRoutine(routineId) }.collectAsState(initial = null)
+    val exercises = routineData?.firstOrNull()?.exercises.orEmpty().sortedBy { it.sortOrder }
+    val openEditor = { nav.navigate("workout/routine/$routineId/edit") }
     val lastSets = remember(sessions) {
         buildMap {
             sessions.forEach { session ->
@@ -58,45 +56,81 @@ internal fun RoutineDetailScreen(
     }
 
     val scope = rememberCoroutineScope()
+    var confirmDelete by rememberSaveable(routineId) { mutableStateOf(false) }
+    var deleting by remember(routineId) { mutableStateOf(false) }
+    var deleteError by remember(routineId) { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    var duplicating by remember { mutableStateOf(false) }
+    var duplicateError by remember { mutableStateOf(false) }
+    val current = routineData?.firstOrNull()?.routine
+    val canEdit = current != null &&
+        (current.cloudOwnerUid == null || current.cloudOwnerUid == app.workoutCloud.ownerUid)
 
-    LaunchedEffect(routineId, selectedExerciseIds) {
-        routine = dao.getRoutineById(routineId)
-        if (selectedExerciseIds.isNotEmpty()) {
-            if (routine?.let { it.cloudOwnerUid == null || it.cloudOwnerUid == app.workoutCloud.ownerUid } == true) {
-                database.withTransaction {
-                    val planned = dao.getRoutineExercises(routineId)
-                    val existing = planned.map { it.exerciseId }.toSet()
-                    val nextOrder = (planned.maxOfOrNull { it.sortOrder } ?: -1) + 1
-                    val additions = selectedExerciseIds.distinct().filterNot { it in existing }
-                    additions.forEachIndexed { index, id ->
-                        dao.insertRoutineExercise(RoutineExerciseEntity(
-                            routineId = routineId, exerciseId = id, sortOrder = nextOrder + index,
-                        ))
-                    }
-                    if (additions.isNotEmpty()) dao.touchRoutine(routineId, System.currentTimeMillis())
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding()) {
+        WorkoutHeader("Routine details", { nav.popBackStack() }) {
+            if (current != null) Box {
+                IconButton(onClick = { showMenu = true }, enabled = !deleting && !duplicating) {
+                    Icon(Icons.Rounded.MoreVert, "Routine options", tint = V.Teal)
                 }
-                app.workoutCloud.sync()
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    if (canEdit) DropdownMenuItem(text = { Text("Edit routine") }, onClick = {
+                        showMenu = false
+                        openEditor()
+                    })
+                    if (canEdit) DropdownMenuItem(text = { Text("Duplicate routine") }, onClick = {
+                        showMenu = false
+                        duplicating = true
+                        duplicateError = false
+                        scope.launch {
+                            try {
+                                val copyId = database.withTransaction {
+                                    val source = checkNotNull(dao.getRoutineById(routineId))
+                                    check(source.cloudOwnerUid == null || source.cloudOwnerUid == app.workoutCloud.ownerUid)
+                                    val uid = app.workoutCloud.ownerUid
+                                    val now = System.currentTimeMillis()
+                                    val id = dao.insertRoutine(source.copy(
+                                        id = 0,
+                                        name = "${source.name} (copy)",
+                                        createdAt = now,
+                                        updatedAt = now,
+                                        cloudOwnerUid = uid,
+                                        cloudId = uid?.let { UUID.randomUUID().toString() },
+                                        cloudSyncedRevision = null,
+                                    ))
+                                    dao.getRoutineExercises(routineId).forEach { exercise ->
+                                        dao.insertRoutineExercise(exercise.copy(id = 0, routineId = id))
+                                    }
+                                    id
+                                }
+                                app.workoutCloud.sync()
+                                nav.navigate("workout/routine/$copyId")
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (_: Exception) {
+                                duplicateError = true
+                            } finally {
+                                duplicating = false
+                            }
+                        }
+                    })
+                    if (canEdit) DropdownMenuItem(text = { Text("Delete routine", color = V.Red) }, onClick = {
+                        showMenu = false
+                        confirmDelete = true
+                    })
+                }
             }
-            onExerciseHandled()
         }
-        exercises = dao.getRoutineExercises(routineId)
-        loaded = true
-    }
-
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding()) {
-        WorkoutHeader("Routine details", { nav.popBackStack() })
-        val current = routine
         if (current == null) {
-            Text(if (loaded) "Routine unavailable" else "Loading routine…", Modifier.padding(AuraScreenInset), color = V.Gray)
+            Text(if (routineData == null) "Loading routine…" else "Routine unavailable", Modifier.padding(AuraScreenInset), color = V.Gray)
             return@Column
         }
-        val canEdit = current.cloudOwnerUid == null || current.cloudOwnerUid == app.workoutCloud.ownerUid
         Column(
             Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(AuraScreenInset),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(current.name, style = MaterialTheme.typography.headlineLarge, color = V.White)
             if (current.description.isNotBlank()) Text(current.description, color = V.Gray)
+            if (duplicateError) Text("Couldn’t duplicate the routine. Try again.", color = V.Error)
             AuraPrimaryButton(
                 if (active == null) "Start routine" else "Resume workout",
                 onClick = {
@@ -107,18 +141,18 @@ internal fun RoutineDetailScreen(
 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Exercises", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, color = V.White)
-                if (canEdit && exercises.isNotEmpty()) {
-                    TextButton(onClick = { editing = !editing }) {
-                        Text(if (editing) "Done" else "Edit routine", color = V.Teal)
-                    }
+                if (canEdit) TextButton(onClick = openEditor) {
+                    Text("Edit routine", color = V.Teal)
                 }
             }
             if (exercises.isEmpty()) Text("No exercises in this routine yet.", color = V.Gray)
             exercises.forEach { entry ->
                 val exercise = ExerciseLib.getById(entry.exerciseId)
                 val latest = lastSets[entry.exerciseId].orEmpty()
-                val rows = if (latest.isEmpty()) {
-                    List(entry.targetSets.coerceAtLeast(0)) { SetTableRow(it + 1, null, entry.targetReps) }
+                val plan = entry.plan()
+                val showPlan = latest.isEmpty() || entry.planJson != null
+                val rows = if (showPlan) {
+                    plan.sets.mapIndexed { index, set -> SetTableRow(index + 1, set.weightKg, set.reps) }
                 } else {
                     latest.map { SetTableRow(it.setNumber, it.weight, it.reps) }
                 }
@@ -137,32 +171,63 @@ internal fun RoutineDetailScreen(
                                 ExerciseThumbnail(exercise?.imageUrl)
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                                     Text(exercise?.name ?: "Exercise unavailable", color = V.White, style = MaterialTheme.typography.titleMedium)
-                                    Text(if (latest.isEmpty()) "Planned sets" else "Last logged sets", color = V.Gray, style = MaterialTheme.typography.labelMedium)
+                                    Text(if (showPlan) "Planned sets" else "Last logged sets", color = V.Gray, style = MaterialTheme.typography.labelMedium)
                                 }
-                                if (exercise != null && !editing) WorkoutDetailChevron()
-                            }
-                            if (canEdit && editing) IconButton(onClick = {
-                                scope.launch {
-                                    database.withTransaction {
-                                        dao.deleteRoutineExercise(entry.id)
-                                        dao.touchRoutine(routineId, System.currentTimeMillis())
-                                    }
-                                    app.workoutCloud.sync()
-                                    exercises = dao.getRoutineExercises(routineId)
-                                }
-                            }) {
-                                Icon(Icons.Rounded.Close, "Remove ${exercise?.name ?: "exercise"} from routine", tint = V.Gray)
+                                if (exercise != null) WorkoutDetailChevron()
                             }
                         }
+                        if (plan.restSeconds > 0) Text("Rest · ${plan.restSeconds} sec", color = V.Gray)
+                        if (plan.note.isNotBlank()) Text(plan.note, color = V.Gray)
                         WorkoutSetTable(rows)
                     }
                 }
             }
-            if (canEdit && (editing || exercises.isEmpty())) {
-                WorkoutAction("Add exercise", Icons.Rounded.Add, { openExercisePicker(nav, exercises.map { it.exerciseId }) }, Modifier.fillMaxWidth())
-            }
             MusclesWorkedCard(remember(exercises) { exercises.mapNotNull { ExerciseLib.getById(it.exerciseId) } })
         }
+    }
+    if (confirmDelete && current != null && canEdit) {
+        AlertDialog(
+            onDismissRequest = { if (!deleting) confirmDelete = false },
+            containerColor = V.SurfaceRaised,
+            title = { Text("Delete routine?", color = V.White) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Delete ${current.name}? Your workout history will still be available.", color = V.White)
+                    if (deleteError) Text("Couldn’t delete the routine. Try again.", color = V.Error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }, enabled = !deleting) { Text("Cancel") }
+            },
+            confirmButton = {
+                TextButton(enabled = !deleting, onClick = {
+                    deleting = true
+                    deleteError = false
+                    scope.launch {
+                        try {
+                            database.withTransaction {
+                                val stored = dao.getRoutineById(routineId) ?: return@withTransaction
+                                val ownerUid = stored.cloudOwnerUid
+                                check(ownerUid == null || ownerUid == app.workoutCloud.ownerUid)
+                                if (ownerUid != null && stored.cloudId != null) {
+                                    dao.queueRoutineCloudDeletion(RoutineCloudDeletion(ownerUid, stored.cloudId))
+                                }
+                                dao.deleteRoutine(stored)
+                            }
+                            app.workoutCloud.sync()
+                            confirmDelete = false
+                            nav.popBackStack()
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            deleteError = true
+                        } finally {
+                            deleting = false
+                        }
+                    }
+                }) { Text("Delete", color = V.Red) }
+            },
+        )
     }
 }
 

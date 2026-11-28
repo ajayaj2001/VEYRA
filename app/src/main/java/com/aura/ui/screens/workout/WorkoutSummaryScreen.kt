@@ -49,7 +49,7 @@ internal fun WorkoutSummaryScreen(nav: NavController, workoutId: Long, celebrate
         loaded = true
     }
 
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding()) {
         WorkoutHeader("Workout summary", { nav.popBackStack() })
         val current = workout
         if (current == null) {

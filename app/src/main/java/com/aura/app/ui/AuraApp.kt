@@ -863,7 +863,7 @@ private fun TrainScreen(
             }
             item { PopButton("VIEW WORKOUT HISTORY", Icons.Outlined.History, SurfaceHigh, onWorkoutHistory) }
         }
-        item { SectionHeader("EXERCISE LIBRARY", "View all") }
+        item { SectionHeader("LIBRARY", "View all") }
         items(exercises) { exercise -> ExerciseCard(exercise) { onExercise(exercise) } }
     }
 }

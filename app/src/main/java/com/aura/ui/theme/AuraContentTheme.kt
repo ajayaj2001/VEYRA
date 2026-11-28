@@ -21,11 +21,11 @@ internal val AuraWordmark = TextStyle(
     letterSpacing = (-1.3).sp,
 )
 
-internal val AuraBody = TextStyle(fontFamily = FontFamily.Default, fontSize = 16.sp, lineHeight = 24.sp)
+internal val AuraBody = TextStyle(fontFamily = PlusJakartaSans, fontSize = 16.sp, lineHeight = 24.sp)
 internal val AuraCaption = AuraBody.copy(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium)
-internal val AuraButtonLabel = AuraBody.copy(fontSize = 18.sp, fontWeight = FontWeight.Medium)
-private val AuraHeading = AuraBody.copy(fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold)
-private val AuraSectionTitle = AuraHeading.copy(fontSize = 24.sp, lineHeight = 32.sp)
+internal val AuraButtonLabel = AuraBody.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold)
+private val AuraHeading = AuraBody.copy(fontSize = 34.sp, lineHeight = 41.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.7).sp)
+private val AuraSectionTitle = AuraHeading.copy(fontSize = 24.sp, lineHeight = 32.sp, letterSpacing = (-0.35).sp)
 private val AuraContentTypography = AuraTypography.copy(
     displayLarge = AuraHeading,
     displayMedium = AuraHeading,

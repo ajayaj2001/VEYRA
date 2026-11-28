@@ -53,8 +53,8 @@ internal fun ExerciseSearchScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding().imePadding()) {
-        WorkoutHeader(if (picker) "Add exercise" else "Exercise library", { nav.popBackStack() })
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding().imePadding()) {
+        WorkoutHeader(if (picker) "Add exercise" else "Library", { nav.popBackStack() })
         Column(Modifier.padding(horizontal = AuraScreenInset, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             AuraSearchField(query, { query = it }, "Search exercises")

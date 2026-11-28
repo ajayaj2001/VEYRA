@@ -11,6 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,9 +25,9 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -110,7 +111,7 @@ private fun AuraRoot(
     val showNav = route in tabRoutes
 
     Scaffold(
-        containerColor = V.Black,
+        containerColor = V.Canvas,
         bottomBar = {
             AnimatedVisibility(
                 visible = showNav,
@@ -152,17 +153,17 @@ private fun BottomBar(
     Row(
         Modifier
             .fillMaxWidth()
-            .background(V.Black)
+            .background(V.Canvas)
             .padding(bottom = navPadding.calculateBottomPadding())
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Nav pill container
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .background(V.SurfaceRaised)
+                .clip(RoundedCornerShape(20.dp))
+                .background(V.Surface)
+                .border(1.dp, V.Divider, RoundedCornerShape(20.dp))
                 .padding(horizontal = 6.dp, vertical = 4.dp)
                 .selectableGroup(),
             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -174,7 +175,7 @@ private fun BottomBar(
                 Box(
                     Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(9999.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .selectable(selected, role = Role.Tab, onClick = { onTab(tab) })
                         .heightIn(min = 64.dp)
                         .padding(vertical = 6.dp),
@@ -185,16 +186,17 @@ private fun BottomBar(
                         verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                         Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
-                            if (selected) {
-                                Box(Modifier.matchParentSize().clip(CircleShape).background(V.Teal.copy(alpha = 0.15f)))
-                            }
                             Icon(tab.icon, contentDescription = null, tint = if (selected) V.Teal else V.Gray,
                                 modifier = Modifier.size(24.dp))
                         }
                         Text(
                             tab.label,
                             style = AuraCaption,
-                            color = if (selected) V.Teal else V.Gray,
+                            color = if (selected) V.White else V.Gray,
+                        )
+                        Box(
+                            Modifier.width(20.dp).height(3.dp).clip(RoundedCornerShape(2.dp))
+                                .background(if (selected) V.Teal else androidx.compose.ui.graphics.Color.Transparent),
                         )
                     }
                 }

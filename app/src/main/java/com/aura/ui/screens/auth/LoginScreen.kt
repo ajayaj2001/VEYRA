@@ -61,7 +61,7 @@ fun LoginScreen(
 ) {
     var wordmarkTaps by remember { mutableIntStateOf(0) }
     BoxWithConstraints(
-        Modifier.fillMaxSize().background(V.Black)
+        Modifier.fillMaxSize().background(V.Canvas)
             .statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp),
         contentAlignment = Alignment.TopCenter,
     ) {

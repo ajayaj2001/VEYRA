@@ -38,7 +38,7 @@ fun AiSettingsScreen(nav: NavController) {
     }
 
     Column(
-        Modifier.fillMaxSize().background(V.Black).verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize().background(V.Canvas).verticalScroll(rememberScrollState())
             .statusBarsPadding().navigationBarsPadding().imePadding()
     ) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {

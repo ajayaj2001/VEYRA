@@ -17,6 +17,9 @@ data class RoutineEntity(
     val cloudSyncedRevision: Long? = null,
 )
 
+@Entity(tableName = "routine_cloud_deletions", primaryKeys = ["ownerUid", "cloudId"])
+data class RoutineCloudDeletion(val ownerUid: String, val cloudId: String)
+
 @Entity(
     tableName = "routine_exercises",
     foreignKeys = [ForeignKey(entity = RoutineEntity::class, parentColumns = ["id"], childColumns = ["routineId"], onDelete = ForeignKey.CASCADE)],
@@ -29,6 +32,7 @@ data class RoutineExerciseEntity(
     val sortOrder: Int,
     val targetSets: Int = 3,
     val targetReps: Int = 10,
+    val planJson: String? = null,
 )
 
 @Entity(tableName = "workouts")

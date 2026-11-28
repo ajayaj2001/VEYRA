@@ -3,6 +3,7 @@ package com.aura.data.cloud
 import android.util.Log
 import androidx.room.withTransaction
 import com.aura.data.local.AppDatabase
+import com.aura.data.local.entity.plan
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -53,7 +54,7 @@ internal class WorkoutCloudSync(private val database: () -> AppDatabase) {
                         "sortOrder" to exercise.sortOrder,
                         "targetSets" to exercise.targetSets,
                         "targetReps" to exercise.targetReps,
-                    )
+                    ) + exercise.plan().cloudFields()
                 }
                 Upload("routines", checkNotNull(routine.cloudId), routine.updatedAt, mapOf(
                     "name" to routine.name,
@@ -91,7 +92,12 @@ internal class WorkoutCloudSync(private val database: () -> AppDatabase) {
                     "sets" to sets,
                 )) { dao.markWorkoutSynced(workout.id, endTime) }
             }
-            routines + workouts
+            val deletions = dao.pendingRoutineCloudDeletions(uid).map { deletion ->
+                Upload("routines", deletion.cloudId, Long.MIN_VALUE, null) {
+                    dao.acknowledgeRoutineCloudDeletion(deletion)
+                }
+            }
+            routines + workouts + deletions
         }
         if (uid != ownerUid || uploads.isEmpty()) return
 
@@ -101,7 +107,8 @@ internal class WorkoutCloudSync(private val database: () -> AppDatabase) {
             val key = document.path to upload.revision
             if (key in pending) continue
 
-            val task = document.set(upload.data + ("syncedAt" to FieldValue.serverTimestamp()))
+            val task = upload.data?.let { document.set(it + ("syncedAt" to FieldValue.serverTimestamp())) }
+                ?: document.delete()
             pending.add(key)
             task.addOnCompleteListener { result ->
                 scope.launch {
@@ -124,7 +131,7 @@ internal class WorkoutCloudSync(private val database: () -> AppDatabase) {
         val collection: String,
         val id: String,
         val revision: Long,
-        val data: Map<String, Any?>,
+        val data: Map<String, Any?>?,
         val acknowledge: suspend () -> Unit,
     )
 }

@@ -26,6 +26,10 @@ interface WorkoutDao {
     @Query("SELECT * FROM routines ORDER BY updatedAt DESC, id DESC")
     fun observeRoutinesWithExercises(): Flow<List<RoutineWithExercises>>
 
+    @Transaction
+    @Query("SELECT * FROM routines WHERE id = :id")
+    fun observeRoutine(id: Long): Flow<List<RoutineWithExercises>>
+
     @Query("SELECT * FROM routines WHERE id = :id")
     suspend fun getRoutineById(id: Long): RoutineEntity?
 
@@ -35,14 +39,26 @@ interface WorkoutDao {
     @Delete
     suspend fun deleteRoutine(routine: RoutineEntity)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun queueRoutineCloudDeletion(deletion: RoutineCloudDeletion)
+
+    @Query("SELECT * FROM routine_cloud_deletions WHERE ownerUid = :uid")
+    suspend fun pendingRoutineCloudDeletions(uid: String): List<RoutineCloudDeletion>
+
+    @Delete
+    suspend fun acknowledgeRoutineCloudDeletion(deletion: RoutineCloudDeletion)
+
     @Query("SELECT * FROM routine_exercises WHERE routineId = :routineId ORDER BY sortOrder")
     suspend fun getRoutineExercises(routineId: Long): List<RoutineExerciseEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRoutineExercise(exercise: RoutineExerciseEntity): Long
 
-    @Query("DELETE FROM routine_exercises WHERE id = :id")
-    suspend fun deleteRoutineExercise(id: Long)
+    @Query("DELETE FROM routine_exercises WHERE routineId = :routineId")
+    suspend fun clearRoutineExercises(routineId: Long)
+
+    @Query("UPDATE routines SET name = :name, updatedAt = MAX(updatedAt + 1, :now) WHERE id = :id")
+    suspend fun updateRoutinePlan(id: Long, name: String, now: Long)
 
     // Workouts
     @Query("SELECT * FROM workouts WHERE isActive = 0 ORDER BY startTime DESC")
@@ -84,9 +100,6 @@ interface WorkoutDao {
 
     @Delete
     suspend fun deleteWorkout(workout: WorkoutEntity)
-
-    @Query("UPDATE routines SET updatedAt = MAX(updatedAt + 1, :now) WHERE id = :id")
-    suspend fun touchRoutine(id: Long, now: Long)
 
     @Query("SELECT * FROM routines WHERE cloudOwnerUid = :uid AND cloudId IS NOT NULL AND (cloudSyncedRevision IS NULL OR cloudSyncedRevision != updatedAt)")
     suspend fun pendingRoutines(uid: String): List<RoutineEntity>

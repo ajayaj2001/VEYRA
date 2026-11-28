@@ -100,7 +100,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
     val context = LocalContext.current
 
     BackHandler(enabled = busy || review) { if (!busy) review = false }
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding().navigationBarsPadding().imePadding()) {
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding().navigationBarsPadding().imePadding()) {
         Row(
             Modifier.fillMaxWidth().padding(end = AuraScreenInset),
             verticalAlignment = Alignment.CenterVertically,
@@ -149,7 +149,7 @@ internal fun NutritionEntryScreen(vm: NutritionVM, onClose: () -> Unit) {
                 },
             )
         } else {
-            TabRow(selectedTabIndex = mode, containerColor = V.Black, contentColor = V.Teal) {
+            TabRow(selectedTabIndex = mode, containerColor = V.Canvas, contentColor = V.Teal) {
                 listOf("Manual", "AI estimate", "Favorites").forEachIndexed { index, name ->
                     Tab(
                         selected = mode == index, onClick = { mode = index },

@@ -30,7 +30,7 @@ fun SplashScreen(onFinished: () -> Unit) {
     }
 
     BoxWithConstraints(
-        Modifier.fillMaxSize().background(V.Black)
+        Modifier.fillMaxSize().background(V.Canvas)
             .statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center,
     ) {

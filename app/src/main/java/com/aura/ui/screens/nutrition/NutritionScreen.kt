@@ -111,7 +111,7 @@ fun NutritionScreen(nav: NavController, vm: NutritionVM = viewModel()) {
     val favorites by vm.favorites.collectAsState(initial = emptyList())
     var selected by remember { mutableStateOf<FoodLogEntity?>(null) }
 
-    Column(Modifier.fillMaxSize().background(V.Black).statusBarsPadding()) {
+    Column(Modifier.fillMaxSize().background(V.Canvas).statusBarsPadding()) {
         LazyColumn(
             Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = AuraScreenInset, vertical = 16.dp),

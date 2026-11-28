@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 internal class WorkoutNotification(private val app: AuraApp) {
     private val manager = app.getSystemService(NotificationManager::class.java)
     private val preferences = app.getSharedPreferences("workout_notifications", Context.MODE_PRIVATE)
-    private val units = app.getSharedPreferences("workout_display_units", Context.MODE_PRIVATE)
+    private val units = WorkoutWeightPreferences(app)
     private val auth = FirebaseAuth.getInstance()
     private val owner = MutableStateFlow(auth.currentUser?.uid)
     private val updates = MutableStateFlow(0)
@@ -83,7 +83,7 @@ internal class WorkoutNotification(private val app: AuraApp) {
         val workout = session.workout
         val next = nextSet(session.sets)
         val exercise = next?.let { ExerciseLib.getById(it.exerciseId) }
-        val unit = if (units.getLong("pounds_workout", -1L) == workout.id) WorkoutWeightUnit.LB else WorkoutWeightUnit.KG
+        val unit = if (next?.exerciseId in units.poundExercises(workout.id)) WorkoutWeightUnit.LB else WorkoutWeightUnit.KG
         val title = exercise?.name ?: next?.exerciseName?.takeIf { it.isNotBlank() } ?: workout.name
         val text = when {
             next == null && session.sets.isEmpty() -> "Open Aura to add an exercise"
